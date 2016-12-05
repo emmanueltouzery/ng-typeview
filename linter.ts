@@ -1,16 +1,13 @@
 /// <reference path="typings/node/node.d.ts" />
+/// <reference path="node_modules/tsmonad/dist/tsmonad.d.ts" />
 
 import {readFileSync} from "fs";
 import * as ts from "typescript";
+import {Maybe} from "tsmonad";
 
 export function delint(sourceFile: ts.SourceFile) {
     // console.info(sourceFile.statements);
     delintNode(sourceFile);
-
-    interface ControllerViewInfo {
-        controllerName : string;
-        viewPath: string;
-    }
 
     function naFind<T>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : T|null {
         const filterRes = arr.filter(f);
@@ -19,6 +16,11 @@ export function delint(sourceFile: ts.SourceFile) {
         } else {
             return null;
         }
+    }
+
+    interface ControllerViewInfo {
+        controllerName : string;
+        viewPath: string;
     }
 
     function parseModalOpen(callExpr : ts.CallExpression): ControllerViewInfo | null {
@@ -57,12 +59,27 @@ export function delint(sourceFile: ts.SourceFile) {
         };
     }
 
+    function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
+        const typeIsIScope = t =>
+            t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
+            t.expression.name.text === "IScope";
+        const ifaceIsIScope = iface.heritageClauses.some(c => c.types.some(typeIsIScope));
+        if (ifaceIsIScope) {
+            return iface.getText();
+        } else {
+            return null;
+        }
+    }
+
     function delintNode(node: ts.Node) {
         // console.info(node);
         // console.info(node.kind);
 
         if (node.kind == ts.SyntaxKind.CallExpression) {
             console.info(parseModalOpen(<ts.CallExpression>node));
+        }
+        if (node.kind == ts.SyntaxKind.InterfaceDeclaration) {
+            console.info(parseScopeInterface(<ts.InterfaceDeclaration>node));
         }
 
         // if (node.kind == ts.SyntaxKind.PropertyAccessExpression) {
@@ -114,6 +131,8 @@ const fileNames = process.argv.slice(2);
 fileNames.forEach(fileName => {
     // Parse a file
     let sourceFile = ts.createSourceFile(fileName, readFileSync(fileName).toString(), ts.ScriptTarget.ES6, /*setParentNodes */ true);
+
+    console.log(Maybe.just(19));
 
     // delint it
     delint(sourceFile);
