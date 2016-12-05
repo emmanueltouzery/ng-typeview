@@ -18,24 +18,24 @@ export function delint(sourceFile: ts.SourceFile) {
         }
     }
 
+    function maybeNodeType<T>(input: ts.Node, sKind: ts.SyntaxKind, f: (value:ts.Node) => T): Maybe<T> {
+        return (input.kind === sKind) ? Maybe.just(f(input)) : Maybe.nothing();
+    }
+
     function maybeCallExpression(input: ts.Node): Maybe<ts.CallExpression> {
-        return (input.kind === ts.SyntaxKind.CallExpression)
-            ? Maybe.just(input) : Maybe.nothing();
+        return maybeNodeType(input, ts.SyntaxKind.CallExpression, i => <ts.CallExpression>i);
     }
 
     function maybePropertyAccessExpression(input: ts.Node): Maybe<ts.PropertyAccessExpression> {
-        return (input.kind === ts.SyntaxKind.PropertyAccessExpression)
-            ? Maybe.just(input) : Maybe.nothing();
+        return maybeNodeType(input, ts.SyntaxKind.PropertyAccessExpression, i => <ts.PropertyAccessExpression>i);
     }
 
     function maybeIdentifier(input: ts.Node): Maybe<ts.Identifier> {
-        return (input.kind === ts.SyntaxKind.Identifier)
-            ? Maybe.just(input) : Maybe.nothing();
+        return maybeNodeType(input, ts.SyntaxKind.Identifier, i => <ts.Identifier>i);
     }
 
     function maybeStringLiteral(input: ts.Node): Maybe<ts.StringLiteral> {
-        return (input.kind === ts.SyntaxKind.StringLiteral)
-            ? Maybe.just(input) : Maybe.nothing();
+        return maybeNodeType(input, ts.SyntaxKind.StringLiteral, i => <ts.StringLiteral>i);
     }
 
     interface ControllerViewInfo {
