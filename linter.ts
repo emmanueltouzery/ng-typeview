@@ -18,6 +18,26 @@ export function delint(sourceFile: ts.SourceFile) {
         }
     }
 
+    function maybeCallExpression(input: ts.Node): Maybe<ts.CallExpression> {
+        return (input.kind === ts.SyntaxKind.CallExpression)
+            ? Maybe.just(input) : Maybe.nothing();
+    }
+
+    function maybePropertyAccessExpression(input: ts.Node): Maybe<ts.PropertyAccessExpression> {
+        return (input.kind === ts.SyntaxKind.PropertyAccessExpression)
+            ? Maybe.just(input) : Maybe.nothing();
+    }
+
+    function maybeIdentifier(input: ts.Node): Maybe<ts.Identifier> {
+        return (input.kind === ts.SyntaxKind.Identifier)
+            ? Maybe.just(input) : Maybe.nothing();
+    }
+
+    function maybeStringLiteral(input: ts.Node): Maybe<ts.StringLiteral> {
+        return (input.kind === ts.SyntaxKind.StringLiteral)
+            ? Maybe.just(input) : Maybe.nothing();
+    }
+
     interface ControllerViewInfo {
         controllerName : string;
         viewPath: string;
@@ -59,6 +79,35 @@ export function delint(sourceFile: ts.SourceFile) {
         };
     }
 
+    function parseAngularModule(expr: ts.ExpressionStatement) {
+        const callExpr = maybeCallExpression(expr.expression);
+        const prop0 = callExpr
+            .bind(callExpr => maybePropertyAccessExpression(callExpr.expression));
+
+        const prop = prop0
+            .bind(callProp => maybeCallExpression(callProp.expression))
+            .bind(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+
+        const receiver1 = prop
+            .bind(p => maybeIdentifier(p.expression))
+            .map(r => r.text);
+        const call1 = prop
+            .bind(p => maybeIdentifier(p.name))
+            .map(r => r.text);
+
+        if (receiver1.valueOr(null) === "angular" && call1.valueOr(null) === "module") {
+            console.log("part 1 done")
+            const moduleCall = prop0.map(p => p.name.text);
+            if (moduleCall.valueOr(null) === "controller") {
+                console.log("part 2 done")
+                const nme = callExpr
+                    .bind(c => maybeStringLiteral(c.arguments[0]))
+                    .map(a => a.text);
+                console.log("name => " + nme.valueOr(null));
+            }
+        }
+    }
+
     function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
         const typeIsIScope = t =>
             t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
@@ -77,6 +126,9 @@ export function delint(sourceFile: ts.SourceFile) {
 
         if (node.kind == ts.SyntaxKind.CallExpression) {
             console.info(parseModalOpen(<ts.CallExpression>node));
+        }
+        if (node.kind == ts.SyntaxKind.ExpressionStatement) {
+            parseAngularModule(<ts.ExpressionStatement>node);
         }
         if (node.kind == ts.SyntaxKind.InterfaceDeclaration) {
             console.info(parseScopeInterface(<ts.InterfaceDeclaration>node));
@@ -131,8 +183,6 @@ const fileNames = process.argv.slice(2);
 fileNames.forEach(fileName => {
     // Parse a file
     let sourceFile = ts.createSourceFile(fileName, readFileSync(fileName).toString(), ts.ScriptTarget.ES6, /*setParentNodes */ true);
-
-    console.log(Maybe.just(19));
 
     // delint it
     delint(sourceFile);
