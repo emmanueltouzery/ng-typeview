@@ -27,7 +27,9 @@ function stmtAddScopeAccessors(node: ts.Node): string {
         const op = <ts.PrefixUnaryExpression>node;
         return ts.tokenToString(op.operator) + stmtAddScopeAccessors(op.operand);
     } else if (node.kind === ts.SyntaxKind.CallExpression) {
-        return "$scope." + node.getText();
+        const expr = <ts.CallExpression>node;
+        return "$scope." + expr.expression.getText() + "(" +
+            expr.arguments.map(stmtAddScopeAccessors).join(", ") + ")";
     } else if (node.kind === ts.SyntaxKind.BinaryExpression) {
         const expr = <ts.BinaryExpression>node;
         return stmtAddScopeAccessors(expr.left)
@@ -35,7 +37,7 @@ function stmtAddScopeAccessors(node: ts.Node): string {
             + stmtAddScopeAccessors(expr.right);
     } else if (node.kind === ts.SyntaxKind.ElementAccessExpression) {
         const acc = <ts.ElementAccessExpression>node;
-        return stmtAddScopeAccessors(acc.expression) + "["+ acc.argumentExpression.getText() + "]";
+        return stmtAddScopeAccessors(acc.expression) + "["+ stmtAddScopeAccessors(acc.argumentExpression) + "]";
     } else if (nodeKindPassthroughList.contains(node.kind)) {
         return node.getText();
     }
