@@ -1,9 +1,12 @@
 {
-    "name": "ng-typeview",
-    "version": "0.1",
-    "license": "MIT",
-    "dependencies": {
-        "typescript": "2.0.10",
-        "tsmonad": "0.6.1"
-    }
+  "name": "ng-typeview",
+  "version": "0.1",
+  "license": "MIT",
+  "dependencies": {
+    "@types/immutable": "^3.8.6",
+    "htmlparser2": "3.9.2",
+    "immutable": "^3.8.1",
+    "tsmonad": "0.6.1",
+    "typescript": "2.0.10"
+  }
 }

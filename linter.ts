@@ -101,6 +101,7 @@ export function delint(sourceFile: ts.SourceFile) {
             if (moduleCall.valueOr(null) === "controller") {
                 console.log("part 2 done")
                 const nme = callExpr
+                    // TODO guard the array indexing
                     .bind(c => maybeStringLiteral(c.arguments[0]))
                     .map(a => a.text);
                 console.log("name => " + nme.valueOr(null));
