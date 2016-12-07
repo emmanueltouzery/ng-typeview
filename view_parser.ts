@@ -6,11 +6,12 @@ import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {List} from "immutable";
 
+type ParsedExpression = {expr: string, type: ExpressionType};
 type ExpressionType = "boolean" | "any"
 
 interface AttributeHandler {
     attrName: string,
-    getExpressions: (val: string) => {expr: string, type: ExpressionType}[]
+    getExpressions: (val: string) => ParsedExpression[]
 }
 
 const ngShowAttributeHandler = {
@@ -30,21 +31,35 @@ function writeExpression(expr: ExpressionType): void {
     console.log(expr);
 }
 
-const myHandler: Handler = {
-    // onopentag: (name: string, attribs:{[type:string]: string}) => {
-    //     console.log("tag open " + name);
-    // },
-    onattribute: (name: string, value: string) => {
-        const exprs = attributeHandlers
-            .filter(attrHandler => attrHandler.attrName === name)
-            .flatMap(handler => handler.getExpressions(value));
-        exprs.forEach(writeExpression);
-    }
-};
+function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
+    var expressions = [];
+    return {
+        // onopentag: (name: string, attribs:{[type:string]: string}) => {
+        //     console.log("tag open " + name);
+        // },
+        onattribute: (name: string, value: string) => {
+            expressions = expressions.concat(
+                attributeHandlers
+                    .filter(attrHandler => attrHandler.attrName === name)
+                    .flatMap(handler => handler.getExpressions(value))
+                    .toArray());
+        },
+        onend: () => {
+            f(expressions);
+        }
+    };
+}
 
-const parser = new Parser(myHandler);
+
+export const parseView = (fileName: string, f: (expr: ParsedExpression[]) => void) => {
+    const parser = new Parser(getHandler(f));
+    parser.write(readFileSync(fileName).toString());
+    parser.done();
+}
 
 const fileNames = process.argv.slice(2);
 fileNames.forEach(fileName => {
-    parser.write(readFileSync(fileName).toString());
+    parseView(fileName, expr => console.log(expr));
+    // parser.write(readFileSync(fileName).toString());
 });
+// parser.done();
