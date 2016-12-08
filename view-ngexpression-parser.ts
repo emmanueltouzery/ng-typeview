@@ -1,5 +1,3 @@
-/// <reference path="typings/node/node.d.ts" />
-
 import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Set} from "immutable";

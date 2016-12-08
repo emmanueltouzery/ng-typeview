@@ -1,4 +1,3 @@
-/// <reference path="typings/node/node.d.ts" />
 //  <reference path="typings/globals/html2parser2/index.d.ts"
 
 // var htmlparser = require("htmlparser2");

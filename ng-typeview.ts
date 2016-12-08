@@ -1,7 +1,8 @@
-import {writeFile} from "fs";
+import {writeFile, readdirSync, statSync} from "fs";
+import {sync} from "glob";
 
 import {parseView, ParsedExpression} from "./view-parser"
-import {extractScopeInterface} from "./controller-parse"
+import {extractScopeInterface, extractModalOpenAngularModule} from "./controller-parse"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
@@ -19,4 +20,21 @@ async function processViewController(controllerPath: string, viewPath: string) {
              "\n}\n");
 }
 
-processViewController(process.argv[2], process.argv[3]);
+// processViewController(process.argv[2], process.argv[3]);
+
+async function readProjectFiles(path: string) {
+    console.log(path);
+    const files = sync(path + "/**/*.@(js|ts)", {nodir:true});
+    console.log(files.length);
+    try {
+        const viewInfos = (await Promise.all(files.map(extractModalOpenAngularModule)))
+            // TODO parameter destructuring possible here?
+            .filter(viewInfo => viewInfo.ngModuleName !== null || viewInfo.controllerViewInfos.length > 0);
+        console.log(viewInfos.length);
+        console.log(viewInfos);
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+readProjectFiles(process.argv[2]);
