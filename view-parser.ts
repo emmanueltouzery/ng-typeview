@@ -6,8 +6,8 @@ import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {List} from "immutable";
 
-type ParsedExpression = {expr: string, type: ExpressionType};
-type ExpressionType = "boolean" | "any"
+export type ParsedExpression = {expr: string, type: ExpressionType};
+export type ExpressionType = "boolean" | "any"
 
 interface AttributeHandler {
     attrName: string,
@@ -50,16 +50,27 @@ function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
     };
 }
 
+export function parseView(fileName: string): Promise<ParsedExpression[]> {
+    return new Promise((resolve, reject) => {
+        const parser = new Parser(getHandler(resolve));
+        parser.write(readFileSync(fileName).toString());
+        parser.done();
+    });
+}
 
-export const parseView = (fileName: string, f: (expr: ParsedExpression[]) => void) => {
-    const parser = new Parser(getHandler(f));
-    parser.write(readFileSync(fileName).toString());
-    parser.done();
+async function fetch(fileName: string) {
+    let r = await parseView(fileName);
+    console.log(r);
 }
 
 const fileNames = process.argv.slice(2);
 fileNames.forEach(fileName => {
-    parseView(fileName, expr => console.log(expr));
+    // parseView(fileName).then(expr => console.log(expr));
+
+    // parseView(fileName).then(expr => console.log(expr));
+
+    fetch(fileName);
+
     // parser.write(readFileSync(fileName).toString());
 });
 // parser.done();

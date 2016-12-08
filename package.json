@@ -3,6 +3,7 @@
   "version": "0.1",
   "license": "MIT",
   "dependencies": {
+    "@types/es6-promise": "0.0.32",
     "@types/immutable": "^3.8.6",
     "htmlparser2": "3.9.2",
     "immutable": "^3.8.1",

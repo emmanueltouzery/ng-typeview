@@ -5,11 +5,24 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe} from "tsmonad";
 
+
+function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
+    const typeIsIScope = t =>
+        t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
+        t.expression.name.text === "IScope";
+    const ifaceIsIScope = iface.heritageClauses.some(c => c.types.some(typeIsIScope));
+    if (ifaceIsIScope) {
+        return iface.getText();
+    } else {
+        return null;
+    }
+}
+
 export function delint(sourceFile: ts.SourceFile) {
     // console.info(sourceFile.statements);
     delintNode(sourceFile);
 
-    function naFind<T>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : T|null {
+    function naFind<T extends ts.Node>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : T|null {
         const filterRes = arr.filter(f);
         if (filterRes.length > 0) {
             return filterRes[0];
@@ -109,18 +122,6 @@ export function delint(sourceFile: ts.SourceFile) {
         }
     }
 
-    function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
-        const typeIsIScope = t =>
-            t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
-            t.expression.name.text === "IScope";
-        const ifaceIsIScope = iface.heritageClauses.some(c => c.types.some(typeIsIScope));
-        if (ifaceIsIScope) {
-            return iface.getText();
-        } else {
-            return null;
-        }
-    }
-
     function delintNode(node: ts.Node) {
         // console.info(node);
         // console.info(node.kind);
@@ -180,11 +181,31 @@ export function delint(sourceFile: ts.SourceFile) {
     }
 }
 
-const fileNames = process.argv.slice(2);
-fileNames.forEach(fileName => {
-    // Parse a file
-    let sourceFile = ts.createSourceFile(fileName, readFileSync(fileName).toString(), ts.ScriptTarget.ES6, /*setParentNodes */ true);
+export function extractScopeInterface(fileName: string): Promise<string> {
+    const sourceFile = ts.createSourceFile(
+        fileName, readFileSync(fileName).toString(),
+        ts.ScriptTarget.ES2016, /*setParentNodes */ true);
+    return new Promise((resolve, reject) => {
+        function nodeExtractScopeInterface(node: ts.Node) {
+            if (node.kind == ts.SyntaxKind.InterfaceDeclaration) {
+                const intfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
+                if (intfInfo !== null) {
+                    resolve(intfInfo);
+                }
+            }
+            ts.forEachChild(node, nodeExtractScopeInterface);
+        }
+        nodeExtractScopeInterface(sourceFile);
+    });
+}
 
-    // delint it
-    delint(sourceFile);
-});
+// const fileNames = process.argv.slice(2);
+// fileNames.forEach(fileName => {
+//     // Parse a file
+//     let sourceFile = ts.createSourceFile(
+//         fileName, readFileSync(fileName).toString(),
+//         ts.ScriptTarget.2016, /*setParentNodes */ true);
+
+//     // delint it
+//     console.log("result => " + delint(sourceFile));
+// });

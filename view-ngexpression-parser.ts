@@ -4,9 +4,9 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Set} from "immutable";
 
-function addScopeAccessors(input: string): string {
+export function addScopeAccessors(input: string): string {
     let sourceFile = ts.createSourceFile(
-        "", input, ts.ScriptTarget.ES6, /*setParentNodes */ true);
+        "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return sourceFile.statements.map(stmtAddScopeAccessors).join(";\n");
 }
 
