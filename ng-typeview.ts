@@ -1,8 +1,10 @@
 import {writeFile, readdirSync, statSync} from "fs";
 import {sync} from "glob";
+import {Map, List, Seq, Iterable} from "immutable";
+import {parse} from "path";
 
 import {parseView, ParsedExpression} from "./view-parser"
-import {extractScopeInterface, extractModalOpenAngularModule} from "./controller-parse"
+import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo} from "./controller-parse"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
@@ -12,9 +14,12 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
 }
 
 async function processViewController(controllerPath: string, viewPath: string) {
+    console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents = await extractScopeInterface(controllerPath);
     const viewExprs = await parseView(viewPath);
-    writeFile("out.ts", scopeContents +
+    const pathInfo = parse(controllerPath);
+    const outputFname = pathInfo.dir + "/" + pathInfo.name + "_viewtest.ts";
+    writeFile(outputFname, scopeContents +
               "\n\nfunction ___f($scope: Scope) {\n" +
               viewExprs.map(formatViewExpr).join("\n") +
              "\n}\n");
@@ -22,19 +27,34 @@ async function processViewController(controllerPath: string, viewPath: string) {
 
 // processViewController(process.argv[2], process.argv[3]);
 
-async function readProjectFiles(path: string) {
-    console.log(path);
-    const files = sync(path + "/**/*.@(js|ts)", {nodir:true});
-    console.log(files.length);
+async function readProjectFiles(path: string, blacklist: string[]) {
+    // console.log(path);
+    const files = sync(path + "/**/*.@(js|ts)", {nodir:true, ignore: blacklist});
+    // console.log(files.length);
     try {
-        const viewInfos = (await Promise.all(files.map(extractModalOpenAngularModule)))
-            // TODO parameter destructuring possible here?
-            .filter(viewInfo => viewInfo.ngModuleName !== null || viewInfo.controllerViewInfos.length > 0);
-        console.log(viewInfos.length);
-        console.log(viewInfos);
+        const viewInfos = await Promise.all(files.map(f => extractModalOpenAngularModule(f, path)));
+        const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
+            List(viewInfos)
+            .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
+            .groupBy(cvi => cvi.viewPath);
+        const controllerNameToFilename =
+            Map<string,string>(viewInfos
+                               .filter(vi => vi.ngModuleName)
+                               .map(vi => [vi.ngModuleName, vi.fileName]));
+        const viewFilenameToCtrlFilenames =
+            viewFilenameToControllerNames
+            .mapEntries<string,Iterable<number,string>>(
+                ([viewFname,ctrlViewInfos]) =>
+                    [viewFname, ctrlViewInfos.map(
+                        (cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))]);
+        viewFilenameToCtrlFilenames.forEach(
+            (ctrlNames, viewName) => ctrlNames.forEach(
+                ctrlName => processViewController(ctrlName, viewName)));
+        // console.log(viewInfos.length);
+        // console.log(viewInfos);
     } catch (e) {
         console.log(e);
     }
 }
 
-readProjectFiles(process.argv[2]);
+readProjectFiles(process.argv[2], process.argv.slice(3));

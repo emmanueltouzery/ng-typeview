@@ -13,12 +13,12 @@ interface AttributeHandler {
     getExpressions: (val: string) => ParsedExpression[]
 }
 
-const ngShowAttributeHandler = {
+const ngShowAttributeHandler: AttributeHandler = {
     attrName: "ng-show",
     getExpressions: val => [{expr: val, type: "boolean"}]
 };
 
-const ngClickAttributeHandler = {
+const ngClickAttributeHandler: AttributeHandler = {
     attrName: "ng-click",
     getExpressions: val => [{expr: val, type: "any"}]
 }
@@ -31,7 +31,7 @@ function writeExpression(expr: ExpressionType): void {
 }
 
 function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
-    var expressions = [];
+    var expressions: ParsedExpression[] = [];
     return {
         // onopentag: (name: string, attribs:{[type:string]: string}) => {
         //     console.log("tag open " + name);
@@ -40,7 +40,7 @@ function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
             expressions = expressions.concat(
                 attributeHandlers
                     .filter(attrHandler => attrHandler.attrName === name)
-                    .flatMap(handler => handler.getExpressions(value))
+                    .flatMap<number,ParsedExpression>(handler => handler.getExpressions(value))
                     .toArray());
         },
         onend: () => {
@@ -59,7 +59,7 @@ export function parseView(fileName: string): Promise<ParsedExpression[]> {
 
 async function fetch(fileName: string) {
     let r = await parseView(fileName);
-    console.log(r);
+    // console.log(r);
 }
 
 const fileNames = process.argv.slice(2);

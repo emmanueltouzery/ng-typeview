@@ -48,7 +48,8 @@ export interface ControllerViewInfo {
     viewPath: string;
 }
 
-function parseModalOpen(callExpr : ts.CallExpression): ControllerViewInfo | null {
+// TODO convert to monadic style
+function parseModalOpen(callExpr : ts.CallExpression, folder: string): ControllerViewInfo | null {
     if (callExpr.expression.getText() !== "$modal.open") {
         return null;
     }
@@ -67,12 +68,11 @@ function parseModalOpen(callExpr : ts.CallExpression): ControllerViewInfo | null
     const getFieldStringLiteralValue = field =>
         (<ts.StringLiteral>(<ts.PropertyAssignment>field).initializer).text;
 
-    const controllerInfo = getField("controller");
-    const templateInfo = getField("templateUrl");
-    return {
-        controllerName: getFieldStringLiteralValue(controllerInfo),
-        viewPath: getFieldStringLiteralValue(templateInfo)
-    };
+    const controllerName = getFieldStringLiteralValue(getField("controller"));
+    const rawViewPath = getFieldStringLiteralValue(getField("templateUrl"));
+    return (controllerName && rawViewPath)
+        ? {controllerName: controllerName, viewPath: folder + "/" + rawViewPath}
+        : null;
 }
 
 function parseAngularModule(expr: ts.ExpressionStatement) {
@@ -107,20 +107,21 @@ function parseAngularModule(expr: ts.ExpressionStatement) {
 }
 
 export interface ViewInfo {
+    fileName: string;
     ngModuleName: string|null;
     controllerViewInfos: [ControllerViewInfo]
 }
 
-export function extractModalOpenAngularModule(fileName: string): Promise<ViewInfo> {
+export function extractModalOpenAngularModule(fileName: string, webappPath: string): Promise<ViewInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    var ngModuleName = null;
-    var viewInfos = [];
+    var ngModuleName:string|null = null;
+    var viewInfos:ControllerViewInfo[] = [];
     return new Promise((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.CallExpression) {
-                const viewInfo = parseModalOpen(<ts.CallExpression>node);
+                const viewInfo = parseModalOpen(<ts.CallExpression>node, webappPath);
                 if (viewInfo !== null) {
                     viewInfos.push(viewInfo);
                 }
@@ -131,7 +132,10 @@ export function extractModalOpenAngularModule(fileName: string): Promise<ViewInf
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);
-        const result = {ngModuleName: ngModuleName, controllerViewInfos: viewInfos};
+        const result = {
+            fileName: fileName,
+            ngModuleName: ngModuleName,
+            controllerViewInfos: viewInfos};
         console.log("resolving for " + fileName);
         console.log(result);
         resolve(result);
