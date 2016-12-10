@@ -5,6 +5,7 @@
   "dependencies": {
     "@types/es6-promise": "0.0.32",
     "@types/glob": "5.0.30",
+    "@types/htmlparser2": "3.7.29",
     "@types/node": "0.0.2",
     "glob": "7.1.1",
     "htmlparser2": "3.9.2",
