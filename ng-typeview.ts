@@ -4,7 +4,7 @@ import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
 import {parseView, ParsedExpression} from "./view-parser"
-import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo} from "./controller-parse"
+import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parse"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
@@ -13,19 +13,21 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
     return "    const ___x" + (i++) + " = " + addScopeAccessors(viewExpr.expr) + ";"
 }
 
-async function processViewController(controllerPath: string, viewPath: string) {
+async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
-    const scopeContents = await extractScopeInterface(controllerPath);
+    const scopeContents: ControllerScopeInfo = await extractScopeInterface(controllerPath);
     const viewExprs = await parseView(viewPath);
     const pathInfo = parse(controllerPath);
     const outputFname = pathInfo.dir + "/" + pathInfo.name + "_viewtest.ts";
-    writeFile(outputFname, scopeContents +
-              "\n\nfunction ___f($scope: Scope) {\n" +
-              viewExprs.map(formatViewExpr).join("\n") +
-             "\n}\n");
+    const moduleWrap = scopeContents.tsModuleName === null
+        ? (x:string) => x
+        : (x:string) => "module " + scopeContents.tsModuleName + " {\n" + x + "\n}";
+    writeFile(outputFname, moduleWrap(
+        scopeContents.scopeContents +
+            "\n\nfunction ___f($scope: Scope) {\n" +
+            viewExprs.map(formatViewExpr).join("\n") +
+            "\n}\n"));
 }
-
-// processViewController(process.argv[2], process.argv[3]);
 
 async function readProjectFiles(path: string, blacklist: string[]) {
     // console.log(path);
@@ -49,7 +51,7 @@ async function readProjectFiles(path: string, blacklist: string[]) {
                         (cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))]);
         viewFilenameToCtrlFilenames.forEach(
             (ctrlNames, viewName) => ctrlNames.forEach(
-                ctrlName => processViewController(ctrlName, viewName)));
+                ctrlName => processControllerView(ctrlName, viewName)));
         // console.log(viewInfos.length);
         // console.log(viewInfos);
     } catch (e) {

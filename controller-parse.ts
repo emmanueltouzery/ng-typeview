@@ -142,20 +142,33 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
     });
 }
 
-export function extractScopeInterface(fileName: string): Promise<string> {
+export interface ControllerScopeInfo {
+    tsModuleName: string|null;
+    scopeContents : string;
+}
+
+export function extractScopeInterface(fileName: string): Promise<ControllerScopeInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise((resolve, reject) => {
+        var intfInfo: string|null = null;
+        var tsModuleName:string|null = null;
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.InterfaceDeclaration) {
-                const intfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
-                if (intfInfo !== null) {
-                    resolve(intfInfo);
+                intfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
+            }
+            if (node.kind == ts.SyntaxKind.ModuleDeclaration) {
+                const moduleLevel = (<ts.StringLiteral>(<ts.ModuleDeclaration>node).name).text;
+                if (tsModuleName) {
+                    tsModuleName += "." + moduleLevel;
+                } else {
+                    tsModuleName = moduleLevel;
                 }
             }
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
+        resolve({tsModuleName: tsModuleName, scopeContents: intfInfo});
     });
 }
