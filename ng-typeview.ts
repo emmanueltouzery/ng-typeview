@@ -13,9 +13,13 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
     return "    const ___x" + (i++) + " = " + addScopeAccessors(viewExpr.expr) + ";"
 }
 
-async function processControllerView(controllerPath: string, viewPath: string) {
+async function processControllerView(controllerPath: string, viewPath: string):void {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractScopeInterface(controllerPath);
+    if (!scopeContents.scopeContents) {
+        // no point of writing anything if there is no scope block
+        return;
+    }
     const viewExprs = await parseView(viewPath);
     const pathInfo = parse(controllerPath);
     const outputFname = pathInfo.dir + "/" + pathInfo.name + "_viewtest.ts";
