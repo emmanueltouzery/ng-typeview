@@ -42,12 +42,3 @@ function stmtAddScopeAccessors(node: ts.Node): string {
     console.log("Add scope accessors: unhandled node: " + node.kind);
     return node.getText();
 }
-
-console.log(addScopeAccessors("data.value"));
-console.log(addScopeAccessors("!wasProvidedWorkbook()"))
-console.log(addScopeAccessors("info.subscribedEmails.length > 0"))
-console.log(addScopeAccessors("movieInfo.legendEnabled && movieInfo.legend.length > 0"))
-console.log(addScopeAccessors("selectedScreen.images[idx - 1] !== null"))
-console.log(addScopeAccessors("selectedScreen.images[idx - 1].name"))
-console.log(addScopeAccessors("getSelectedImage(selectedScreen.images[idx - 1])"))
-console.log(addScopeAccessors("fType === 'test' || fType === 'test1'"))
