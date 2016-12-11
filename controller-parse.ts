@@ -148,6 +148,7 @@ export interface ControllerScopeInfo {
     tsModuleName: string|null;
     scopeContents: string;
     typeAliases: string[];
+    imports: string[];
 }
 
 export function extractScopeInterface(fileName: string): Promise<ControllerScopeInfo> {
@@ -158,6 +159,7 @@ export function extractScopeInterface(fileName: string): Promise<ControllerScope
         var intfInfo: string|null = null;
         var tsModuleName:string|null = null;
         var typeAliases:string[] = [];
+        var imports:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                 intfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
@@ -173,13 +175,17 @@ export function extractScopeInterface(fileName: string): Promise<ControllerScope
             if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
                 typeAliases.push(node.getText());
             }
+            if (node.kind === ts.SyntaxKind.ImportEqualsDeclaration) {
+                imports.push(node.getText());
+            }
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: tsModuleName,
             scopeContents: intfInfo,
-            typeAliases: typeAliases
+            typeAliases: typeAliases,
+            imports: imports
         });
     });
 }
