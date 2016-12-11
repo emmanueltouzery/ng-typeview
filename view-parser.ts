@@ -17,13 +17,17 @@ function boolAttrHandler(attrName: string): AttributeHandler {
     };
 }
 
-const ngClickAttributeHandler: AttributeHandler = {
-    attrName: "ng-click",
-    getExpressions: val => [{expr: val, type: "any"}]
+function anyAttrHandler(attrName: string): AttributeHandler {
+    return {
+        attrName: attrName,
+        getExpressions: val => [{expr: val, type: "any"}]
+    };
 }
 
 const attributeHandlers = List.of(
-    boolAttrHandler("ng-show"), boolAttrHandler("ng-if"), ngClickAttributeHandler);
+    boolAttrHandler("ng-show"), boolAttrHandler("ng-if"),
+    boolAttrHandler("ng-required"),
+    anyAttrHandler("ng-click"), anyAttrHandler("ng-model"));
 
 function writeExpression(expr: ExpressionType): void {
     console.log(expr);
