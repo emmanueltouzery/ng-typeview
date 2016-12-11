@@ -1,8 +1,25 @@
 import * as assert from 'assert'
-import {extractControllerScopeInfo, ControllerScopeInfo} from '../src/controller-parser'
+import {extractControllerScopeInfo, ControllerScopeInfo, extractModalOpenAngularModule} from '../src/controller-parser'
+
+describe("extractModalOpenAngularModule", () => {
+    it("should recognize the statements", async () => {
+        const modalModuleInfo = await extractModalOpenAngularModule("test/test-ctrl.ts", "webapp");
+        assert.equal("test/test-ctrl.ts", modalModuleInfo.fileName);
+        assert.equal("MyNgControllerName", modalModuleInfo.ngModuleName);
+        assert.deepEqual([
+            {
+                controllerName: "ControllerName",
+                viewPath: "webapp/path/to/the/view.html"
+            },
+            {
+                controllerName: "AnotherControllerName",
+                viewPath: "webapp/path/to/another/view.html"
+            }], modalModuleInfo.controllerViewInfos);
+    });
+});
 
 describe("extractControllerScopeInfo", () => {
-    it ("should parse the scope info", async () => {
+    it("should parse the scope info", async () => {
         const scopeInfo = await extractControllerScopeInfo("test/test-ctrl.ts");
         assert.equal("multipart.module.name", scopeInfo.tsModuleName);
         assert.equal("interface Scope extends ng.IScope {\n" +
