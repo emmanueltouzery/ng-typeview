@@ -146,7 +146,8 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
 
 export interface ControllerScopeInfo {
     tsModuleName: string|null;
-    scopeContents : string;
+    scopeContents: string;
+    typeAliases: string[];
 }
 
 export function extractScopeInterface(fileName: string): Promise<ControllerScopeInfo> {
@@ -156,11 +157,12 @@ export function extractScopeInterface(fileName: string): Promise<ControllerScope
     return new Promise((resolve, reject) => {
         var intfInfo: string|null = null;
         var tsModuleName:string|null = null;
+        var typeAliases:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
-            if (node.kind == ts.SyntaxKind.InterfaceDeclaration) {
+            if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                 intfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
             }
-            if (node.kind == ts.SyntaxKind.ModuleDeclaration) {
+            if (node.kind === ts.SyntaxKind.ModuleDeclaration) {
                 const moduleLevel = (<ts.StringLiteral>(<ts.ModuleDeclaration>node).name).text;
                 if (tsModuleName) {
                     tsModuleName += "." + moduleLevel;
@@ -168,9 +170,16 @@ export function extractScopeInterface(fileName: string): Promise<ControllerScope
                     tsModuleName = moduleLevel;
                 }
             }
+            if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
+                typeAliases.push(node.getText());
+            }
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
-        resolve({tsModuleName: tsModuleName, scopeContents: intfInfo});
+        resolve({
+            tsModuleName: tsModuleName,
+            scopeContents: intfInfo,
+            typeAliases: typeAliases
+        });
     });
 }

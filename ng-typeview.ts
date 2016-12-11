@@ -27,6 +27,7 @@ async function processControllerView(controllerPath: string, viewPath: string) {
         ? (x:string) => x
         : (x:string) => "module " + scopeContents.tsModuleName + " {\n" + x + "\n}";
     writeFile(outputFname, moduleWrap(
+        scopeContents.typeAliases.join("\n") + "\n" +
         scopeContents.scopeContents +
             "\n\nfunction ___f($scope: Scope) {\n" +
             viewExprs.map(formatViewExpr).join("\n") +
