@@ -4,7 +4,7 @@ import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
 import {parseView, ParsedExpression} from "./view-parser"
-import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parser"
+import {extractControllerScopeInfo, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
@@ -16,7 +16,7 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
 
 async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
-    const scopeContents: ControllerScopeInfo = await extractScopeInterface(controllerPath);
+    const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
     if (!scopeContents.scopeContents) {
         // no point of writing anything if there is no scope block
         return;

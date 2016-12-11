@@ -152,7 +152,7 @@ export interface ControllerScopeInfo {
     interfaces: string[];
 }
 
-export function extractScopeInterface(fileName: string): Promise<ControllerScopeInfo> {
+export function extractControllerScopeInfo(fileName: string): Promise<ControllerScopeInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
