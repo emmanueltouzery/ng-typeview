@@ -13,7 +13,7 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
     return "    const ___x" + (i++) + " = " + addScopeAccessors(viewExpr.expr) + ";"
 }
 
-async function processControllerView(controllerPath: string, viewPath: string):void {
+async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractScopeInterface(controllerPath);
     if (!scopeContents.scopeContents) {

@@ -1,6 +1,3 @@
-//  <reference path="typings/globals/html2parser2/index.d.ts"
-
-// var htmlparser = require("htmlparser2");
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {List} from "immutable";
@@ -13,10 +10,12 @@ interface AttributeHandler {
     getExpressions: (val: string) => ParsedExpression[]
 }
 
-const ngShowAttributeHandler: AttributeHandler = {
-    attrName: "ng-show",
-    getExpressions: val => [{expr: val, type: "boolean"}]
-};
+function boolAttrHandler(attrName: string): AttributeHandler {
+    return {
+        attrName: attrName,
+        getExpressions: val => [{expr: val, type: "boolean"}]
+    };
+}
 
 const ngClickAttributeHandler: AttributeHandler = {
     attrName: "ng-click",
@@ -24,7 +23,7 @@ const ngClickAttributeHandler: AttributeHandler = {
 }
 
 const attributeHandlers = List.of(
-    ngShowAttributeHandler, ngClickAttributeHandler);
+    boolAttrHandler("ng-show"), boolAttrHandler("ng-if"), ngClickAttributeHandler);
 
 function writeExpression(expr: ExpressionType): void {
     console.log(expr);
