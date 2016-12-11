@@ -4,7 +4,7 @@ import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
 import {parseView, ParsedExpression} from "./view-parser"
-import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parse"
+import {extractScopeInterface, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
