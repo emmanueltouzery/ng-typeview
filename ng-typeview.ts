@@ -29,6 +29,7 @@ async function processControllerView(controllerPath: string, viewPath: string) {
     writeFile(outputFname, moduleWrap(
         scopeContents.imports.join("\n") + "\n" +
         scopeContents.typeAliases.join("\n") + "\n" +
+        scopeContents.interfaces.join("\n") + "\n" +
         scopeContents.scopeContents +
             "\n\nfunction ___f($scope: Scope) {\n" +
             viewExprs.map(formatViewExpr).join("\n") +
