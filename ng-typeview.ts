@@ -10,7 +10,8 @@ import {addScopeAccessors} from "./view-ngexpression-parser"
 var i: number = 0;
 
 function formatViewExpr(viewExpr: ParsedExpression): string {
-    return "    const ___x" + (i++) + " = " + addScopeAccessors(viewExpr.expr) + ";"
+    return "    const ___x" + (i++) + ": " + viewExpr.type +
+        " = " + addScopeAccessors(viewExpr.expr) + ";"
 }
 
 async function processControllerView(controllerPath: string, viewPath: string) {
