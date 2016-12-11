@@ -61,15 +61,17 @@ function parseModalOpen(callExpr : ts.CallExpression, folder: string): Controlle
         return null;
     }
     const objectParam = <ts.ObjectLiteralExpression>callExpr.arguments[0];
-    const getField = name =>
-        naFind(objectParam.properties,
-               p => (<ts.Identifier>p.name).text === name);
+    const getField = (name: string): Maybe<ts.Node> =>
+        Maybe.maybe(naFind(objectParam.properties,
+                           p => (<ts.Identifier>p.name).text === name));
 
-    const getFieldStringLiteralValue = field =>
+    const getFieldStringLiteralValue = (field: ts.Node): string =>
         (<ts.StringLiteral>(<ts.PropertyAssignment>field).initializer).text;
 
-    const controllerName = getFieldStringLiteralValue(getField("controller"));
-    const rawViewPath = getFieldStringLiteralValue(getField("templateUrl"));
+    const controllerName = getField("controller")
+        .map(f => getFieldStringLiteralValue(f)).valueOr(null);
+    const rawViewPath = getField("templateUrl")
+        .map(f =>getFieldStringLiteralValue(f)).valueOr(null);
     return (controllerName && rawViewPath)
         ? {controllerName: controllerName, viewPath: folder + "/" + rawViewPath}
         : null;
