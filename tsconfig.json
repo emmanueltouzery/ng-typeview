@@ -4,5 +4,12 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "alwaysStrict": true
-    }
+    },
+    "include": [
+        "src/**/*",
+        "test/**/*"
+    ],
+    "exclude": [
+        "test/data/**"
+    ]
 }

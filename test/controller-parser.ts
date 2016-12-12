@@ -3,8 +3,8 @@ import {extractControllerScopeInfo, ControllerScopeInfo, extractModalOpenAngular
 
 describe("extractModalOpenAngularModule", () => {
     it("should recognize the statements", async () => {
-        const modalModuleInfo = await extractModalOpenAngularModule("test/test-ctrl.ts", "webapp");
-        assert.equal("test/test-ctrl.ts", modalModuleInfo.fileName);
+        const modalModuleInfo = await extractModalOpenAngularModule("test/data/test-ctrl.ts", "webapp");
+        assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
         assert.equal("MyNgControllerName", modalModuleInfo.ngModuleName);
         assert.deepEqual([
             {
@@ -20,7 +20,7 @@ describe("extractModalOpenAngularModule", () => {
 
 describe("extractControllerScopeInfo", () => {
     it("should parse the scope info", async () => {
-        const scopeInfo = await extractControllerScopeInfo("test/test-ctrl.ts");
+        const scopeInfo = await extractControllerScopeInfo("test/data/test-ctrl.ts");
         assert.equal("multipart.module.name", scopeInfo.tsModuleName);
         assert.equal("interface Scope extends ng.IScope {\n" +
                      "        intField: number;\n" +
