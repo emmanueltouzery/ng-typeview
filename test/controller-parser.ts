@@ -1,11 +1,12 @@
 import * as assert from 'assert'
+import {Maybe} from "monet";
 import {extractControllerScopeInfo, ControllerScopeInfo, extractModalOpenAngularModule} from '../src/controller-parser'
 
 describe("extractModalOpenAngularModule", () => {
     it("should recognize the statements", async () => {
         const modalModuleInfo = await extractModalOpenAngularModule("test/data/test-ctrl.ts", "webapp");
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
-        assert.equal("MyNgControllerName", modalModuleInfo.ngModuleName);
+        assert.deepEqual(Maybe.Some("MyNgControllerName"), modalModuleInfo.ngModuleName);
         assert.deepEqual([
             {
                 controllerName: "ControllerName",

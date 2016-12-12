@@ -49,8 +49,8 @@ async function readProjectFiles(path: string, blacklist: string[]) {
             .groupBy(cvi => cvi.viewPath);
         const controllerNameToFilename =
             Map<string,string>(viewInfos
-                               .filter(vi => vi.ngModuleName)
-                               .map(vi => [vi.ngModuleName, vi.fileName]));
+                               .filter(vi => vi.ngModuleName.isSome())
+                               .map(vi => [vi.ngModuleName.some(), vi.fileName]));
         const viewFilenameToCtrlFilenames =
             viewFilenameToControllerNames
             .mapEntries<string,Iterable<number,string>>(

@@ -1,6 +1,5 @@
 {
     "compilerOptions": {
-        "lib": ["es5", "es2015.promise"],
         "noImplicitAny": true,
         "strictNullChecks": true,
         "alwaysStrict": true

@@ -1,11 +1,11 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Maybe} from "tsmonad";
+import {Maybe} from "monet";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
-    const typeIsIScope = t =>
+    const typeIsIScope = (t: ts.ExpressionWithTypeArguments) =>
         t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
-        t.expression.name.text === "IScope";
+        (<ts.PropertyAccessExpression>t.expression).name.text === "IScope";
     const ifaceIsIScope = iface.heritageClauses.some(c => c.types.some(typeIsIScope));
     if (ifaceIsIScope) {
         return iface.getText();
@@ -14,17 +14,17 @@ function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
     }
 }
 
-function naFind<T extends ts.Node>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : T|null {
+function naFind<T extends ts.Node>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : Maybe<T> {
     const filterRes = arr.filter(f);
     if (filterRes.length > 0) {
-        return filterRes[0];
+        return Maybe.Some(filterRes[0]);
     } else {
-        return null;
+        return Maybe.None<T>();
     }
 }
 
 function maybeNodeType<T>(input: ts.Node, sKind: ts.SyntaxKind, f: (value:ts.Node) => T): Maybe<T> {
-    return (input.kind === sKind) ? Maybe.just(f(input)) : Maybe.nothing();
+    return (input.kind === sKind) ? Maybe.Some(f(input)) : Maybe.None<T>();
 }
 
 function maybeCallExpression(input: ts.Node): Maybe<ts.CallExpression> {
@@ -62,55 +62,56 @@ function parseModalOpen(callExpr : ts.CallExpression, folder: string): Controlle
     }
     const objectParam = <ts.ObjectLiteralExpression>callExpr.arguments[0];
     const getField = (name: string): Maybe<ts.Node> =>
-        Maybe.maybe(naFind(objectParam.properties,
-                           p => (<ts.Identifier>p.name).text === name));
+        naFind(objectParam.properties,
+               p => (<ts.Identifier>p.name).text === name);
 
     const getFieldStringLiteralValue = (field: ts.Node): string =>
         (<ts.StringLiteral>(<ts.PropertyAssignment>field).initializer).text;
 
     const controllerName = getField("controller")
-        .map(f => getFieldStringLiteralValue(f)).valueOr(null);
+        .map(f => getFieldStringLiteralValue(f));
     const rawViewPath = getField("templateUrl")
-        .map(f =>getFieldStringLiteralValue(f)).valueOr(null);
-    return (controllerName && rawViewPath)
-        ? {controllerName: controllerName, viewPath: folder + "/" + rawViewPath}
+        .map(f =>getFieldStringLiteralValue(f));
+    return (controllerName.isSome() && rawViewPath.isSome())
+        ? {controllerName: controllerName.some(), viewPath: folder + "/" + rawViewPath.some()}
         : null;
 }
 
-function parseAngularModule(expr: ts.ExpressionStatement) {
+function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
     const callExpr = maybeCallExpression(expr.expression);
     const prop0 = callExpr
-        .bind(callExpr => maybePropertyAccessExpression(callExpr.expression));
+        .flatMap(callExpr => maybePropertyAccessExpression(callExpr.expression));
 
     const prop = prop0
-        .bind(callProp => maybeCallExpression(callProp.expression))
-        .bind(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+        .flatMap(callProp => maybeCallExpression(callProp.expression))
+        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
 
     const receiver1 = prop
-        .bind(p => maybeIdentifier(p.expression))
+        .flatMap(p => maybeIdentifier(p.expression))
         .map(r => r.text);
     const call1 = prop
-        .bind(p => maybeIdentifier(p.name))
+        .flatMap(p => maybeIdentifier(p.name))
         .map(r => r.text);
 
-    if (receiver1.valueOr(null) === "angular" && call1.valueOr(null) === "module") {
+    if (receiver1.filter(v => v === "angular")
+        .orElse(call1.filter(v => v === "module")).isSome()) {
         console.log("part 1 done")
         const moduleCall = prop0.map(p => p.name.text);
-        if (moduleCall.valueOr(null) === "controller") {
+        if (moduleCall.filter(v => v === "controller").isSome()) {
             console.log("part 2 done")
             const nme = callExpr
             // TODO guard the array indexing
-                .bind(c => maybeStringLiteral(c.arguments[0]))
+                .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(a => a.text);
-            return nme.valueOr(null);
+            return nme;
         }
     }
-    return null;
+    return Maybe.None<string>();
 }
 
 export interface ViewInfo {
     fileName: string;
-    ngModuleName: string|null;
+    ngModuleName: Maybe<string>;
     controllerViewInfos: [ControllerViewInfo]
 }
 
@@ -118,7 +119,7 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    var ngModuleName:string|null = null;
+    var ngModuleName = Maybe.None<string>();
     var viewInfos:ControllerViewInfo[] = [];
     return new Promise((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
@@ -128,7 +129,7 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
                     viewInfos.push(viewInfo);
                 }
             }
-            if (ngModuleName === null && node.kind == ts.SyntaxKind.ExpressionStatement) {
+            if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
                 ngModuleName = parseAngularModule(<ts.ExpressionStatement>node);
             }
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
