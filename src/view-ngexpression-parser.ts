@@ -35,7 +35,11 @@ function stmtAddScopeAccessors(node: ts.Node): string {
             + stmtAddScopeAccessors(expr.right);
     } else if (node.kind === ts.SyntaxKind.ElementAccessExpression) {
         const acc = <ts.ElementAccessExpression>node;
-        return stmtAddScopeAccessors(acc.expression) + "["+ stmtAddScopeAccessors(acc.argumentExpression) + "]";
+        const argValue = acc.argumentExpression
+            ? stmtAddScopeAccessors(acc.argumentExpression)
+            : "";
+        return stmtAddScopeAccessors(acc.expression) +
+            "["+ argValue + "]";
     } else if (nodeKindPassthroughList.contains(node.kind)) {
         return node.getText();
     }
