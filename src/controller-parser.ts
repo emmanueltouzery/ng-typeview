@@ -99,7 +99,7 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
         if (moduleCall.filter(v => v === "controller").isSome()) {
             console.log("part 2 done")
             const nme = callExpr
-            // TODO guard the array indexing
+                .filter(c => c.arguments.length > 0)
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(a => a.text);
             return nme;
