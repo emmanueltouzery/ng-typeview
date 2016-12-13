@@ -2,16 +2,15 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe} from "monet";
 
-function parseScopeInterface(iface: ts.InterfaceDeclaration): string | null {
+function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     const typeIsIScope = (t: ts.ExpressionWithTypeArguments) =>
         t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
         (<ts.PropertyAccessExpression>t.expression).name.text === "IScope";
-    const ifaceIsIScope = iface.heritageClauses.some(c => c.types.some(typeIsIScope));
-    if (ifaceIsIScope) {
-        return iface.getText();
-    } else {
-        return null;
-    }
+    const heritageClauseHasIScope = (c:ts.HeritageClause) =>
+        Maybe.fromNull(c.types).filter(ts => ts.some(typeIsIScope)).isSome();
+    return Maybe.fromNull(iface.heritageClauses)
+        .filter(clauses => clauses.some(heritageClauseHasIScope))
+        .map(_ => iface.getText());
 }
 
 function naFind<T extends ts.Node>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : Maybe<T> {
@@ -158,7 +157,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise((resolve, reject) => {
-        var intfInfo: string|null = null;
+        var intfInfo: Maybe<string> = Maybe.None<string>();
         var tsModuleName:string|null = null;
         var typeAliases:string[] = [];
         var imports:string[] = [];
@@ -166,7 +165,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
-                if (curIntfInfo) {
+                if (curIntfInfo.isSome()) {
                     intfInfo = curIntfInfo;
                 } else {
                     interfaces.push(node.getText());
@@ -191,7 +190,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeContents: Maybe.fromNull<string>(intfInfo),
+            scopeContents: intfInfo,
             typeAliases: typeAliases,
             imports: imports,
             interfaces: interfaces
