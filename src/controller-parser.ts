@@ -94,10 +94,8 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
 
     if (receiver1.filter(v => v === "angular")
         .orElse(call1.filter(v => v === "module")).isSome()) {
-        console.log("part 1 done")
         const moduleCall = prop0.map(p => p.name.text);
         if (moduleCall.filter(v => v === "controller").isSome()) {
-            console.log("part 2 done")
             const nme = callExpr
                 .filter(c => c.arguments.length > 0)
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
