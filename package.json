@@ -11,7 +11,7 @@
     "glob": "7.1.1",
     "htmlparser2": "3.9.2",
     "immutable": "https://github.com/facebook/immutable-js/tarball/0155f1c7b2e9c575b2090ff0e5e9093ae1039c87",
-    "monet": "0.8.10",
+    "monet": "https://github.com/cwmyers/monet.js/tarball/5e91531e494f60983aaf1e0bc6579507e5ac9913",
     "typescript": "2.1.4"
   },
   "devDependencies": {

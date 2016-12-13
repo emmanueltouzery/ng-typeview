@@ -17,21 +17,21 @@ function formatViewExpr(viewExpr: ParsedExpression): string {
 async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
-    if (!scopeContents.scopeContents) {
+    if (scopeContents.scopeContents.isNone()) {
         // no point of writing anything if there is no scope block
         return;
     }
     const viewExprs = await parseView(viewPath);
     const pathInfo = parse(controllerPath);
     const outputFname = pathInfo.dir + "/" + pathInfo.name + "_viewtest.ts";
-    const moduleWrap = scopeContents.tsModuleName === null
-        ? (x:string) => x
-        : (x:string) => "module " + scopeContents.tsModuleName + " {\n" + x + "\n}";
+    const moduleWrap = (x:string) => scopeContents.tsModuleName
+        .map(n => `module ${n} {\n${x}\n}`)
+        .orSome(x);
     writeFileSync(outputFname, moduleWrap(
         scopeContents.imports.join("\n") + "\n" +
-        scopeContents.typeAliases.join("\n") + "\n" +
-        scopeContents.interfaces.join("\n") + "\n" +
-        scopeContents.scopeContents +
+            scopeContents.typeAliases.join("\n") + "\n" +
+            scopeContents.interfaces.join("\n") + "\n" +
+            scopeContents.scopeContents.some() +
             "\n\nfunction ___f($scope: Scope) {\n" +
             viewExprs.map(formatViewExpr).join("\n") +
             "\n}\n") + "\n");

@@ -146,8 +146,8 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
 }
 
 export interface ControllerScopeInfo {
-    tsModuleName: string|null;
-    scopeContents: string;
+    tsModuleName: Maybe<string>;
+    scopeContents: Maybe<string>;
     typeAliases: string[];
     imports: string[];
     interfaces: string[];
@@ -190,11 +190,11 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
-            tsModuleName: tsModuleName,
-            scopeContents: intfInfo,
+            tsModuleName: Maybe.fromNull<string>(tsModuleName),
+            scopeContents: Maybe.fromNull<string>(intfInfo),
             typeAliases: typeAliases,
             imports: imports,
             interfaces: interfaces
-        });
+        } as ControllerScopeInfo);
     });
 }
