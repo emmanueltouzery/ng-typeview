@@ -1,4 +1,4 @@
-import {writeFile, readdirSync, statSync} from "fs";
+import {writeFileSync, readdirSync, statSync} from "fs";
 import {sync} from "glob";
 import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
@@ -27,44 +27,41 @@ async function processControllerView(controllerPath: string, viewPath: string) {
     const moduleWrap = scopeContents.tsModuleName === null
         ? (x:string) => x
         : (x:string) => "module " + scopeContents.tsModuleName + " {\n" + x + "\n}";
-    writeFile(outputFname, moduleWrap(
+    writeFileSync(outputFname, moduleWrap(
         scopeContents.imports.join("\n") + "\n" +
         scopeContents.typeAliases.join("\n") + "\n" +
         scopeContents.interfaces.join("\n") + "\n" +
         scopeContents.scopeContents +
             "\n\nfunction ___f($scope: Scope) {\n" +
             viewExprs.map(formatViewExpr).join("\n") +
-            "\n}\n"));
+            "\n}\n") + "\n");
 }
 
-async function readProjectFiles(path: string, blacklist: string[]) {
-    // console.log(path);
+export async function processProjectFolder(path: string, blacklist: string[]): Promise<any> {
     const files = sync(path + "/**/*.@(js|ts)", {nodir:true, ignore: blacklist});
-    // console.log(files.length);
-    try {
-        const viewInfos = await Promise.all(files.map(f => extractModalOpenAngularModule(f, path)));
-        const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
-            List(viewInfos)
-            .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
-            .groupBy(cvi => cvi.viewPath);
-        const controllerNameToFilename =
-            Map<string,string>(viewInfos
-                               .filter(vi => vi.ngModuleName.isSome())
-                               .map(vi => [vi.ngModuleName.some(), vi.fileName]));
-        const viewFilenameToCtrlFilenames =
-            viewFilenameToControllerNames
-            .mapEntries<string,Iterable<number,string>>(
-                ([viewFname,ctrlViewInfos]) =>
-                    [viewFname, ctrlViewInfos.map(
-                        (cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))]);
-        viewFilenameToCtrlFilenames.forEach(
-            (ctrlNames, viewName) => ctrlNames.forEach(
-                ctrlName => processControllerView(ctrlName, viewName)));
-        // console.log(viewInfos.length);
-        // console.log(viewInfos);
-    } catch (e) {
-        console.log(e);
-    }
+    const viewInfos = await Promise.all(files.map(f => extractModalOpenAngularModule(f, path)));
+    const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
+        List(viewInfos)
+        .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
+        .groupBy(cvi => cvi.viewPath);
+    const controllerNameToFilename =
+        Map<string,string>(viewInfos
+                           .filter(vi => vi.ngModuleName.isSome())
+                           .map(vi => [vi.ngModuleName.some(), vi.fileName]));
+    const viewFilenameToCtrlFilenames =
+        viewFilenameToControllerNames
+        .mapEntries<string,Iterable<number,string>>(
+            ([viewFname,ctrlViewInfos]) =>
+                [viewFname, ctrlViewInfos
+                 .map((cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))
+                 .filter((name:string) => name)]);
+    return Promise.all(viewFilenameToCtrlFilenames.map(
+        (ctrlNames, viewName) => Promise.all(ctrlNames.map(
+            ctrlName => processControllerView(ctrlName, viewName)).toArray())).toArray());
 }
 
-readProjectFiles(process.argv[2], process.argv.slice(3));
+try {
+    processProjectFolder(process.argv[2], process.argv.slice(3));
+} catch (e) {
+    console.log(e);
+}

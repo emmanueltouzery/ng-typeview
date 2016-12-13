@@ -6,11 +6,11 @@ describe("extractModalOpenAngularModule", () => {
     it("should recognize the statements", async () => {
         const modalModuleInfo = await extractModalOpenAngularModule("test/data/test-ctrl.ts", "webapp");
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
-        assert.deepEqual(Maybe.Some("MyNgControllerName"), modalModuleInfo.ngModuleName);
+        assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.ngModuleName);
         assert.deepEqual([
             {
                 controllerName: "ControllerName",
-                viewPath: "webapp/path/to/the/view.html"
+                viewPath: "webapp/test-view.html"
             },
             {
                 controllerName: "AnotherControllerName",

@@ -21,7 +21,7 @@ module multipart.module.name {
 
     $scope.f1 = function () {
         return $modal.open({
-            templateUrl: 'path/to/the/view.html',
+            templateUrl: 'test-view.html',
             controller: 'ControllerName',
             param2: 'something',
             param3: 'something else',
@@ -46,5 +46,5 @@ module multipart.module.name {
     }
 
     angular.module('my.ng.module.name')
-        .controller('MyNgControllerName', ['param1', 'param2', Ctor]);
+        .controller('ControllerName', ['param1', 'param2', Ctor]);
 }
