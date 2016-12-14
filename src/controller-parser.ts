@@ -13,33 +13,16 @@ function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
         .map(_ => iface.getText());
 }
 
-function maybeNodeType<T>(input: ts.Node|undefined, sKind: ts.SyntaxKind, f: (value:ts.Node) => T): Maybe<T> {
-    return (input && input.kind === sKind) ? Maybe.Some(f(input)) : Maybe.None<T>();
+function maybeNodeType<T>(input: ts.Node|undefined, sKind: ts.SyntaxKind): Maybe<T> {
+    return (input && input.kind === sKind) ? Maybe.Some(<T><any>input) : Maybe.None<T>();
 }
 
-function maybeCallExpression(input: ts.Node): Maybe<ts.CallExpression> {
-    return maybeNodeType(input, ts.SyntaxKind.CallExpression, i => <ts.CallExpression>i);
-}
-
-function maybePropertyAccessExpression(input: ts.Node): Maybe<ts.PropertyAccessExpression> {
-    return maybeNodeType(input, ts.SyntaxKind.PropertyAccessExpression, i => <ts.PropertyAccessExpression>i);
-}
-
-function maybePropertyAssignment(input: ts.Node): Maybe<ts.PropertyAssignment> {
-    return maybeNodeType(input, ts.SyntaxKind.PropertyAssignment, i => <ts.PropertyAssignment>i);
-}
-
-function maybeIdentifier(input: ts.Node|undefined): Maybe<ts.Identifier> {
-    return maybeNodeType(input, ts.SyntaxKind.Identifier, i => <ts.Identifier>i);
-}
-
-function maybeStringLiteral(input: ts.Node): Maybe<ts.StringLiteral> {
-    return maybeNodeType(input, ts.SyntaxKind.StringLiteral, i => <ts.StringLiteral>i);
-}
-
-function maybeObjectLiteralExpression(input: ts.Node): Maybe<ts.ObjectLiteralExpression> {
-    return maybeNodeType(input, ts.SyntaxKind.ObjectLiteralExpression, i => <ts.ObjectLiteralExpression>i);
-}
+const maybeCallExpression = (input:ts.Node) => maybeNodeType<ts.CallExpression>(input, ts.SyntaxKind.CallExpression);
+const maybePropertyAccessExpression = (input: ts.Node) => maybeNodeType<ts.PropertyAccessExpression>(input, ts.SyntaxKind.PropertyAccessExpression);
+const maybePropertyAssignment = (input: ts.Node) => maybeNodeType<ts.PropertyAssignment>(input, ts.SyntaxKind.PropertyAssignment);
+const maybeIdentifier = (input: ts.Node|undefined) => maybeNodeType<ts.Identifier>(input, ts.SyntaxKind.Identifier);
+const maybeStringLiteral = (input: ts.Node) => maybeNodeType<ts.StringLiteral>(input, ts.SyntaxKind.StringLiteral);
+const maybeObjectLiteralExpression = (input: ts.Node) => maybeNodeType<ts.ObjectLiteralExpression>(input, ts.SyntaxKind.ObjectLiteralExpression);
 
 export interface ControllerViewInfo {
     controllerName : string;
