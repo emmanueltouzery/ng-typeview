@@ -1,6 +1,6 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Maybe} from "monet";
+import {Maybe, List} from "monet";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     const typeIsIScope = (t: ts.ExpressionWithTypeArguments) =>
@@ -13,17 +13,8 @@ function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
         .map(_ => iface.getText());
 }
 
-function naFind<T extends ts.Node>(arr: ts.NodeArray<T>, f: (value: T) => boolean) : Maybe<T> {
-    const filterRes = arr.filter(f);
-    if (filterRes.length > 0) {
-        return Maybe.Some(filterRes[0]);
-    } else {
-        return Maybe.None<T>();
-    }
-}
-
-function maybeNodeType<T>(input: ts.Node, sKind: ts.SyntaxKind, f: (value:ts.Node) => T): Maybe<T> {
-    return (input.kind === sKind) ? Maybe.Some(f(input)) : Maybe.None<T>();
+function maybeNodeType<T>(input: ts.Node|undefined, sKind: ts.SyntaxKind, f: (value:ts.Node) => T): Maybe<T> {
+    return (input && input.kind === sKind) ? Maybe.Some(f(input)) : Maybe.None<T>();
 }
 
 function maybeCallExpression(input: ts.Node): Maybe<ts.CallExpression> {
@@ -34,7 +25,11 @@ function maybePropertyAccessExpression(input: ts.Node): Maybe<ts.PropertyAccessE
     return maybeNodeType(input, ts.SyntaxKind.PropertyAccessExpression, i => <ts.PropertyAccessExpression>i);
 }
 
-function maybeIdentifier(input: ts.Node): Maybe<ts.Identifier> {
+function maybePropertyAssignment(input: ts.Node): Maybe<ts.PropertyAssignment> {
+    return maybeNodeType(input, ts.SyntaxKind.PropertyAssignment, i => <ts.PropertyAssignment>i);
+}
+
+function maybeIdentifier(input: ts.Node|undefined): Maybe<ts.Identifier> {
     return maybeNodeType(input, ts.SyntaxKind.Identifier, i => <ts.Identifier>i);
 }
 
@@ -42,38 +37,40 @@ function maybeStringLiteral(input: ts.Node): Maybe<ts.StringLiteral> {
     return maybeNodeType(input, ts.SyntaxKind.StringLiteral, i => <ts.StringLiteral>i);
 }
 
+function maybeObjectLiteralExpression(input: ts.Node): Maybe<ts.ObjectLiteralExpression> {
+    return maybeNodeType(input, ts.SyntaxKind.ObjectLiteralExpression, i => <ts.ObjectLiteralExpression>i);
+}
+
 export interface ControllerViewInfo {
     controllerName : string;
     viewPath: string;
 }
 
-// TODO convert to monadic style
-function parseModalOpen(callExpr : ts.CallExpression, folder: string): ControllerViewInfo | null {
-    if (callExpr.expression.getText() !== "$modal.open") {
-        return null;
-    }
-    if (callExpr.arguments.length !== 1 ||
-        callExpr.arguments[0].kind !== ts.SyntaxKind.ObjectLiteralExpression) {
-        console.warn("$modal.open call with unexpected param count: " +
-                     callExpr.arguments.length +
-                     " or kind: " + callExpr.arguments[0].kind);
-        return null;
-    }
-    const objectParam = <ts.ObjectLiteralExpression>callExpr.arguments[0];
-    const getField = (name: string): Maybe<ts.Node> =>
-        naFind(objectParam.properties,
-               p => (<ts.Identifier>p.name).text === name);
+function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<ControllerViewInfo> {
+    const paramObjectElements = Maybe.of(callExpr)
+        .filter(c => c.expression.getText() === "$modal.open")
+        .filter(c => c.arguments.length === 1)
+        .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
+        .map(o => List.fromArray(o.properties));
 
-    const getFieldStringLiteralValue = (field: ts.Node): string =>
-        (<ts.StringLiteral>(<ts.PropertyAssignment>field).initializer).text;
+    const getField = (name: string): Maybe<ts.Node> =>
+        paramObjectElements.flatMap(elts => elts.find(
+            elt => maybeIdentifier(elt.name).filter(i => i.text === name).isSome()));
+
+    const getFieldStringLiteralValue = (field: ts.Node): Maybe<string> =>
+        maybePropertyAssignment(field)
+        .flatMap(pa => maybeStringLiteral(pa.initializer))
+        .map(ini => ini.text);
 
     const controllerName = getField("controller")
-        .map(f => getFieldStringLiteralValue(f));
+        .flatMap(f => getFieldStringLiteralValue(f));
     const rawViewPath = getField("templateUrl")
-        .map(f =>getFieldStringLiteralValue(f));
-    return (controllerName.isSome() && rawViewPath.isSome())
-        ? {controllerName: controllerName.some(), viewPath: folder + "/" + rawViewPath.some()}
-        : null;
+        .flatMap(f =>getFieldStringLiteralValue(f));
+
+    const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+        ({controllerName: ctrlName, viewPath: folder + "/" + rawViewPath});
+
+    return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
 }
 
 function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
@@ -122,8 +119,8 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.CallExpression) {
                 const viewInfo = parseModalOpen(<ts.CallExpression>node, webappPath);
-                if (viewInfo !== null) {
-                    viewInfos.push(viewInfo);
+                if (viewInfo.isSome()) {
+                    viewInfos.push(viewInfo.some());
                 }
             }
             if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
