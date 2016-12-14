@@ -17,12 +17,12 @@ const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): 
     return (input && input.kind === sKind) ? Maybe.Some(<T><any>input) : Maybe.None<T>();
 }
 
-const maybeCallExpression =  maybeNodeType<ts.CallExpression>(ts.SyntaxKind.CallExpression);
+const maybeCallExpression = maybeNodeType<ts.CallExpression>(ts.SyntaxKind.CallExpression);
 const maybePropertyAccessExpression = maybeNodeType<ts.PropertyAccessExpression>(ts.SyntaxKind.PropertyAccessExpression);
-const maybePropertyAssignment =  maybeNodeType<ts.PropertyAssignment>(ts.SyntaxKind.PropertyAssignment);
+const maybePropertyAssignment = maybeNodeType<ts.PropertyAssignment>(ts.SyntaxKind.PropertyAssignment);
 const maybeIdentifier = maybeNodeType<ts.Identifier>(ts.SyntaxKind.Identifier);
-const maybeStringLiteral =  maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringLiteral);
-const maybeObjectLiteralExpression =  maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
+const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringLiteral);
+const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
 
 export interface ControllerViewInfo {
     controllerName : string;
