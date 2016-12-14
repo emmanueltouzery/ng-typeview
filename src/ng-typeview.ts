@@ -23,7 +23,10 @@ async function processControllerView(controllerPath: string, viewPath: string) {
     }
     const viewExprs = await parseView(viewPath);
     const pathInfo = parse(controllerPath);
-    const outputFname = pathInfo.dir + "/" + pathInfo.name + "_viewtest.ts";
+    const viewPathInfo = parse(viewPath);
+    // putting both controller & view name in the output, as one controller
+    // may be used for several views.
+    const outputFname = `${pathInfo.dir}/${pathInfo.name}_${viewPathInfo.name}_viewtest.ts`;
     const moduleWrap = (x:string) => scopeContents.tsModuleName
         .map(n => `module ${n} {\n${x}\n}`)
         .orSome(x);
