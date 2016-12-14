@@ -29,10 +29,6 @@ const attributeHandlers = List.of(
     boolAttrHandler("ng-required"),
     anyAttrHandler("ng-click"), anyAttrHandler("ng-model"));
 
-function writeExpression(expr: ExpressionType): void {
-    console.log(expr);
-}
-
 function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
     var expressions: ParsedExpression[] = [];
     return {
@@ -62,17 +58,9 @@ export function parseView(fileName: string): Promise<ParsedExpression[]> {
 
 async function fetch(fileName: string) {
     let r = await parseView(fileName);
-    // console.log(r);
 }
 
 const fileNames = process.argv.slice(2);
 fileNames.forEach(fileName => {
-    // parseView(fileName).then(expr => console.log(expr));
-
-    // parseView(fileName).then(expr => console.log(expr));
-
     fetch(fileName);
-
-    // parser.write(readFileSync(fileName).toString());
 });
-// parser.done();
