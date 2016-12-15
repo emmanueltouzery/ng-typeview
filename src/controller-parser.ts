@@ -89,7 +89,7 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
 export interface ViewInfo {
     fileName: string;
     ngModuleName: Maybe<string>;
-    controllerViewInfos: [ControllerViewInfo]
+    controllerViewInfos: ControllerViewInfo[]
 }
 
 export function extractModalOpenAngularModule(fileName: string, webappPath: string): Promise<ViewInfo> {
@@ -112,12 +112,10 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);
-        const result = {
+        const result: ViewInfo = {
             fileName: fileName,
             ngModuleName: ngModuleName,
             controllerViewInfos: viewInfos};
-        console.log("resolving for " + fileName);
-        console.log(result);
         resolve(result);
     });
 }
