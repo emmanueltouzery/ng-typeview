@@ -9,14 +9,18 @@ import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
 
+interface String {
+    repeat(c: number): string;
+}
+
 function formatViewExpr(viewExprIndex: [ParsedExpression, number]): string {
     const [viewExpr, indentLevel] = viewExprIndex;
-    const spaces = (<any>" ").repeat((1+indentLevel)*4);
+    const spaces = " ".repeat((1+indentLevel)*4);
     if (viewExpr instanceof ParsedVariable) {
         return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
             " = " + addScopeAccessors(viewExpr.expr) + ";"
     } else if (viewExpr instanceof LoopStart) {
-        return (<any>" ").repeat(indentLevel*4) + viewExpr.loopExpr;
+        return " ".repeat(indentLevel*4) + viewExpr.loopExpr;
     } else if (viewExpr instanceof LoopEnd) {
         return spaces + "}";
     } else {
