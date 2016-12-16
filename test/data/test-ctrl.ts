@@ -14,9 +14,11 @@ module multipart.module.name {
     }
 
     interface Scope extends ng.IScope {
-        intField: number;
-        date?: string;
-        f1: (x:string)=>boolean;
+        showDiv?: string;
+        showText: (x:string)=>boolean;
+        data: {groups: any[], firstname: string}
+        triggerAction: boolean
+        user: string;
     }
 
     $scope.f1 = function () {

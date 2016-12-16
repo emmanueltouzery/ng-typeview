@@ -10,9 +10,11 @@ interface NotScope2 extends NotScope {
         f1: (x:string)=>boolean;
     }
 interface Scope extends ng.IScope {
-        intField: number;
-        date?: string;
-        f1: (x:string)=>boolean;
+        showDiv?: string;
+        showText: (x:string)=>boolean;
+        data: {groups: any[], firstname: string}
+        triggerAction: boolean
+        user: string;
     }
 
 function ___f($scope: Scope) {

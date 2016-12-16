@@ -4,24 +4,26 @@ import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
 import {parseView, ParsedExpression, ParsedVariable, LoopStart, LoopEnd} from "./view-parser"
-import {extractControllerScopeInfo, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parser"
+import {extractControllerScopeInfo, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo, ScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
 
-function formatViewExpr(viewExprIndex: [ParsedExpression, number]): string {
-    const [viewExpr, indentLevel] = viewExprIndex;
-    const spaces = (<any>" ").repeat((1+indentLevel)*4);
-    if (viewExpr instanceof ParsedVariable) {
-        return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
-            " = " + addScopeAccessors(viewExpr.expr) + ";"
-    } else if (viewExpr instanceof LoopStart) {
-        return (<any>" ").repeat(indentLevel*4) + viewExpr.loopExpr;
-    } else if (viewExpr instanceof LoopEnd) {
-        return spaces + "}";
-    } else {
-        throw `unknown parsed expression type: ${viewExpr}`;
-    }
+function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression, number]) => string {
+    return viewExprIndex => {
+        const [viewExpr, indentLevel] = viewExprIndex;
+        const spaces = (<any>" ").repeat((1+indentLevel)*4);
+        if (viewExpr instanceof ParsedVariable) {
+            return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
+                " = " + addScopeAccessors(viewExpr.expr, scopeInfo) + ";"
+        } else if (viewExpr instanceof LoopStart) {
+            return (<any>" ").repeat(indentLevel*4) + viewExpr.loopExpr;
+        } else if (viewExpr instanceof LoopEnd) {
+            return spaces + "}";
+        } else {
+            throw `unknown parsed expression type: ${viewExpr}`;
+        }
+    };
 }
 
 function indentChange(expr: ParsedExpression): number {
@@ -36,7 +38,7 @@ function indentChange(expr: ParsedExpression): number {
 async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
-    if (scopeContents.scopeContents.isNone()) {
+    if (scopeContents.scopeInfo.isNone()) {
         // no point of writing anything if there is no scope block
         return;
     }
@@ -55,9 +57,9 @@ async function processControllerView(controllerPath: string, viewPath: string) {
         scopeContents.imports.join("\n") + "\n" +
             scopeContents.typeAliases.join("\n") + "\n" +
             scopeContents.interfaces.join("\n") + "\n" +
-            scopeContents.scopeContents.some() +
+            scopeContents.scopeInfo.some().contents +
             "\n\nfunction ___f($scope: Scope) {\n" +
-            viewExprs.zip(viewLevels).map(formatViewExpr).join("\n") +
+            viewExprs.zip(viewLevels).map(formatViewExpr(scopeContents.scopeInfo.some())).join("\n") +
             "\n}\n") + "\n");
 }
 

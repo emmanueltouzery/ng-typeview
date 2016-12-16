@@ -24,9 +24,14 @@ describe("extractControllerScopeInfo", () => {
         const scopeInfo = await extractControllerScopeInfo("test/data/test-ctrl.ts");
         assert.equal("multipart.module.name", scopeInfo.tsModuleName.some());
         assert.equal("interface Scope extends ng.IScope {\n" +
-                     "        intField: number;\n" +
-                     "        date?: string;\n" +
-                     "        f1: (x:string)=>boolean;\n    }", scopeInfo.scopeContents.some());
+                     "        showDiv?: string;\n" +
+                     "        showText: (x:string)=>boolean;\n" +
+                     "        data: {groups: any[], firstname: string}\n" +
+                     "        triggerAction: boolean\n" +
+                     "        user: string;\n    }", scopeInfo.scopeInfo.some().contents);
+        assert.deepEqual(
+            ["showDiv", "showText", "data", "triggerAction", "user"],
+            scopeInfo.scopeInfo.some().fieldNames);
         assert.deepEqual(["type STR = string;", "type INT = number;"], scopeInfo.typeAliases);
         assert.deepEqual(["import Aa = api.Aa;", "import Bb = api.Bb;"], scopeInfo.imports);
         assert.deepEqual(
