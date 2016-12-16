@@ -7,6 +7,11 @@
                 <button ng-click="triggerAction('six')" />
             </div>
             <input type="text" ng-model="data.firstname">
+            <div data-ng-repeat="group in data.groups">
+                <div data-ng-repeat="item in group">
+                    <input type="text" ng-model="item.name + ' ' + user.wantsData()">
+                </div>
+            </div>
             ng-model="should.not-match"
         </p>
     </body>

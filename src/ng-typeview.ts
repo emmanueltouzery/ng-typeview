@@ -3,15 +3,34 @@ import {sync} from "glob";
 import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
-import {parseView, ParsedExpression} from "./view-parser"
+import {parseView, ParsedExpression, ParsedVariable, LoopStart, LoopEnd} from "./view-parser"
 import {extractControllerScopeInfo, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
 
-function formatViewExpr(viewExpr: ParsedExpression): string {
-    return "    const ___x" + (i++) + ": " + viewExpr.type +
-        " = " + addScopeAccessors(viewExpr.expr) + ";"
+function formatViewExpr(viewExprIndex: [ParsedExpression, number]): string {
+    const [viewExpr, indentLevel] = viewExprIndex;
+    const spaces = (<any>" ").repeat((1+indentLevel)*4);
+    if (viewExpr instanceof ParsedVariable) {
+        return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
+            " = " + addScopeAccessors(viewExpr.expr) + ";"
+    } else if (viewExpr instanceof LoopStart) {
+        return (<any>" ").repeat(indentLevel*4) + viewExpr.loopExpr;
+    } else if (viewExpr instanceof LoopEnd) {
+        return spaces + "}";
+    } else {
+        throw `unknown parsed expression type: ${viewExpr}`;
+    }
+}
+
+function indentChange(expr: ParsedExpression): number {
+    if (expr instanceof LoopStart) {
+        return 1;
+    } else if (expr instanceof LoopEnd) {
+        return -1;
+    }
+    return 0;
 }
 
 async function processControllerView(controllerPath: string, viewPath: string) {
@@ -21,7 +40,9 @@ async function processControllerView(controllerPath: string, viewPath: string) {
         // no point of writing anything if there is no scope block
         return;
     }
-    const viewExprs = await parseView(viewPath);
+    const viewExprs = List(await parseView(viewPath));
+    const viewLevels = viewExprs.reduce(
+        (soFar: List<number>, cur: ParsedExpression) => soFar.push((soFar.last() || 0) + indentChange(cur)), List([]));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -36,7 +57,7 @@ async function processControllerView(controllerPath: string, viewPath: string) {
             scopeContents.interfaces.join("\n") + "\n" +
             scopeContents.scopeContents.some() +
             "\n\nfunction ___f($scope: Scope) {\n" +
-            viewExprs.map(formatViewExpr).join("\n") +
+            viewExprs.zip(viewLevels).map(formatViewExpr).join("\n") +
             "\n}\n") + "\n");
 }
 

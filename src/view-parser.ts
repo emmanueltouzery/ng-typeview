@@ -1,45 +1,65 @@
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import {List} from "immutable";
+import {List, Stack} from "immutable";
 
-export type ParsedExpression = {expr: string, type: ExpressionType};
-export type ExpressionType = "boolean" | "any"
+export class ParsedVariable {
+    constructor(public expr: string, public type: VariableType) {}
+};
+export type VariableType = "boolean" | "any"
+
+export class LoopStart {
+    constructor(public loopExpr: string) {}
+}
+export class LoopEnd {};
+
+export type ParsedExpression = ParsedVariable | LoopStart | LoopEnd;
 
 interface AttributeHandler {
-    attrName: string,
-    getExpressions: (val: string) => ParsedExpression[]
+    attrNames: string[],
+    getVariables: (val: string) => ParsedVariable[]
 }
 
-function boolAttrHandler(attrName: string): AttributeHandler {
-    return {
-        attrName: attrName,
-        getExpressions: val => [{expr: val, type: "boolean"}]
-    };
-}
+const boolAttrHandler: AttributeHandler = {
+    attrNames: ["ng-show", "ng-if", "ng-required"],
+    getVariables: val => [new ParsedVariable(val, "boolean")]
+};
 
-function anyAttrHandler(attrName: string): AttributeHandler {
-    return {
-        attrName: attrName,
-        getExpressions: val => [{expr: val, type: "any"}]
-    };
-}
+const anyAttrHandler: AttributeHandler = {
+    attrNames: ["ng-click", "ng-model"],
+    getVariables: val => [new ParsedVariable(val, "any")]
+};
 
-const attributeHandlers = List.of(
-    boolAttrHandler("ng-show"), boolAttrHandler("ng-if"),
-    boolAttrHandler("ng-required"),
-    anyAttrHandler("ng-click"), anyAttrHandler("ng-model"));
+const attributeHandlers = List.of(boolAttrHandler, anyAttrHandler);
 
-function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
+interface NgLoop { xpathDepth: number; }
+
+function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Handler {
     var expressions: ParsedExpression[] = [];
+    var xpath = Stack<string>();
+    var activeLoops = Stack<NgLoop>();
     return {
-        // onopentag: (name: string, attribs:{[type:string]: string}) => {
-        //     console.log("tag open " + name);
-        // },
+        onopentag: (name: string, attribs:{[type:string]: string}) => {
+            xpath = xpath.unshift(name);
+        },
+        onclosetag: (name: string) => {
+            if (xpath.first() !== name) {
+                console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
+            }
+            xpath = xpath.shift();
+            if (activeLoops.first() && activeLoops.first().xpathDepth === xpath.size) {
+                activeLoops = activeLoops.shift();
+                expressions.push(new LoopEnd());
+            }
+        },
         onattribute: (name: string, value: string) => {
+            if (["ng-repeat", "data-ng-repeat"].indexOf(name) >= 0) {
+                activeLoops = activeLoops.unshift({ xpathDepth: xpath.size });
+                expressions.push(new LoopStart(`for (${value}) {`));
+            }
             expressions = expressions.concat(
                 attributeHandlers
-                    .filter(attrHandler => attrHandler.attrName === name)
-                    .flatMap<number,ParsedExpression>(handler => handler.getExpressions(value))
+                    .filter(attrHandler => attrHandler.attrNames.indexOf(name) >= 0)
+                    .flatMap<number,ParsedExpression>(handler => handler.getVariables(value))
                     .toArray());
         },
         onend: () => {
@@ -50,7 +70,7 @@ function getHandler(f: (expr: ParsedExpression[]) => void): Handler {
 
 export function parseView(fileName: string): Promise<ParsedExpression[]> {
     return new Promise((resolve, reject) => {
-        const parser = new Parser(getHandler(resolve));
+        const parser = new Parser(getHandler(fileName, resolve));
         parser.write(readFileSync(fileName).toString());
         parser.done();
     });
