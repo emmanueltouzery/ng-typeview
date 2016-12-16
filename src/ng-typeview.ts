@@ -4,20 +4,28 @@ import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 
 import {parseView, ParsedExpression, ParsedVariable, LoopStart, LoopEnd} from "./view-parser"
-import {extractControllerScopeInfo, extractModalOpenAngularModule, ViewInfo, ControllerViewInfo, ControllerScopeInfo, ScopeInfo} from "./controller-parser"
+import {extractControllerScopeInfo, extractModalOpenAngularModule,
+        ViewInfo, ControllerViewInfo, ControllerScopeInfo, ScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 var i: number = 0;
 
+declare global {
+    // tested working on node.
+    interface String {
+        repeat(c: number): string;
+    }
+}
+
 function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression, number]) => string {
     return viewExprIndex => {
         const [viewExpr, indentLevel] = viewExprIndex;
-        const spaces = (<any>" ").repeat((1+indentLevel)*4);
+        const spaces = " ".repeat((1+indentLevel)*4);
         if (viewExpr instanceof ParsedVariable) {
             return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
                 " = " + addScopeAccessors(viewExpr.expr, scopeInfo) + ";"
         } else if (viewExpr instanceof LoopStart) {
-            return (<any>" ").repeat(indentLevel*4) + viewExpr.loopExpr;
+            return " ".repeat(indentLevel*4) + viewExpr.loopExpr;
         } else if (viewExpr instanceof LoopEnd) {
             return spaces + "}";
         } else {
