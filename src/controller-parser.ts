@@ -104,8 +104,8 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    var ngModuleName = Maybe.None<string>();
-    var viewInfos:ControllerViewInfo[] = [];
+    let ngModuleName = Maybe.None<string>();
+    let viewInfos:ControllerViewInfo[] = [];
     return new Promise((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.CallExpression) {
@@ -146,11 +146,11 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise((resolve, reject) => {
-        var intfInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
-        var tsModuleName:string|null = null;
-        var typeAliases:string[] = [];
-        var imports:string[] = [];
-        var interfaces:string[] = [];
+        let intfInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
+        let tsModuleName:string|null = null;
+        let typeAliases:string[] = [];
+        let imports:string[] = [];
+        let interfaces:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);

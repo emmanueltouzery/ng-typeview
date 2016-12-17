@@ -34,9 +34,9 @@ const attributeHandlers = List.of(boolAttrHandler, anyAttrHandler);
 interface NgLoop { xpathDepth: number; }
 
 function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Handler {
-    var expressions: ParsedExpression[] = [];
-    var xpath = Stack<string>();
-    var activeLoops = Stack<NgLoop>();
+    let expressions: ParsedExpression[] = [];
+    let xpath = Stack<string>();
+    let activeLoops = Stack<NgLoop>();
     return {
         onopentag: (name: string, attribs:{[type:string]: string}) => {
             xpath = xpath.unshift(name);

@@ -8,7 +8,7 @@ import {extractControllerScopeInfo, extractModalOpenAngularModule,
         ViewInfo, ControllerViewInfo, ControllerScopeInfo, ScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
-var i: number = 0;
+let i: number = 0;
 
 declare global {
     // tested working on node.
