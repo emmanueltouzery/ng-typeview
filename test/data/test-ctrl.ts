@@ -36,7 +36,7 @@ module multipart.module.name {
     }
 
     $scope.f2 = function () {
-        return $modal.open({
+        return this.$modal.open({
             templateUrl: 'path/to/another/view.html',
             controller: 'AnotherControllerName',
             param2: 'something',

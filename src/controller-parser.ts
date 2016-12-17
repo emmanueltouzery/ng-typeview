@@ -39,7 +39,8 @@ export interface ControllerViewInfo {
 
 function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<ControllerViewInfo> {
     const paramObjectElements = Maybe.of(callExpr)
-        .filter(c => c.expression.getText() === "$modal.open")
+        .filter(c => ["$modal.open", "this.$modal.open"]
+                .indexOf(c.expression.getText()) >= 0)
         .filter(c => c.arguments.length === 1)
         .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
         .map(o => List.fromArray(o.properties));
