@@ -3,20 +3,20 @@ import {readFileSync} from "fs";
 import {List, Stack} from "immutable";
 
 export class ParsedVariable {
-    constructor(public expr: string, public type: VariableType) {}
+    constructor(public readonly expr: string, public readonly type: VariableType) {}
 };
 export type VariableType = "boolean" | "any"
 
 export class LoopStart {
-    constructor(public loopExpr: string) {}
+    constructor(public readonly loopExpr: string) {}
 }
 export class LoopEnd {};
 
 export type ParsedExpression = ParsedVariable | LoopStart | LoopEnd;
 
 interface AttributeHandler {
-    attrNames: string[],
-    getVariables: (val: string) => ParsedVariable[]
+    readonly attrNames: string[],
+    readonly getVariables: (val: string) => ParsedVariable[]
 }
 
 const boolAttrHandler: AttributeHandler = {
@@ -31,7 +31,7 @@ const anyAttrHandler: AttributeHandler = {
 
 const attributeHandlers = List.of(boolAttrHandler, anyAttrHandler);
 
-interface NgLoop { xpathDepth: number; }
+interface NgLoop { readonly xpathDepth: number; }
 
 function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Handler {
     let expressions: ParsedExpression[] = [];

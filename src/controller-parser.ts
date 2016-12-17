@@ -33,8 +33,8 @@ const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringL
 const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
 
 export interface ControllerViewInfo {
-    controllerName : string;
-    viewPath: string;
+    readonly controllerName : string;
+    readonly viewPath: string;
 }
 
 function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<ControllerViewInfo> {
@@ -95,9 +95,9 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
 }
 
 export interface ViewInfo {
-    fileName: string;
-    ngModuleName: Maybe<string>;
-    controllerViewInfos: ControllerViewInfo[]
+    readonly fileName: string;
+    readonly ngModuleName: Maybe<string>;
+    readonly controllerViewInfos: ControllerViewInfo[]
 }
 
 export function extractModalOpenAngularModule(fileName: string, webappPath: string): Promise<ViewInfo> {
@@ -129,16 +129,16 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
 }
 
 export interface ScopeInfo {
-    contents: string;
-    fieldNames: string[];
+    readonly contents: string;
+    readonly fieldNames: string[];
 }
 
 export interface ControllerScopeInfo {
-    tsModuleName: Maybe<string>;
-    scopeInfo: Maybe<ScopeInfo>;
-    typeAliases: string[];
-    imports: string[];
-    interfaces: string[];
+    readonly tsModuleName: Maybe<string>;
+    readonly scopeInfo: Maybe<ScopeInfo>;
+    readonly typeAliases: string[];
+    readonly imports: string[];
+    readonly interfaces: string[];
 }
 
 export function extractControllerScopeInfo(fileName: string): Promise<ControllerScopeInfo> {
