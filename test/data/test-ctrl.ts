@@ -19,6 +19,7 @@ module multipart.module.name {
         data: {groups: any[], firstname: string}
         triggerAction: boolean
         user: string;
+        maxlength: number;
     }
 
     $scope.f1 = function () {

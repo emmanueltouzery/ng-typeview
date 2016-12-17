@@ -11,8 +11,11 @@ export class LoopStart {
     constructor(public readonly loopExpr: string) {}
 }
 export class LoopEnd {};
+export class FilterExpression {
+    constructor(public readonly filterName:string, public readonly filterParam:string) {}
+}
 
-export type ParsedExpression = ParsedVariable | LoopStart | LoopEnd;
+export type ParsedExpression = ParsedVariable | LoopStart | LoopEnd | FilterExpression;
 
 interface AttributeHandler {
     readonly attrNames: string[],
@@ -32,6 +35,22 @@ const anyAttrHandler: AttributeHandler = {
 const attributeHandlers = List.of(boolAttrHandler, anyAttrHandler);
 
 interface NgLoop { readonly xpathDepth: number; }
+
+function extractInlineExpressions(text: string): ParsedExpression[] {
+    const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
+    let m: RegExpExecArray|null;
+    let result: ParsedExpression[] = [];
+    while (m = re.exec(text)) {
+        const expr: string = m[1];
+        if (expr.indexOf("|") < 0) {
+            result.push(new ParsedVariable(m[1], "any"));
+        } else {
+            let [param, filter] = expr.split("|");
+            result.push(new FilterExpression(filter.trim(), param.trim()));
+        }
+    }
+    return result;
+}
 
 function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Handler {
     let expressions: ParsedExpression[] = [];
@@ -61,6 +80,7 @@ function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Ha
                     .filter(attrHandler => attrHandler.attrNames.indexOf(name) >= 0)
                     .flatMap<number,ParsedExpression>(handler => handler.getVariables(value))
                     .toArray());
+            expressions = expressions.concat(extractInlineExpressions(value));
         },
         onend: () => {
             f(expressions);

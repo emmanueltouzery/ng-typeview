@@ -28,9 +28,11 @@ describe("extractControllerScopeInfo", () => {
                      "        showText: (x:string)=>boolean;\n" +
                      "        data: {groups: any[], firstname: string}\n" +
                      "        triggerAction: boolean\n" +
-                     "        user: string;\n    }", scopeInfo.scopeInfo.some().contents);
+                     "        user: string;\n" +
+                     "        maxlength: number;\n" +
+                     "    }", scopeInfo.scopeInfo.some().contents);
         assert.deepEqual(
-            ["showDiv", "showText", "data", "triggerAction", "user"],
+            ["showDiv", "showText", "data", "triggerAction", "user", "maxlength"],
             scopeInfo.scopeInfo.some().fieldNames);
         assert.deepEqual(["type STR = string;", "type INT = number;"], scopeInfo.typeAliases);
         assert.deepEqual(["import Aa = api.Aa;", "import Bb = api.Bb;"], scopeInfo.imports);

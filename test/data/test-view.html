@@ -4,9 +4,9 @@
             <table ng-required="!user.wantsData()">
             </table>
             <div ng-if="showDiv">
-                <button ng-click="triggerAction('six')" />
+                <button ng-click="triggerAction('six')" value="{{'CLICK_ME' | translate}}" />
             </div>
-            <input type="text" ng-model="data.firstname">
+            <input type="text" ng-model="data.firstname" maxlength="{{maxlength}}">
             <div data-ng-repeat="group in data.groups">
                 <div data-ng-repeat="item in group">
                     <input type="text" ng-model="item.name + ' ' + user.wantsData()">
