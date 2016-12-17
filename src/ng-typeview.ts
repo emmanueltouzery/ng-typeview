@@ -26,7 +26,9 @@ function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression
             return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
                 " = " + addScopeAccessors(viewExpr.expr, scopeInfo) + ";"
         } else if (viewExpr instanceof FilterExpression) {
-            return `${spaces}f__${viewExpr.filterName}(${viewExpr.filterParam});`;
+            const fParams = [addScopeAccessors(viewExpr.filterInput, scopeInfo)]
+                .concat(viewExpr.filterParams).join(", ")
+            return `${spaces}f__${viewExpr.filterName}(${fParams});`;
         } else if (viewExpr instanceof LoopStart) {
             const [lhs, rhs] = viewExpr.loopExpr.split(" in ");
             return  [`${addScopeAccessors(rhs, scopeInfo)}.forEach(${lhs} => {`,

@@ -12,7 +12,9 @@ export class LoopStart {
 }
 export class LoopEnd {};
 export class FilterExpression {
-    constructor(public readonly filterName:string, public readonly filterParam:string) {}
+    constructor(public readonly filterName:string,
+                public readonly filterInput:string,
+                public readonly filterParams: string[]) {}
 }
 
 export type ParsedExpression = ParsedVariable | LoopStart | LoopEnd | FilterExpression;
@@ -45,8 +47,10 @@ function extractInlineExpressions(text: string): ParsedExpression[] {
         if (expr.indexOf("|") < 0) {
             result.push(new ParsedVariable(m[1], "any"));
         } else {
-            let [param, filter] = expr.split("|");
-            result.push(new FilterExpression(filter.trim(), param.trim()));
+            let [input, filter] = expr.split("|");
+            let [filterName, ...filterParams] = filter.split(":");
+            result.push(new FilterExpression(
+                filterName.trim(), input.trim(), filterParams.map(x => x.trim())));
         }
     }
     return result;
@@ -81,6 +85,9 @@ function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Ha
                     .flatMap<number,ParsedExpression>(handler => handler.getVariables(value))
                     .toArray());
             expressions = expressions.concat(extractInlineExpressions(value));
+        },
+        ontext: (text: string) => {
+            expressions = expressions.concat(extractInlineExpressions(text));
         },
         onend: () => {
             f(expressions);

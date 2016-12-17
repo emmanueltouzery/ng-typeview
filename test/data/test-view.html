@@ -11,6 +11,7 @@
                 <div data-ng-repeat="item in group">
                     <input type="text" ng-model="item.name + ' ' + user.wantsData()">
                 </div>
+                The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>
             ng-model="should.not-match"
         </p>

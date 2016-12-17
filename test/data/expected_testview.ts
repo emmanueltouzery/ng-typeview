@@ -18,7 +18,7 @@ interface Scope extends ng.IScope {
         maxlength: number;
     }
 
-function ___f($scope: Scope, f__translate:(key: string) => string) {
+function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
     const ___x0: boolean = $scope.data.showText['five'].function() === 6;
     const ___x1: boolean = !$scope.user.wantsData();
     const ___x2: boolean = $scope.showDiv;
@@ -34,6 +34,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string) {
             let $last = true; let $even = true; let $odd = false;
             const ___x6: any = item.name + ' ' + $scope.user.wantsData();
         });
+        f__formatNumber($scope.maxlength, 'hex');
     });
 }
 }
