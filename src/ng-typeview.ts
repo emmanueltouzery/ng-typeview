@@ -45,6 +45,19 @@ function indentChange(expr: ParsedExpression): number {
     return 0;
 }
 
+// we only repeat the imports, type synonyms and custom interfaces
+// if there is a module, because otherwise those are dumped in the
+// global namespace anyway
+function wrapInModule(moduleName: string, scopeInfo: ControllerScopeInfo,
+                      contents: string): string {
+    return "module " + moduleName + " {\n" +
+        scopeInfo.imports.join("\n") + "\n" +
+        scopeInfo.typeAliases.join("\n") + "\n" +
+        scopeInfo.interfaces.join("\n") + "\n" +
+        contents +
+        "}\n";
+}
+
 async function processControllerView(controllerPath: string, viewPath: string) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
@@ -61,12 +74,9 @@ async function processControllerView(controllerPath: string, viewPath: string) {
     // may be used for several views.
     const outputFname = `${pathInfo.dir}/${pathInfo.name}_${viewPathInfo.name}_viewtest.ts`;
     const moduleWrap = (x:string) => scopeContents.tsModuleName
-        .map(n => `module ${n} {\n${x}\n}`)
+        .map(n => wrapInModule(n, scopeContents, x))
         .orSome(x);
     writeFileSync(outputFname, moduleWrap(
-        scopeContents.imports.join("\n") + "\n" +
-            scopeContents.typeAliases.join("\n") + "\n" +
-            scopeContents.interfaces.join("\n") + "\n" +
             scopeContents.scopeInfo.some().contents +
             "\n\nfunction ___f($scope: Scope) {\n" +
             viewExprs.zip(viewLevels).map(formatViewExpr(scopeContents.scopeInfo.some())).join("\n") +
