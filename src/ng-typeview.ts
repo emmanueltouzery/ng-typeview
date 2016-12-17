@@ -25,9 +25,11 @@ function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression
             return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
                 " = " + addScopeAccessors(viewExpr.expr, scopeInfo) + ";"
         } else if (viewExpr instanceof LoopStart) {
-            return " ".repeat(indentLevel*4) + viewExpr.loopExpr;
+            const [lhs, rhs] = viewExpr.loopExpr.split(" in ");
+            return " ".repeat(indentLevel*4) +
+                `${addScopeAccessors(rhs, scopeInfo)}.forEach(${lhs} => {`;
         } else if (viewExpr instanceof LoopEnd) {
-            return spaces + "}";
+            return spaces + "});";
         } else {
             throw `unknown parsed expression type: ${viewExpr}`;
         }

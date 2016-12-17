@@ -54,7 +54,7 @@ function getHandler(fileName: string, f: (expr: ParsedExpression[]) => void): Ha
         onattribute: (name: string, value: string) => {
             if (["ng-repeat", "data-ng-repeat"].indexOf(name) >= 0) {
                 activeLoops = activeLoops.unshift({ xpathDepth: xpath.size });
-                expressions.push(new LoopStart(`for (${value}) {`));
+                expressions.push(new LoopStart(value));
             }
             expressions = expressions.concat(
                 attributeHandlers

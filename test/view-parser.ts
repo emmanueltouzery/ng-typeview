@@ -15,8 +15,8 @@ describe("parseView", () => {
         assert.equal("any", (<ParsedVariable>viewInfos[3]).type);
         assert.equal("data.firstname", (<ParsedVariable>viewInfos[4]).expr);
         assert.equal("any", (<ParsedVariable>viewInfos[4]).type);
-        assert.equal("for (group in data.groups) {", (<LoopStart>viewInfos[5]).loopExpr);
-        assert.equal("for (item in group) {", (<LoopStart>viewInfos[6]).loopExpr);
+        assert.equal("group in data.groups", (<LoopStart>viewInfos[5]).loopExpr);
+        assert.equal("item in group", (<LoopStart>viewInfos[6]).loopExpr);
         assert.equal("item.name + ' ' + user.wantsData()", (<ParsedVariable>viewInfos[7]).expr);
         assert.equal("any", (<ParsedVariable>viewInfos[7]).type);
         assert.ok(viewInfos[8] instanceof LoopEnd);

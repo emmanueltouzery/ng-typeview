@@ -23,11 +23,11 @@ function ___f($scope: Scope) {
     const ___x2: boolean = $scope.showDiv;
     const ___x3: any = $scope.triggerAction('six');
     const ___x4: any = $scope.data.firstname;
-    for (group in data.groups) {
-        for (item in group) {
+    $scope.data.groups.forEach(group => {
+        group.forEach(item => {
             const ___x5: any = item.name + ' ' + $scope.user.wantsData();
-        }
-    }
+        });
+    });
 }
 
 }
