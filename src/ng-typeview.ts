@@ -19,6 +19,7 @@ declare global {
     // tested working on node.
     interface String {
         repeat(c: number): string;
+        endsWith(t: string): boolean;
     }
 }
 
@@ -79,7 +80,8 @@ async function processControllerView(controllerPath: string, viewPath: string, n
     }
     const viewExprs = List(await parseView(viewPath));
     const viewLevels = viewExprs.reduce(
-        (soFar: List<number>, cur: ParsedExpression) => soFar.push((soFar.last() || 0) + indentChange(cur)), List([]));
+        (soFar: List<number>, cur: ParsedExpression) =>
+            soFar.push((soFar.last() || 0) + indentChange(cur)), List([]));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -118,9 +120,15 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
         .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Map<string,string>(viewInfos
-                           .filter(vi => vi.ngModuleName.isSome())
-                           .map(vi => [vi.ngModuleName.some(), vi.fileName]));
+        Map<string,string>(
+            viewInfos
+                .filter(vi => vi.ngModuleName.isSome())
+			          // JS files are not going to have a scope interface
+			          // definition so they're not helpful. Also, we can
+			          // get twice the same file: original TS & compiled JS.
+			          // => keep only the original TS in that case.
+			          .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
+                .map(vi => [vi.ngModuleName.some(), vi.fileName]));
     const viewFilenameToCtrlFilenames =
         viewFilenameToControllerNames
         .mapEntries<string,Iterable<number,string>>(
