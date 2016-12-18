@@ -10,7 +10,11 @@ export const filters = [
 describe("processProjectFolder", () => {
     it("should generate view test files", async () => {
         execSync("git clean -xf test/data");
-        await processProjectFolder("test/data", [], filters);
+        await processProjectFolder({
+            path: "test/data",
+            blacklist: [],
+            ngFilters :filters,
+            ctrlViewConnectors: []});
         const actualContents = readFileSync("test/data/test-ctrl_test-view_viewtest.ts").toString();
         const expectedContents = readFileSync("test/data/expected_testview.ts").toString();
         assert.equal(expectedContents, actualContents);

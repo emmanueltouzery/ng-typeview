@@ -131,7 +131,14 @@ export interface ViewInfo {
     readonly controllerViewInfos: ControllerViewInfo[]
 }
 
-export function extractModalOpenAngularModule(fileName: string, webappPath: string): Promise<ViewInfo> {
+export interface ControllerViewConnector {
+    interceptAstNode: ts.SyntaxKind;
+    getControllerView: (call: ts.Node, projectPath: string) => ControllerViewInfo[];
+}
+
+export function extractCtrlViewConnsAngularModule(
+    fileName: string, webappPath: string,
+    ctrlViewConnectors: ControllerViewConnector[]): Promise<ViewInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
@@ -152,6 +159,11 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
             } else if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
                 ngModuleName = parseAngularModule(<ts.ExpressionStatement>node);
             }
+            viewInfos = viewInfos.concat(
+                List.fromArray(ctrlViewConnectors)
+                    .filter(conn => conn.interceptAstNode === node.kind)
+                    .flatMap(conn => List.fromArray(conn.getControllerView(node, webappPath)))
+                    .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);

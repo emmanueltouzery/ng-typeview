@@ -2,12 +2,16 @@ import {writeFileSync, readdirSync, statSync} from "fs";
 import {sync} from "glob";
 import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
+import * as ts from "typescript";
 
 import {parseView, ParsedExpression, ParsedVariable,
         LoopStart, LoopEnd, FilterExpression} from "./view-parser"
-import {extractControllerScopeInfo, extractModalOpenAngularModule,
-        ViewInfo, ControllerViewInfo, ControllerScopeInfo, ScopeInfo} from "./controller-parser"
+import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
+        ViewInfo, ControllerViewConnector, ControllerViewInfo,
+        ControllerScopeInfo, ScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
+
+export {ControllerViewInfo} from "./controller-parser";
 
 let i: number = 0;
 
@@ -96,9 +100,19 @@ export class NgFilter {
     constructor(public readonly name: string, public readonly type: string) {}
 }
 
-export async function processProjectFolder(path: string, blacklist: string[], ngFilters: NgFilter[]): Promise<any> {
-    const files = sync(path + "/**/*.@(js|ts)", {nodir:true, ignore: blacklist});
-    const viewInfos = await Promise.all(files.map(f => extractModalOpenAngularModule(f, path)));
+export interface ProjectSettings {
+    path: string;
+    blacklist: string[];
+    ngFilters: NgFilter[];
+    ctrlViewConnectors: ControllerViewConnector[];
+}
+
+export async function processProjectFolder(prjSettings: ProjectSettings): Promise<any> {
+    const files = sync(prjSettings.path + "/**/*.@(js|ts)",
+                       {nodir:true, ignore: prjSettings.blacklist});
+    const viewInfos = await Promise.all(
+        files.map(f => extractCtrlViewConnsAngularModule(
+            f, prjSettings.path, prjSettings.ctrlViewConnectors)));
     const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
         List(viewInfos)
         .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
@@ -116,12 +130,18 @@ export async function processProjectFolder(path: string, blacklist: string[], ng
                  .filter((name:string) => name)]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
-            ctrlName => processControllerView(ctrlName, viewName, ngFilters)).toArray())).toArray());
+            ctrlName => processControllerView(
+                ctrlName, viewName, prjSettings.ngFilters)).toArray())).toArray());
 }
 
 export const basicFilters = [new NgFilter("translate", "(key: string) => string")];
 try {
-    processProjectFolder(process.argv[2], process.argv.slice(3), basicFilters);
+    processProjectFolder({
+        path: process.argv[2],
+        blacklist: process.argv.slice(3),
+        ngFilters: basicFilters,
+        ctrlViewConnectors: []
+    });
 } catch (e) {
     console.log(e);
 }

@@ -1,10 +1,34 @@
 import * as assert from 'assert'
 import {Maybe} from "monet";
-import {extractControllerScopeInfo, ControllerScopeInfo, extractModalOpenAngularModule} from '../src/controller-parser'
+import {extractControllerScopeInfo, ControllerScopeInfo,
+        extractCtrlViewConnsAngularModule,
+        ControllerViewInfo} from '../src/controller-parser'
+import * as ts from "typescript";
+
+const ctrlViewConn = {
+    interceptAstNode: ts.SyntaxKind.CallExpression,
+    getControllerView: (node: ts.Node, projectPath: string): ControllerViewInfo[] => {
+        const call = <ts.CallExpression>node;
+        if (["displayDialog", "core.displayDialog"].indexOf(call.expression.getText()) < 0) {
+            return [];
+        }
+        if (call.arguments.length < 3) {
+            return [];
+        }
+        if (call.arguments[1].kind !== ts.SyntaxKind.StringLiteral ||
+            call.arguments[2].kind !== ts.SyntaxKind.StringLiteral) {
+            return [];
+        }
+        return [{
+            controllerName: (<ts.StringLiteral>call.arguments[1]).text,
+            viewPath: projectPath + "/" + (<ts.StringLiteral>call.arguments[2]).text}];
+    }
+};
 
 describe("extractModalOpenAngularModule", () => {
     it("should recognize the statements", async () => {
-        const modalModuleInfo = await extractModalOpenAngularModule("test/data/test-ctrl.ts", "webapp");
+        const modalModuleInfo = await extractCtrlViewConnsAngularModule(
+            "test/data/test-ctrl.ts", "webapp", [ctrlViewConn]);
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
         assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.ngModuleName);
         assert.deepEqual([
@@ -23,6 +47,10 @@ describe("extractModalOpenAngularModule", () => {
             {
                 controllerName: "AnotherControllerName",
                 viewPath: "webapp/path/to/another/view.html"
+            },
+            {
+                controllerName: "YupYetAnotherCtrl",
+                viewPath: "webapp/and/yet/another/view.html"
             }], modalModuleInfo.controllerViewInfos);
     });
 });
