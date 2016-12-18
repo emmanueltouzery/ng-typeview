@@ -9,7 +9,7 @@
             <input type="text" ng-model="data.firstname" maxlength="{{maxlength}}">
             <div data-ng-repeat="group in data.groups">
                 <div data-ng-repeat="item in group">
-                    <input type="text" ng-model="item.name + ' ' + user.wantsData()">
+                    <input type="text" ng-model="item.name + ' ' + user.wantsData()" ng-change="triggerAction('five')">
                 </div>
                 The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>

@@ -30,7 +30,7 @@ const boolAttrHandler: AttributeHandler = {
 };
 
 const anyAttrHandler: AttributeHandler = {
-    attrNames: ["ng-click", "ng-model"],
+    attrNames: ["ng-click", "ng-model", "ng-change"],
     getVariables: val => [new ParsedVariable(val, "any")]
 };
 
