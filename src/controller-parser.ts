@@ -37,6 +37,23 @@ export interface ControllerViewInfo {
     readonly viewPath: string;
 }
 
+function objectLiteralGetProperty(
+    propName: string, elts: List<ts.ObjectLiteralElementLike>): Maybe<ts.Node> {
+    return elts.find(elt => maybeIdentifier(elt.name).filter(i => i.text === propName).isSome());
+}
+
+function getFieldStringLiteralValue(field: ts.Node): Maybe<string> {
+    return maybePropertyAssignment(field)
+        .flatMap(pa => maybeStringLiteral(pa.initializer))
+        .map(ini => ini.text);
+}
+
+function objectLiteralGetStringLiteralField(
+    propName: string, elts: List<ts.ObjectLiteralElementLike>): Maybe<string> {
+    return objectLiteralGetProperty(propName, elts)
+        .flatMap(p => getFieldStringLiteralValue(p));
+}
+
 function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<ControllerViewInfo> {
     const paramObjectElements = Maybe.of(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
@@ -45,24 +62,37 @@ function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<Con
         .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
         .map(o => List.fromArray(o.properties));
 
-    const getField = (name: string): Maybe<ts.Node> =>
-        paramObjectElements.flatMap(elts => elts.find(
-            elt => maybeIdentifier(elt.name).filter(i => i.text === name).isSome()));
+    const getField = (name: string): Maybe<string> =>
+        paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
 
-    const getFieldStringLiteralValue = (field: ts.Node): Maybe<string> =>
-        maybePropertyAssignment(field)
-        .flatMap(pa => maybeStringLiteral(pa.initializer))
-        .map(ini => ini.text);
-
-    const controllerName = getField("controller")
-        .flatMap(f => getFieldStringLiteralValue(f));
-    const rawViewPath = getField("templateUrl")
-        .flatMap(f =>getFieldStringLiteralValue(f));
+    const controllerName = getField("controller");
+    const rawViewPath = getField("templateUrl");
 
     const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
         ({controllerName: ctrlName, viewPath: folder + "/" + rawViewPath});
 
     return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+}
+
+function parseModuleState(prop : ts.ObjectLiteralExpression, folder: string): Maybe<ControllerViewInfo> {
+    const objectLiteralFields = prop.properties
+        .map(e => maybeIdentifier(e.name))
+        .filter(i => i.isSome())
+        .map(i => i.some().text);
+    if ((objectLiteralFields.indexOf("url") >= 0) &&
+        (objectLiteralFields.indexOf("templateUrl") >= 0) &&
+        (objectLiteralFields.indexOf("controller") >= 0)) {
+        // seems like I got a state controller/view declaration
+        const controllerName = objectLiteralGetStringLiteralField(
+            "controller", List.fromArray(prop.properties));
+        const rawViewPath = objectLiteralGetStringLiteralField(
+            "templateUrl", List.fromArray(prop.properties));
+
+        const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+            ({controllerName: ctrlName, viewPath: folder + "/" + rawViewPath});
+        return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+    }
+    return Maybe.None<ControllerViewInfo>();
 }
 
 function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
@@ -114,8 +144,12 @@ export function extractModalOpenAngularModule(fileName: string, webappPath: stri
                 if (viewInfo.isSome()) {
                     viewInfos.push(viewInfo.some());
                 }
-            }
-            if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
+            } else if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
+                const linkInfo = parseModuleState(<ts.ObjectLiteralExpression>node, webappPath);
+                if (linkInfo.isSome()) {
+                    viewInfos.push(linkInfo.some());
+                }
+            } else if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
                 ngModuleName = parseAngularModule(<ts.ExpressionStatement>node);
             }
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);

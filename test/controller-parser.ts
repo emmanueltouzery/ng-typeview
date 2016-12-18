@@ -9,6 +9,14 @@ describe("extractModalOpenAngularModule", () => {
         assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.ngModuleName);
         assert.deepEqual([
             {
+                controllerName: "CtrlState1",
+                viewPath: "webapp/app/view/url1.html"
+            },
+            {
+                controllerName: "CtrlState2",
+                viewPath: "webapp/app/view/url2.html"
+            },
+            {
                 controllerName: "ControllerName",
                 viewPath: "webapp/test-view.html"
             },

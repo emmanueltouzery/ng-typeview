@@ -22,6 +22,30 @@ module multipart.module.name {
         maxlength: number;
     }
 
+    $scope.register =
+        ($stateProvider: ng.ui.IStateProvider) =>
+    $stateProvider.state('my.first.state', <ng.ui.IState>{
+        abstract: true,
+        url: '/config',
+        template: '<div data-ui-view style="padding: 0px"></div>'
+    }).state('my.second.state', <ng.ui.IState>{
+        url: '/list',
+        templateUrl: 'app/view/url1.html',
+        controller: 'CtrlState1'
+    }).state('my.third.state', <ng.ui.IState>{
+        url: '/:id/details/?id/:back',
+        templateUrl: 'app/view/url2.html',
+        controller: 'CtrlState2',
+        resolve: {
+            source: ['myService',
+                     (myService: any) => {
+                         if (_.isEmpty(myService.tasks))
+                             myService.query();
+                     }
+                    ]
+        }
+    });
+
     $scope.f1 = function () {
         return $modal.open({
             templateUrl: 'test-view.html',
