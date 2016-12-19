@@ -26,10 +26,10 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
     f__translate('CLICK_ME');
     const ___x4: any = $scope.data.firstname;
     const ___x5: any = $scope.maxlength;
-    $scope.data.groups.forEach(group => {
+    angular.forEach($scope.data.groups, group => {
         let $index = 0; let $first = true; let $middle=true;
         let $last = true; let $even = true; let $odd = false;
-        group.forEach(item => {
+        angular.forEach(group, item => {
             let $index = 0; let $first = true; let $middle=true;
             let $last = true; let $even = true; let $odd = false;
             const ___x6: any = item.name + ' ' + $scope.user.wantsData();

@@ -36,7 +36,7 @@ function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression
             return `${spaces}f__${viewExpr.filterName}(${fParams});`;
         } else if (viewExpr instanceof LoopStart) {
             const [lhs, rhs] = viewExpr.loopExpr.split(" in ");
-            return  [`${addScopeAccessors(rhs, scopeInfo)}.forEach(${lhs} => {`,
+            return  [`angular.forEach(${addScopeAccessors(rhs, scopeInfo)}, ${lhs} => {`,
                 "let $index = 0; let $first = true; let $middle=true;",
                 "let $last = true; let $even = true; let $odd = false;"]
                 .map((x,i) => " ".repeat((indentLevel+(i>0?1:0))*4) + x)
