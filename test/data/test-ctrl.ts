@@ -12,6 +12,18 @@ module multipart.module.name {
     interface NotScope2 extends NotScope {
         f1: (x:string)=>boolean;
     }
+    export interface IDontCopy {
+        whatever: number;
+    }
+
+    class NotScopeClass {
+        field?: number;
+        constructor(public f2: number);
+    }
+
+    export class DontCopy {
+        field: string;
+    }
 
     interface Scope extends ng.IScope {
         showDiv?: string;

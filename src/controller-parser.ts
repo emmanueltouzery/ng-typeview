@@ -185,7 +185,14 @@ export interface ControllerScopeInfo {
     readonly scopeInfo: Maybe<ScopeInfo>;
     readonly typeAliases: string[];
     readonly imports: string[];
-    readonly interfaces: string[];
+    readonly nonExportedDeclarations: string[];
+}
+
+function nodeIsExported(node: ts.Node): boolean {
+    return Maybe.fromNull(node.modifiers)
+        .filter(modifiers => modifiers.some(
+            modifier => modifier.kind === ts.SyntaxKind.ExportKeyword))
+        .isSome();
 }
 
 export function extractControllerScopeInfo(fileName: string): Promise<ControllerScopeInfo> {
@@ -197,15 +204,18 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
         let imports:string[] = [];
-        let interfaces:string[] = [];
+        let nonExportedDeclarations:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
-            if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+            if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
                 if (curIntfInfo.isSome()) {
                     intfInfo = curIntfInfo;
                 } else {
-                    interfaces.push(node.getText());
+                    nonExportedDeclarations.push(node.getText());
                 }
+            }
+            if (node.kind === ts.SyntaxKind.ClassDeclaration && !nodeIsExported(node)) {
+                nonExportedDeclarations.push(node.getText());
             }
             if (node.kind === ts.SyntaxKind.ModuleDeclaration) {
                 const moduleLevel = (<ts.StringLiteral>(<ts.ModuleDeclaration>node).name).text;
@@ -215,7 +225,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
                     tsModuleName = moduleLevel;
                 }
             }
-            if (node.kind === ts.SyntaxKind.TypeAliasDeclaration) {
+            if (node.kind === ts.SyntaxKind.TypeAliasDeclaration && !nodeIsExported(node)) {
                 typeAliases.push(node.getText());
             }
             if (node.kind === ts.SyntaxKind.ImportEqualsDeclaration) {
@@ -229,7 +239,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
             scopeInfo: intfInfo,
             typeAliases: typeAliases,
             imports: imports,
-            interfaces: interfaces
+            nonExportedDeclarations: nonExportedDeclarations
         };
         resolve(r);
     });

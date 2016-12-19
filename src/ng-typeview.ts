@@ -72,7 +72,7 @@ function wrapInModule(moduleName: string, scopeInfo: ControllerScopeInfo,
     return "module " + moduleName + " {\n" +
         scopeInfo.imports.join("\n") + "\n" +
         scopeInfo.typeAliases.join("\n") + "\n" +
-        scopeInfo.interfaces.join("\n") + "\n" +
+        scopeInfo.nonExportedDeclarations.join("\n") + "\n" +
         contents +
         "}\n";
 }

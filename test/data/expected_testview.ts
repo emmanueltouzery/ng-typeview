@@ -9,6 +9,10 @@ interface NotScope extends SomethingElse {
 interface NotScope2 extends NotScope {
         f1: (x:string)=>boolean;
     }
+class NotScopeClass {
+        field?: number;
+        constructor(public f2: number);
+    }
 interface Scope extends ng.IScope {
         showDiv?: string;
         showText: (x:string)=>boolean;

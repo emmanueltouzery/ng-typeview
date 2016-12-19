@@ -75,8 +75,9 @@ describe("extractControllerScopeInfo", () => {
         assert.deepEqual(
             [
                 "interface NotScope extends SomethingElse {\n        intField: number;\n    }",
-                "interface NotScope2 extends NotScope {\n        f1: (x:string)=>boolean;\n    }"
+                "interface NotScope2 extends NotScope {\n        f1: (x:string)=>boolean;\n    }",
+                "class NotScopeClass {\n        field?: number;\n        constructor(public f2: number);\n    }"
             ],
-            scopeInfo.interfaces);
+            scopeInfo.nonExportedDeclarations);
     });
 });
