@@ -95,7 +95,7 @@ function parseModuleState(prop : ts.ObjectLiteralExpression, folder: string): Ma
     return Maybe.None<ControllerViewInfo>();
 }
 
-function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
+function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]> {
     const callExpr = maybeCallExpression(expr.expression);
     const prop0 = callExpr
         .flatMap(callExpr => maybePropertyAccessExpression(callExpr.expression));
@@ -115,19 +115,26 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<string> {
         .orElse(call1.filter(v => v === "module")).isSome()) {
         const moduleCall = prop0.map(p => p.name.text);
         if (moduleCall.filter(v => v === "controller").isSome()) {
-            const nme = callExpr
+            const ctrlName = callExpr
                 .filter(c => c.arguments.length > 0)
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(a => a.text);
-            return nme;
+            const moduleName = prop0
+                .flatMap(p => maybeCallExpression(p.expression))
+                .filter(c => c.arguments.length > 0)
+                .flatMap(c => maybeStringLiteral(c.arguments[0]))
+                .map(s => s.text);
+            const buildModuleCtrl: ((x:string) => (y:string) => [string,string]) = mod => ctrl => [mod, ctrl];
+            return ctrlName.ap(moduleName.map(buildModuleCtrl));
         }
     }
-    return Maybe.None<string>();
+    return Maybe.None<[string,string]>();
 }
 
 export interface ViewInfo {
     readonly fileName: string;
     readonly ngModuleName: Maybe<string>;
+    readonly controllerName: Maybe<string>;
     readonly controllerViewInfos: ControllerViewInfo[]
 }
 
@@ -143,6 +150,7 @@ export function extractCtrlViewConnsAngularModule(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     let ngModuleName = Maybe.None<string>();
+    let controllerName = Maybe.None<string>();
     let viewInfos:ControllerViewInfo[] = [];
     return new Promise((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
@@ -156,8 +164,10 @@ export function extractCtrlViewConnsAngularModule(
                 if (linkInfo.isSome()) {
                     viewInfos.push(linkInfo.some());
                 }
-            } else if (ngModuleName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
-                ngModuleName = parseAngularModule(<ts.ExpressionStatement>node);
+            } else if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
+                const mCtrlNgModule = parseAngularModule(<ts.ExpressionStatement>node);
+                ngModuleName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[0]);
+                controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
             }
             viewInfos = viewInfos.concat(
                 List.fromArray(ctrlViewConnectors)
@@ -170,6 +180,7 @@ export function extractCtrlViewConnsAngularModule(
         const result: ViewInfo = {
             fileName: fileName,
             ngModuleName: ngModuleName,
+            controllerName: controllerName,
             controllerViewInfos: viewInfos};
         resolve(result);
     });

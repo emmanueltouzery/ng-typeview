@@ -30,7 +30,8 @@ describe("extractModalOpenAngularModule", () => {
         const modalModuleInfo = await extractCtrlViewConnsAngularModule(
             "test/data/test-ctrl.ts", "webapp", [ctrlViewConn]);
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
-        assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.ngModuleName);
+        assert.deepEqual(Maybe.Some("my.ng.module.name"), modalModuleInfo.ngModuleName);
+        assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.controllerName);
         assert.deepEqual([
             {
                 controllerName: "CtrlState1",

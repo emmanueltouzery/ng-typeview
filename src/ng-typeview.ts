@@ -128,13 +128,13 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
     const controllerNameToFilename =
         Map<string,string>(
             viewInfos
-                .filter(vi => vi.ngModuleName.isSome())
+                .filter(vi => vi.controllerName.isSome())
 			          // JS files are not going to have a scope interface
 			          // definition so they're not helpful. Also, we can
 			          // get twice the same file: original TS & compiled JS.
 			          // => keep only the original TS in that case.
 			          .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
-                .map(vi => [vi.ngModuleName.some(), vi.fileName]));
+                .map(vi => [vi.controllerName.some(), vi.fileName]));
     const viewFilenameToCtrlFilenames =
         viewFilenameToControllerNames
         .mapEntries<string,Iterable<number,string>>(
