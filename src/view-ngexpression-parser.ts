@@ -13,7 +13,9 @@ export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {
 const nodeKindPassthroughList = Set(
     [ts.SyntaxKind.NumericLiteral,
      ts.SyntaxKind.NullKeyword,
-     ts.SyntaxKind.StringLiteral]);
+     ts.SyntaxKind.StringLiteral,
+     ts.SyntaxKind.TrueKeyword,
+     ts.SyntaxKind.FalseKeyword]);
 
 function stmtAddScopeAccessors(scopeInfo: ScopeInfo) : (node: ts.Node) => string {
     return node => {
