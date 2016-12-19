@@ -23,6 +23,17 @@ declare global {
     }
 }
 
+function formatNgRepeat(scopeInfo: ScopeInfo, repeat: LoopStart, indentLevel: number): string {
+    const [lhs, rhs] = repeat.loopExpr.split(" in ");
+    const [enumerable, tracker] = rhs.split(" track by ");
+    return [`angular.forEach(${addScopeAccessors(enumerable, scopeInfo)}, ${lhs} => {`,
+            "let $index = 0; let $first = true; let $middle=true;",
+            "let $last = true; let $even = true; let $odd = false;" +
+            (tracker ? `\n${" ".repeat((indentLevel+1)*4)}let tracker${indentLevel} = ${tracker};` : "")]
+        .map((x,i) => " ".repeat((indentLevel+(i>0?1:0))*4) + x)
+        .join("\n");
+}
+
 function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression, number]) => string {
     return viewExprIndex => {
         const [viewExpr, indentLevel] = viewExprIndex;
@@ -35,12 +46,7 @@ function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression
                 .concat(viewExpr.filterParams).join(", ")
             return `${spaces}f__${viewExpr.filterName}(${fParams});`;
         } else if (viewExpr instanceof LoopStart) {
-            const [lhs, rhs] = viewExpr.loopExpr.split(" in ");
-            return  [`angular.forEach(${addScopeAccessors(rhs, scopeInfo)}, ${lhs} => {`,
-                "let $index = 0; let $first = true; let $middle=true;",
-                "let $last = true; let $even = true; let $odd = false;"]
-                .map((x,i) => " ".repeat((indentLevel+(i>0?1:0))*4) + x)
-                .join("\n");
+            return formatNgRepeat(scopeInfo, viewExpr, indentLevel);
         } else if (viewExpr instanceof LoopEnd) {
             return spaces + "});";
         } else {

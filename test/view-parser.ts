@@ -5,7 +5,7 @@ import {parseView, ParsedExpression, ParsedVariable,
 describe("parseView", () => {
     it("should find angular attributes", async () => {
         const viewInfos = await parseView("test/data/test-view.html");
-        assert.equal(14, viewInfos.length);
+        assert.equal(16, viewInfos.length);
         assert.equal("data.showText['five'].function() === 6", (<ParsedVariable>viewInfos[0]).expr);
         assert.equal("boolean", (<ParsedVariable>viewInfos[0]).type);
         assert.equal("!user.wantsData()", (<ParsedVariable>viewInfos[1]).expr);
@@ -21,8 +21,8 @@ describe("parseView", () => {
         assert.equal("any", (<ParsedVariable>viewInfos[5]).type);
         assert.equal("maxlength", (<ParsedVariable>viewInfos[6]).expr);
         assert.equal("any", (<ParsedVariable>viewInfos[6]).type);
-        assert.equal("group in data.groups", (<LoopStart>viewInfos[7]).loopExpr);
-        assert.equal("item in group", (<LoopStart>viewInfos[8]).loopExpr);
+        assert.equal("group in data.groups track by group.id", (<LoopStart>viewInfos[7]).loopExpr);
+        assert.equal("item in group track by $index", (<LoopStart>viewInfos[8]).loopExpr);
         assert.equal("item.name + ' ' + user.wantsData()", (<ParsedVariable>viewInfos[9]).expr);
         assert.equal("any", (<ParsedVariable>viewInfos[9]).type);
         assert.equal("triggerAction('five')", (<ParsedVariable>viewInfos[10]).expr);
@@ -32,5 +32,7 @@ describe("parseView", () => {
         assert.equal("formatNumber", (<FilterExpression>viewInfos[12]).filterName);
         assert.deepEqual(["'hex'"], (<FilterExpression>viewInfos[12]).filterParams);
         assert.ok(viewInfos[13] instanceof LoopEnd);
+        assert.equal("group in data.groups", (<LoopStart>viewInfos[14]).loopExpr);
+        assert.ok(viewInfos[15] instanceof LoopEnd);
     });
 });

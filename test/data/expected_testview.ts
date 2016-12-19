@@ -29,13 +29,19 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
     angular.forEach($scope.data.groups, group => {
         let $index = 0; let $first = true; let $middle=true;
         let $last = true; let $even = true; let $odd = false;
+        let tracker1 = group.id;
         angular.forEach(group, item => {
             let $index = 0; let $first = true; let $middle=true;
             let $last = true; let $even = true; let $odd = false;
+            let tracker2 = $index;
             const ___x6: any = item.name + ' ' + $scope.user.wantsData();
             const ___x7: any = $scope.triggerAction('five');
         });
         f__formatNumber($scope.maxlength, 'hex');
+    });
+    angular.forEach($scope.data.groups, group => {
+        let $index = 0; let $first = true; let $middle=true;
+        let $last = true; let $even = true; let $odd = false;
     });
 }
 }

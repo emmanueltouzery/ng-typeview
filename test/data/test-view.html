@@ -7,13 +7,15 @@
                 <button ng-click="triggerAction('six')" value="{{'CLICK_ME' | translate}}" />
             </div>
             <input type="text" ng-model="data.firstname" maxlength="{{maxlength}}">
-            <div data-ng-repeat="group in data.groups">
-                <div data-ng-repeat="item in group">
+            <div data-ng-repeat="group in data.groups track by group.id">
+                <div data-ng-repeat="item in group track by $index">
                     <input type="text" ng-model="item.name + ' ' + user.wantsData()" ng-change="triggerAction('five')">
                 </div>
                 The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>
-            ng-model="should.not-match"
+            <div data-ng-repeat="group in data.groups">
+                ng-model="should.not-match"
+            </div>
         </p>
     </body>
 </html>
