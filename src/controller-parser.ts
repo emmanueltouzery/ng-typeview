@@ -33,8 +33,23 @@ const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringL
 const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
 
 export interface ControllerViewInfo {
-    readonly controllerName : string;
+    readonly controllerName: string;
     readonly viewPath: string;
+}
+
+export interface ModuleControllerViewInfo {
+    readonly ngModuleName: Maybe<string>;
+    readonly controllerName: string;
+    readonly viewPath: string;
+}
+
+function ctrlViewInfoAddModuleInfo(
+    moduleName: Maybe<string>, ctrlViewInfo: ControllerViewInfo): ModuleControllerViewInfo {
+    return {
+        ngModuleName: moduleName,
+        controllerName: ctrlViewInfo.controllerName,
+        viewPath: ctrlViewInfo.viewPath
+    };
 }
 
 function objectLiteralGetProperty(
@@ -135,7 +150,7 @@ export interface ViewInfo {
     readonly fileName: string;
     readonly ngModuleName: Maybe<string>;
     readonly controllerName: Maybe<string>;
-    readonly controllerViewInfos: ControllerViewInfo[]
+    readonly controllerViewInfos: ModuleControllerViewInfo[]
 }
 
 export interface ControllerViewConnector {
@@ -181,7 +196,8 @@ export function extractCtrlViewConnsAngularModule(
             fileName: fileName,
             ngModuleName: ngModuleName,
             controllerName: controllerName,
-            controllerViewInfos: viewInfos};
+            controllerViewInfos: viewInfos.map(vi => ctrlViewInfoAddModuleInfo(ngModuleName, vi))
+        };
         resolve(result);
     });
 }
