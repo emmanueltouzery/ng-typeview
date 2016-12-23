@@ -3,12 +3,11 @@ import {sync} from "glob";
 import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
 import * as ts from "typescript";
-import {Maybe} from "monet";
 
 import {parseView} from "./view-parser"
 import {defaultDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
-        ViewInfo, ControllerViewConnector, ModuleControllerViewInfo,
+        ViewInfo, ControllerViewConnector, ControllerViewInfo,
         ControllerScopeInfo, ScopeInfo} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
@@ -77,13 +76,11 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
     const viewInfos = await Promise.all(
         files.map(f => extractCtrlViewConnsAngularModule(
             f, prjSettings.path, prjSettings.ctrlViewConnectors)));
-    const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ModuleControllerViewInfo>> =
+    const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
         List(viewInfos)
-        .flatMap<number,ModuleControllerViewInfo>(vi => vi.controllerViewInfos)
+        .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
         .groupBy(cvi => cvi.viewPath);
-    const formatModuleCtrl = (module: Maybe<string>, ctrl: string): string =>
-        module.map(n => n + "/").orSome("") + ctrl;
-    const moduleCtrlNameToFilename =
+    const controllerNameToFilename =
         Map<string,string>(
             viewInfos
                 .filter(vi => vi.controllerName.isSome())
@@ -92,14 +89,13 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
 			          // get twice the same file: original TS & compiled JS.
 			          // => keep only the original TS in that case.
 			          .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
-                .map(vi => [formatModuleCtrl(vi.ngModuleName, vi.controllerName.some()), vi.fileName]));
+                .map(vi => [vi.controllerName.some(), vi.fileName]));
     const viewFilenameToCtrlFilenames =
         viewFilenameToControllerNames
         .mapEntries<string,Iterable<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
                 [viewFname, ctrlViewInfos
-                 .map((cvi: ModuleControllerViewInfo) => moduleCtrlNameToFilename.get(
-                     formatModuleCtrl(cvi.ngModuleName, cvi.controllerName)))
+                 .map((cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))
                  .filter((name:string) => name)]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(

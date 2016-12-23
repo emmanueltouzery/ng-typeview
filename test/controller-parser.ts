@@ -35,27 +35,22 @@ describe("extractModalOpenAngularModule", () => {
         assert.deepEqual([
             {
                 controllerName: "CtrlState1",
-                ngModuleName: Maybe.of("my.ng.module.name"),
                 viewPath: "webapp/app/view/url1.html"
             },
             {
                 controllerName: "CtrlState2",
-                ngModuleName: Maybe.of("my.ng.module.name"),
                 viewPath: "webapp/app/view/url2.html"
             },
             {
                 controllerName: "ControllerName",
-                ngModuleName: Maybe.of("my.ng.module.name"),
                 viewPath: "webapp/test-view.html"
             },
             {
                 controllerName: "AnotherControllerName",
-                ngModuleName: Maybe.of("my.ng.module.name"),
                 viewPath: "webapp/path/to/another/view.html"
             },
             {
                 controllerName: "YupYetAnotherCtrl",
-                ngModuleName: Maybe.of("my.ng.module.name"),
                 viewPath: "webapp/and/yet/another/view.html"
             }], modalModuleInfo.controllerViewInfos);
     });
