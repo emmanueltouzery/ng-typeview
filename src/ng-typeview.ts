@@ -5,8 +5,8 @@ import {parse} from "path";
 import * as ts from "typescript";
 import {Maybe} from "monet";
 
-import {parseView, ParsedExpression, ParsedVariable,
-        LoopStart, LoopEnd, FilterExpression} from "./view-parser"
+import {parseView} from "./view-parser"
+import {defaultDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ModuleControllerViewInfo,
         ControllerScopeInfo, ScopeInfo} from "./controller-parser"
@@ -14,55 +14,12 @@ import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
 
-let i: number = 0;
-
 declare global {
     // tested working on node.
     interface String {
         repeat(c: number): string;
         endsWith(t: string): boolean;
     }
-}
-
-function formatNgRepeat(scopeInfo: ScopeInfo, repeat: LoopStart, indentLevel: number): string {
-    const [lhs, rhs] = repeat.loopExpr.split(" in ");
-    const [enumerable, tracker] = rhs.split(" track by ");
-    return [`angular.forEach(${addScopeAccessors(enumerable, scopeInfo)}, ${lhs} => {`,
-            "let $index = 0; let $first = true; let $middle=true;",
-            "let $last = true; let $even = true; let $odd = false;" +
-            (tracker ? `\n${" ".repeat((indentLevel+1)*4)}let tracker${indentLevel} = ${tracker};` : "")]
-        .map((x,i) => " ".repeat((indentLevel+(i>0?1:0))*4) + x)
-        .join("\n");
-}
-
-function formatViewExpr(scopeInfo: ScopeInfo): (viewExprIndex: [ParsedExpression, number]) => string {
-    return viewExprIndex => {
-        const [viewExpr, indentLevel] = viewExprIndex;
-        const spaces = " ".repeat((1+indentLevel)*4);
-        if (viewExpr instanceof ParsedVariable) {
-            return spaces + "const ___x" + (i++) + ": " + viewExpr.type +
-                " = " + addScopeAccessors(viewExpr.expr, scopeInfo) + ";"
-        } else if (viewExpr instanceof FilterExpression) {
-            const fParams = [addScopeAccessors(viewExpr.filterInput, scopeInfo)]
-                .concat(viewExpr.filterParams).join(", ")
-            return `${spaces}f__${viewExpr.filterName}(${fParams});`;
-        } else if (viewExpr instanceof LoopStart) {
-            return formatNgRepeat(scopeInfo, viewExpr, indentLevel);
-        } else if (viewExpr instanceof LoopEnd) {
-            return spaces + "});";
-        } else {
-            throw `unknown parsed expression type: ${viewExpr}`;
-        }
-    };
-}
-
-function indentChange(expr: ParsedExpression): number {
-    if (expr instanceof LoopStart) {
-        return 1;
-    } else if (expr instanceof LoopEnd) {
-        return -1;
-    }
-    return 0;
 }
 
 // we only repeat the imports, type synonyms and custom interfaces
@@ -85,10 +42,8 @@ async function processControllerView(controllerPath: string, viewPath: string, n
         // no point of writing anything if there is no scope block
         return;
     }
-    const viewExprs = List(await parseView(viewPath));
-    const viewLevels = viewExprs.reduce(
-        (soFar: List<number>, cur: ParsedExpression) =>
-            soFar.push((soFar.last() || 0) + indentChange(cur)), List([]));
+    const addScope = (js: string) => addScopeAccessors(js, scopeContents.scopeInfo.some());
+    const viewExprs = await parseView(viewPath, addScope, defaultDirectiveHandlers);
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -101,7 +56,7 @@ async function processControllerView(controllerPath: string, viewPath: string, n
     writeFileSync(outputFname, moduleWrap(
             scopeContents.scopeInfo.some().contents +
             `\n\nfunction ___f($scope: Scope, ${filterParams}) {\n` +
-            viewExprs.zip(viewLevels).map(formatViewExpr(scopeContents.scopeInfo.some())).join("\n") +
+            viewExprs +
             "\n}\n") + "\n");
 }
 
