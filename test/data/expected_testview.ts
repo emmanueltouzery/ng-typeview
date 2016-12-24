@@ -62,6 +62,17 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
         let $odd = false;
         
     });
+    const ___x10: any = $scope.data;
+    while (1) {
+        let $select = {
+            search:'', selected: $scope.data
+        };
+        const ___x11: any = $select.selected.firstname;
+        
+    }$scope.data.groups.forEach(subtype => {
+        const ___x12: any = subtype.name;
+        
+    });
     
 }
 }

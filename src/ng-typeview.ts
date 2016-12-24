@@ -5,7 +5,7 @@ import {parse} from "path";
 import * as ts from "typescript";
 
 import {parseView} from "./view-parser"
-import {defaultDirectiveHandlers} from "./ng-directives"
+import {defaultAttrDirectiveHandlers, defaultTagDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
         ControllerScopeInfo, ScopeInfo} from "./controller-parser"
@@ -18,6 +18,7 @@ declare global {
     interface String {
         repeat(c: number): string;
         endsWith(t: string): boolean;
+        startsWith(t: string): boolean;
     }
 }
 
@@ -42,7 +43,8 @@ async function processControllerView(controllerPath: string, viewPath: string, n
         return;
     }
     const addScope = (js: string) => addScopeAccessors(js, scopeContents.scopeInfo.some());
-    const viewExprs = await parseView(viewPath, addScope, defaultDirectiveHandlers);
+    const viewExprs = await parseView(
+        viewPath, addScope, defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers);
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller

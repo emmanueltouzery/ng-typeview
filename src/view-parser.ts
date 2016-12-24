@@ -1,11 +1,13 @@
+import {Maybe} from "monet"
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import {List, Stack} from "immutable";
-import {VarType, Attributes, DirectiveHandler} from "./ng-directives"
+import {Iterable, List, Stack} from "immutable";
+import {VarType, AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 
 interface NgLoop {
     readonly xpathDepth: number;
     readonly closeSource: ()=>string;
+    readonly handleAttr?: (attrN:string,attrV:string) => void;
 }
 
 var v: number = 0;
@@ -32,9 +34,21 @@ function extractInlineExpressions(
     return result;
 }
 
+function requireDefined<T>(x:T|undefined): T {
+    if (typeof x === "undefined") {
+        throw "unexpected undefined!";
+    }
+    return x;
+}
+
+function listKeepDefined<T>(l:Iterable<number,T|undefined>): Iterable<number, T> {
+    return l.filter(x => x!==undefined).map(requireDefined);
+}
+
 function getHandler(
     fileName: string, addScopeAccessors: (js:string) => string,
-    directiveHandlers: List<DirectiveHandler>, f: (expr: string) => void): Handler {
+    tagDirectiveHandlers: List<TagDirectiveHandler>,
+    attrDirectiveHandlers: List<AttributeDirectiveHandler>, f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Stack<string>();
     let activeLoops = Stack<NgLoop>();
@@ -43,28 +57,68 @@ function getHandler(
     return {
         onopentag: (name: string, attribs:{[type:string]: string}) => {
             xpath = xpath.unshift(name);
+            const relevantTagHandlers = tagDirectiveHandlers
+                .filter(d => d.forTags.indexOf(name) >= 0);
+            const tagDirectiveResps = relevantTagHandlers
+                .map(handler => handler.handleTag(
+                    name, addScopeAccessors, registerVariable));
+            expressions += listKeepDefined(tagDirectiveResps)
+                .map(x => x.source).join("");
+            const maybeCloseSources = tagDirectiveResps
+                .map(Maybe.fromNull).map(m => m.map(x => x.closeSource));
+
+            // for each relevant tag handler, we already processed the tag itself,
+            // but must now register the loops and process individual attributes.
+            Iterable.Indexed(relevantTagHandlers).zip(maybeCloseSources)
+                .forEach(([tagHandler, closeSrc]:[TagDirectiveHandler, Maybe<()=>string>]) => {
+                    const tagHandleAttr = (attrN:string, attrV:string) => {
+                        const directiveR = tagHandler.handleAttribute(
+                            attrN, attrV, addScopeAccessors, registerVariable);
+                        if (directiveR) {
+                            expressions += directiveR.source;
+                            if (directiveR.closeSource) {
+                                activeLoops = activeLoops.unshift(
+                                    {
+                                        xpathDepth: xpath.size,
+                                        closeSource: directiveR.closeSource
+                                    });
+                            }
+                        }
+                    };
+                    activeLoops = activeLoops.unshift(
+                        {
+                            xpathDepth: xpath.size,
+                            closeSource: closeSrc.orSome(()=>""),
+                            handleAttr: tagHandleAttr
+                        });
+                    for (let attr in attribs) {
+                        tagHandleAttr(attr, attribs[attr]);
+                    }
+                });
         },
         onclosetag: (name: string) => {
             if (xpath.first() !== name) {
                 console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
             }
             xpath = xpath.shift();
-            if (activeLoops.first() && activeLoops.first().xpathDepth === xpath.size) {
+            while (activeLoops.first() && activeLoops.first().xpathDepth >= xpath.size) {
                 expressions += activeLoops.first().closeSource();
                 activeLoops = activeLoops.shift();
             }
         },
         onattribute: (name: string, value: string) => {
-            const directiveResps = directiveHandlers
-                .filter(d => d.forAttributes.attrNames.indexOf(name) >= 0)
-                .map(handler => handler.handleTagAttribute(
-                    name, value, addScopeAccessors, registerVariable));
-            expressions += directiveResps.map(x => x.source).join("");
-            directiveResps
-                .map(x => x.closeSource)
-                .filter(x => x.isSome())
+            activeLoops.forEach(l => l.handleAttr && l.handleAttr(name, value));
+
+            const attrDirectiveResps = listKeepDefined(attrDirectiveHandlers
+                .filter(d => d.forAttributes.indexOf(name) >= 0)
+                .map(handler => handler.handleAttribute(
+                    name, value, addScopeAccessors, registerVariable)));
+            expressions += attrDirectiveResps.map(x => x.source).join("");
+
+            listKeepDefined(attrDirectiveResps
+                            .map(x => x.closeSource))
                 .forEach(closeSrc => activeLoops = activeLoops.unshift(
-                    { xpathDepth: xpath.size, closeSource: closeSrc.some() }));
+                    { xpathDepth: xpath.size, closeSource: closeSrc }));
             expressions += extractInlineExpressions(
                 value, addScopeAccessors, registerVariable);
         },
@@ -122,10 +176,12 @@ function indentSource(src: string): string {
 
 export function parseView(
     fileName: string, addScopeAccessors: (js:string) => string,
-    directiveHandlers: List<DirectiveHandler>) : Promise<string> {
+    tagDirectiveHandlers: List<TagDirectiveHandler>,
+    attrDirectiveHandlers: List<AttributeDirectiveHandler>) : Promise<string> {
     return new Promise((resolve, reject) => {
         const parser = new Parser(getHandler(
-            fileName, addScopeAccessors, directiveHandlers, resolve));
+            fileName, addScopeAccessors,
+            tagDirectiveHandlers, attrDirectiveHandlers, resolve));
         parser.write(readFileSync(fileName).toString());
         parser.done();
     });
