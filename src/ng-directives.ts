@@ -1,7 +1,7 @@
 import {List} from "immutable";
 import {Maybe} from "monet";
 
-export type VarType = "boolean" | "any" | "string";
+export type VarType = "boolean" | "any" | "string" | "number";
 
 export type DirectiveResponse = { source: string, closeSource?: ()=>string };
 
@@ -28,15 +28,28 @@ export interface TagDirectiveHandler {
 const simpleDirectiveResponse: (v:string) => DirectiveResponse = v => ({ source: v});
 
 const boolAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-show", "ng-if", "ng-required"],
+    forAttributes: ["ng-show", "ng-if", "ng-required", "ng-disabled"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
         simpleDirectiveResponse(registerVariable("boolean", val))
 };
 
 const anyAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-click", "ng-model", "ng-change"],
+    forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
+                    "ng-submit", "ng-class", "ng-style"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
         simpleDirectiveResponse(registerVariable("any", val))
+};
+
+const stringAttrHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-include", "ng-src"],
+    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
+        simpleDirectiveResponse(registerVariable("string", val))
+};
+
+const numberAttrHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-maxlength"],
+    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
+        simpleDirectiveResponse(registerVariable("number", val))
 };
 
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
@@ -87,5 +100,8 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
         }
 };
 
-export const defaultAttrDirectiveHandlers = List.of(boolAttrHandler, anyAttrHandler, ngRepeatAttrDirectiveHandler);
-export const defaultTagDirectiveHandlers = List.of(ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler);
+export const defaultAttrDirectiveHandlers = List.of(
+    boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
+    ngRepeatAttrDirectiveHandler);
+export const defaultTagDirectiveHandlers = List.of(
+    ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler);
