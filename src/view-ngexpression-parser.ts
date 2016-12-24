@@ -45,6 +45,11 @@ function stmtAddScopeAccessors(scopeInfo: ScopeInfo) : (node: ts.Node) => string
                 : "";
             return stmtAddScopeAccessors(scopeInfo)(acc.expression) +
                 "["+ argValue + "]";
+        } else if (node.kind === ts.SyntaxKind.ConditionalExpression) {
+            const cond = <ts.ConditionalExpression>node;
+            return stmtAddScopeAccessors(scopeInfo)(cond.condition) + " ? " +
+                stmtAddScopeAccessors(scopeInfo)(cond.whenTrue) + " : " +
+                stmtAddScopeAccessors(scopeInfo)(cond.whenFalse);
         } else if (nodeKindPassthroughList.contains(node.kind)) {
             return node.getText();
         }
