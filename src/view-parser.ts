@@ -52,8 +52,13 @@ function getHandler(
     let expressions: string = "";
     let xpath = Stack<string>();
     let activeLoops = Stack<NgLoop>();
-    const registerVariable:(type:VarType,val:string)=>string = (type,val) =>
-        `const ___x${v++}: ${type} = ${addScopeAccessors(val)};`;
+    const registerVariable:(type:VarType,val:string)=>string = (type,val) => {
+        if (val.length > 0) {
+            return `const ___x${v++}: ${type} = ${addScopeAccessors(val)};`;
+        } else {
+            return ""; // angular tolerates empty attributes and ignores them, for instance ng-submit=""
+        }
+    }
     return {
         onopentag: (name: string, attribs:{[type:string]: string}) => {
             xpath = xpath.unshift(name);

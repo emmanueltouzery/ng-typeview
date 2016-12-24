@@ -50,10 +50,21 @@ function stmtAddScopeAccessors(scopeInfo: ScopeInfo) : (node: ts.Node) => string
             return stmtAddScopeAccessors(scopeInfo)(cond.condition) + " ? " +
                 stmtAddScopeAccessors(scopeInfo)(cond.whenTrue) + " : " +
                 stmtAddScopeAccessors(scopeInfo)(cond.whenFalse);
+        } else if (node.kind === ts.SyntaxKind.Block) {
+            // it's most likely in fact not a block per se, but an object literal.
+            const block = <ts.Block>node;
+            return block.getChildren().map(stmtAddScopeAccessors(scopeInfo)).join("");
+        } else if (node.kind === ts.SyntaxKind.LabeledStatement) {
+            const lStat = <ts.LabeledStatement>node;
+            return lStat.label.text + ": " + stmtAddScopeAccessors(scopeInfo)(lStat.statement);
+        } else if (node.kind === ts.SyntaxKind.SyntaxList) {
+            return node.getChildren().map(stmtAddScopeAccessors(scopeInfo)).join("");
         } else if (nodeKindPassthroughList.contains(node.kind)) {
             return node.getText();
+        } else if (node.kind >= ts.SyntaxKind.FirstToken && node.kind <= ts.SyntaxKind.LastToken) {
+            return ts.tokenToString(node.kind);
         }
-        console.log("Add scope accessors: unhandled node: " + node.kind);
+        console.log("Add scope accessors: unhandled node: " + node.kind + " -- "+ node.getText());
         return node.getText();
     };
 }

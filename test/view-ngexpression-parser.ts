@@ -25,5 +25,7 @@ describe("addScopeAccessors", () => {
                        "fType === 'test' || fType === 'test1'");
         assertScopeAcc("$scope.wasProvidedWorkbook ? '' : 'ng-invalid'",
                        "wasProvidedWorkbook ? '' : 'ng-invalid'");
+        assertScopeAcc('{"internal-tab":true , "internal-active":$scope.idx === 0}',
+                       '{"internal-tab": true, "internal-active": idx === 0}');
     });
 });
