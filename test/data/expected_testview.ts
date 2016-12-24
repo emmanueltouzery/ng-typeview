@@ -69,7 +69,8 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
         };
         const ___x11: any = $select.selected.firstname;
         
-    }$scope.data.groups.forEach(subtype => {
+    }
+    $scope.data.groups.forEach(subtype => {
         const ___x12: any = subtype.name;
         
     });

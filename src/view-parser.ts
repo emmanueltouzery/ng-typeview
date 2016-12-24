@@ -137,10 +137,15 @@ function indentSource(src: string): string {
     let depth: number = 1;
     let inSingleQuotes: boolean = false;
     let inDoubleQuotes: boolean = false;
+    let previousIsEndBlock = false;
     const addCr: ()=>string = () => "\n" + " ".repeat(depth*multiple);
     let result: string = " ".repeat(depth*multiple);
     for (let i:number = 0;i<src.length;i++) {
         const chr = src[i];
+        if (previousIsEndBlock && [';', ')'].indexOf(chr)<0) {
+            result += addCr();
+        }
+        previousIsEndBlock = false;
         if (inSingleQuotes) {
             if (chr === "'") {
                 inSingleQuotes = false;
@@ -166,6 +171,7 @@ function indentSource(src: string): string {
             } else if (chr === '}') {
                 --depth;
                 result +=  addCr() + "}";
+                previousIsEndBlock = true;
             } else {
                 result += chr;
             }
