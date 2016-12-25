@@ -27,5 +27,7 @@
                     {{subtype.name}}
                 </ui-select-choices>
             </ui-select>
+           <select ng-options="item.subItem as item.label for item in data.groups" ng-model="user"></select>
+           <select ng-options="item.subItem for item in data.groups track by item.id" ng-model="user"></select>
     </body>
 </html>

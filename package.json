@@ -12,7 +12,9 @@
     "htmlparser2": "3.9.2",
     "immutable": "https://github.com/facebook/immutable-js/tarball/0155f1c7b2e9c575b2090ff0e5e9093ae1039c87",
     "monet": "https://github.com/cwmyers/monet.js/tarball/dcaadf8b224d9dae0df5fe5267341092b1ce4ae9",
-    "typescript": "2.1.4"
+    "typescript": "2.1.4",
+    "parsimmon": "1.2.0",
+    "@types/parsimmon": "1.0.1"
   },
   "devDependencies": {
     "mocha": "^3.2.0"

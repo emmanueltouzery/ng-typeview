@@ -1,5 +1,6 @@
 import {List} from "immutable";
 import {Maybe} from "monet";
+import * as P from "parsimmon"
 
 export type VarType = "boolean" | "any" | "string" | "number";
 
@@ -66,6 +67,68 @@ const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
         }
 };
 
+// https://docs.angularjs.org/api/ng/directive/ngOptions
+interface NgOptionsData {
+    select?: string;
+    label: string;
+    value: string;
+    array: string;
+    trackexpr?: string;
+}
+
+function parseNgOptions(): P.Parser<NgOptionsData> {
+    return P.takeWhile(c => c !== ' ')
+        .chain(first => parseNgOptionsAs(first).or(parseNgOptionsFor({ label: first})));
+}
+
+function parseNgOptionsAs(select: string): P.Parser<NgOptionsData> {
+    return P.string(" as ")
+        .then(P.takeWhile(c => c !== ' '))
+        .chain(label => parseNgOptionsFor({select :select, label :label}));
+}
+
+function parseNgOptionsFor(expressions: {label:string,select?:string}): P.Parser<NgOptionsData> {
+    return P.string(" for ")
+        .then(P.takeWhile(c => c !== ' ').skip(P.string(" in ")))
+        .chain(value => P.takeWhile(c => c !== ' ')
+               .chain(array => parseNgOptionsTrackBy().atMost(1)
+                      .map(trackBy => {
+                          const r: NgOptionsData = {
+                              select: expressions.select,
+                              label: expressions.label,
+                              value: value,
+                              array: array,
+                              trackexpr: trackBy ? trackBy[0] : undefined
+                          };
+                          return r;
+                      })));
+}
+
+function parseNgOptionsTrackBy(): P.Parser<string> {
+    return P.string(" track by ").then(P.all);
+}
+
+const ngOptions: AttributeDirectiveHandler = {
+    forAttributes: ["ng-options"],
+    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
+        {
+            const ngOptionsData = parseNgOptions().parse(attrValue);
+            if (!ngOptionsData.status) {
+                console.warn("failed parsing a ng-options clause!");
+                console.warn(attrValue);
+                console.warn(ngOptionsData);
+                return {source: ""};
+            }
+            const addVar = (v:any) => (v ? `${registerVariable('any', v)}` : "");
+            const source = `angular.forEach(${addScopeAccessors(ngOptionsData.value.array)}, ${ngOptionsData.value.value} => {` +
+                addVar(ngOptionsData.value.select) +
+                addVar(ngOptionsData.value.label) +
+                addVar(ngOptionsData.value.trackexpr) +
+                "});";
+            return {source: source};
+        }
+};
+
 const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select"],
     handleTag: (tag, addScopeAccessors, registerVariable) =>
@@ -102,6 +165,6 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
 
 export const defaultAttrDirectiveHandlers = List.of(
     boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
-    ngRepeatAttrDirectiveHandler);
+    ngRepeatAttrDirectiveHandler, ngOptions);
 export const defaultTagDirectiveHandlers = List.of(
     ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler);
