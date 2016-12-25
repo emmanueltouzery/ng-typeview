@@ -2,6 +2,8 @@ import {List} from "immutable";
 import {Maybe} from "monet";
 import * as P from "parsimmon"
 
+import {filterExpressionToTypescript} from "./view-ngexpression-parser"
+
 export type VarType = "boolean" | "any" | "string" | "number";
 
 export type DirectiveResponse = { source: string, closeSource?: ()=>string };
@@ -76,8 +78,12 @@ interface NgOptionsData {
     trackexpr?: string;
 }
 
+function simpleFilterExpression() : P.Parser<string> {
+    return P.sepBy(P.takeWhile(c => c !== ' '), P.regex(/\s+\|\s+/)).map(s => s.join(" | "));
+}
+
 function parseNgOptions(): P.Parser<NgOptionsData> {
-    return P.takeWhile(c => c !== ' ')
+    return simpleFilterExpression()
         .chain(first => parseNgOptionsAs(first).or(parseNgOptionsFor({ label: first})));
 }
 
@@ -122,7 +128,8 @@ const ngOptions: AttributeDirectiveHandler = {
             const addVar = (v:any) => (v ? `${registerVariable('any', v)}` : "");
             const source = `angular.forEach(${addScopeAccessors(ngOptionsData.value.array)}, ${ngOptionsData.value.value} => {` +
                 addVar(ngOptionsData.value.select) +
-                addVar(ngOptionsData.value.label) +
+                (ngOptionsData.value.label ? filterExpressionToTypescript(
+                    ngOptionsData.value.label, registerVariable, addScopeAccessors) : "") +
                 addVar(ngOptionsData.value.trackexpr) +
                 "});";
             return {source: source};

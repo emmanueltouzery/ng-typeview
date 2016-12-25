@@ -81,11 +81,11 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
     });
     const ___x15: any = $scope.user;
     angular.forEach($scope.data.groups, item => {
-        const ___x16: any = item.subItem;
-        const ___x17: any = item.id;
+        f__translate(item.subItem);
+        const ___x16: any = item.id;
         
     });
-    const ___x18: any = $scope.user;
+    const ___x17: any = $scope.user;
     
 }
 }

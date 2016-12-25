@@ -3,6 +3,7 @@ import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {Iterable, List, Stack} from "immutable";
 import {VarType, AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
+import {filterExpressionToTypescript} from "./view-ngexpression-parser"
 
 interface NgLoop {
     readonly xpathDepth: number;
@@ -20,16 +21,7 @@ function extractInlineExpressions(
     let result: string = "";
     while (m = re.exec(text)) {
         const expr: string = m[1];
-        if (expr.indexOf("|") < 0) {
-            result += registerVariable("any", m[1]);
-        } else {
-            let [input, filter] = expr.split("|");
-            let [filterName, ...filterParams] = filter.split(":");
-
-            const fParams = [addScopeAccessors(input.trim())]
-                .concat(filterParams.map(x => x.trim())).join(", ")
-            result += `f__${filterName.trim()}(${fParams});`;
-        }
+        result += filterExpressionToTypescript(expr, registerVariable, addScopeAccessors);
     }
     return result;
 }

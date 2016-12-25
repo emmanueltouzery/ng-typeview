@@ -3,6 +3,22 @@ import * as ts from "typescript";
 import {Set} from "immutable";
 
 import {ScopeInfo} from "./controller-parser"
+import {VarType} from "./ng-directives"
+
+export function filterExpressionToTypescript(
+    expr: string, registerVariable:(type:VarType,val:string)=>string,
+    addScAccessors: (x:string)=>string): string {
+    if (expr.indexOf("|") < 0) {
+        return registerVariable("any", expr);
+    } else {
+        let [input, filter] = expr.split("|");
+        let [filterName, ...filterParams] = filter.split(":");
+
+        const fParams = [addScAccessors(input.trim())]
+            .concat(filterParams.map(x => x.trim())).join(", ")
+        return `f__${filterName.trim()}(${fParams});`;
+    }
+}
 
 export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {
     let sourceFile = ts.createSourceFile(
