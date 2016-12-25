@@ -245,13 +245,11 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
-        const r: ControllerScopeInfo = {
+        resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeInfo: intfInfo,
             typeAliases: typeAliases,
             imports: imports,
             nonExportedDeclarations: nonExportedDeclarations
-        };
-        resolve(r);
+        });
     });
 }
