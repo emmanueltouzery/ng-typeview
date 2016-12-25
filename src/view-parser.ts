@@ -181,7 +181,7 @@ export function parseView(
     fileName: string, addScopeAccessors: (js:string) => string,
     tagDirectiveHandlers: List<TagDirectiveHandler>,
     attrDirectiveHandlers: List<AttributeDirectiveHandler>) : Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(
             fileName, addScopeAccessors,
             tagDirectiveHandlers, attrDirectiveHandlers, resolve));

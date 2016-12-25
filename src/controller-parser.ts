@@ -152,7 +152,7 @@ export function extractCtrlViewConnsAngularModule(
     let ngModuleName = Maybe.None<string>();
     let controllerName = Maybe.None<string>();
     let viewInfos:ControllerViewInfo[] = [];
-    return new Promise((resolve, reject) => {
+    return new Promise<ViewInfo>((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.CallExpression) {
                 const viewInfo = parseModalOpen(<ts.CallExpression>node, webappPath);
@@ -177,12 +177,11 @@ export function extractCtrlViewConnsAngularModule(
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);
-        const result: ViewInfo = {
+        resolve({
             fileName: fileName,
             ngModuleName: ngModuleName,
             controllerName: controllerName,
-            controllerViewInfos: viewInfos};
-        resolve(result);
+            controllerViewInfos: viewInfos});
     });
 }
 
@@ -210,7 +209,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    return new Promise((resolve, reject) => {
+    return new Promise<ControllerScopeInfo>((resolve, reject) => {
         let intfInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
@@ -245,13 +244,12 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
-        const r: ControllerScopeInfo = {
+        resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
             scopeInfo: intfInfo,
             typeAliases: typeAliases,
             imports: imports,
             nonExportedDeclarations: nonExportedDeclarations
-        };
-        resolve(r);
+        });
     });
 }
