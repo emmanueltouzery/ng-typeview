@@ -106,7 +106,8 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
 }
 
 export const basicFilters = [new NgFilter("translate", "(key: string) => string"),
-                             new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string")];
+                             new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
+                             new NgFilter("orderBy", "<T, K extends keyof T>(input:T, field: K) => T[]")];
 try {
     processProjectFolder({
         path: process.argv[2],
