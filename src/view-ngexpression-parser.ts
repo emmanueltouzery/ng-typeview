@@ -6,19 +6,60 @@ import * as P from "parsimmon"
 import {ScopeInfo} from "./controller-parser"
 import {VarType} from "./ng-directives"
 
-interface NgFilterExpression {
+export interface NgFilterExpression {
     expression: string;
     filterCalls: NgFilterCall[];
 }
 
-function parseNgFilterExpression(): P.Parser<NgFilterExpression> {
-    return P.takeWhile(c => c !== '|').map(e => e.trim())
-        .chain(expression => P.regex(/\s*\|\s*/).then(parseNgFilterCall()).many()
-               .map(filterCalls => ({expression, filterCalls})))
-        .skip(P.optWhitespace);
+export function keyword(txt: string): P.Parser<string> {
+    return P.whitespace.then(P.string(txt)).skip(P.whitespace);
 }
 
-interface NgFilterCall {
+function parseAtom(): P.Parser<string> {
+    return P.takeWhile(c => [' ', '|'].indexOf(c) < 0);
+}
+
+function parseArithmeticOperator(): P.Parser<string> {
+    return keyword("+").or(keyword("-")).or(keyword("*")).or(keyword("/"));
+}
+
+function parseArithmetic(): P.Parser<string> {
+    return parseString().or(parseAtom())
+        .chain(expr => parseArithmeticOperator()
+               .chain(op => parseString().or(parseAtom())
+                      .map(expr2 => expr + op + expr2)));
+}
+
+function parseTernary(): P.Parser<string> {
+    return parseAtom()
+        .skip(keyword("?"))
+        .chain(expr => parseString().or(parseAtom())
+               .chain(expr2 => keyword(":").then(parseString().or(parseAtom()))
+                      .map(expr3 => expr + " ? " + expr2 + ":" + expr3)));
+}
+
+function parseString(): P.Parser<string> {
+    const str = (sep:string) => P.string(sep)
+        .then(P.noneOf(sep).many())
+        .skip(P.string(sep))
+        .map(s => sep + s.join("") + sep);
+    return str("'").or(str('"'));
+}
+
+function parseExpr() : P.Parser<string> {
+    return parseString()
+        .or(parseArithmetic())
+        .or(parseTernary())
+        .or(parseAtom());
+}
+
+export function parseNgFilterExpression(): P.Parser<NgFilterExpression> {
+    return P.optWhitespace.then(parseExpr())
+        .chain(expression => P.regex(/\s*\|\s*/).then(parseNgFilterCall()).many()
+               .map(filterCalls => ({expression, filterCalls})));
+}
+
+export interface NgFilterCall {
     functionName: string;
     functionParameters: string[];
 }
@@ -49,19 +90,37 @@ function wrapFilterCall(addScAccessors: (x:string)=>string):
 export function filterExpressionToTypescript(
     expr: string, registerVariable:(type:VarType,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
-    const ngFilterExpr = parseNgFilterExpression().parse(expr);
+    const ngFilterExpr = parseNgFilterExpression().skip(P.optWhitespace).parse(expr);
     if (!ngFilterExpr.status) {
         console.warn("Failed parsing filter expression");
         console.warn(expr);
         console.warn(ngFilterExpr);
         return "";
     }
-    if (ngFilterExpr.value.filterCalls.length === 0) {
-        return registerVariable("any", ngFilterExpr.value.expression);
+    return ngFilterExpressionToTypeScriptStandalone(
+        ngFilterExpr.value, registerVariable, addScAccessors);
+}
+
+export function ngFilterExpressionToTypeScriptStandalone(
+    ngFilterExpr: NgFilterExpression, registerVariable:(type:VarType,val:string)=>string,
+    addScAccessors: (x:string)=>string): string {
+    if (ngFilterExpr.filterCalls.length === 0) {
+        return registerVariable("any", ngFilterExpr.expression);
     }
 
-    return ngFilterExpr.value.filterCalls.reduce(
-        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.value.expression)) + ";";
+    return ngFilterExpr.filterCalls.reduce(
+        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression)) + ";";
+}
+
+export function ngFilterExpressionToTypeScriptEmbedded(
+    ngFilterExpr: NgFilterExpression, registerVariable:(type:VarType,val:string)=>string,
+    addScAccessors: (x:string)=>string): string {
+    if (ngFilterExpr.filterCalls.length === 0) {
+        return addScAccessors(ngFilterExpr.expression);
+    }
+
+    return ngFilterExpr.filterCalls.reduce(
+        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression));
 }
 
 export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {

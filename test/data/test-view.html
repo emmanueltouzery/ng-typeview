@@ -11,6 +11,8 @@
             <div data-ng-repeat="group in data.groups track by group.id">
                 <div data-ng-repeat="item in group track by $index">
                     <input type="text" ng-model="item.name + ' ' + user.wantsData()" ng-change="triggerAction('five')">
+                    {{$index + 1}}
+                    {{$first ? "first" : "not first!"}}
                 </div>
                 The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>
@@ -30,7 +32,7 @@
                     {{subtype.name}}
                 </ui-select-choices>
             </ui-select>
-           <select ng-options="item.subItem as item.label for item in data.groups" ng-model="user"></select>
+           <select ng-options="item.subItem as item.label for item in data.groups | orderBy:'labelSort'" ng-model="user"></select>
            <select ng-options="item.subItem | translate for item in data.groups track by item.id" ng-model="user"></select>
     </body>
 </html>

@@ -2,7 +2,9 @@ import {List} from "immutable";
 import {Maybe} from "monet";
 import * as P from "parsimmon"
 
-import {filterExpressionToTypescript} from "./view-ngexpression-parser"
+import {filterExpressionToTypescript, parseNgFilterExpression,
+        NgFilterExpression, ngFilterExpressionToTypeScriptStandalone,
+        ngFilterExpressionToTypeScriptEmbedded, keyword} from "./view-ngexpression-parser"
 
 export type VarType = "boolean" | "any" | "string" | "number";
 
@@ -80,32 +82,28 @@ const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
 
 // https://docs.angularjs.org/api/ng/directive/ngOptions
 interface NgOptionsData {
-    select?: string;
-    label: string;
+    select?: NgFilterExpression;
+    label: NgFilterExpression;
     value: string;
-    array: string;
+    array: NgFilterExpression;
     trackexpr?: string;
 }
 
-function simpleFilterExpression() : P.Parser<string> {
-    return P.sepBy(P.takeWhile(c => c !== ' '), P.regex(/\s+\|\s+/)).map(s => s.join(" | "));
-}
-
 function parseNgOptions(): P.Parser<NgOptionsData> {
-    return simpleFilterExpression()
+    return parseNgFilterExpression()
         .chain(first => parseNgOptionsAs(first).or(parseNgOptionsFor({ label: first})));
 }
 
-function parseNgOptionsAs(select: string): P.Parser<NgOptionsData> {
-    return P.string(" as ")
-        .then(P.takeWhile(c => c !== ' '))
-        .chain(label => parseNgOptionsFor({select :select, label :label}));
+function parseNgOptionsAs(select: NgFilterExpression): P.Parser<NgOptionsData> {
+    return keyword("as")
+        .then(parseNgFilterExpression())
+        .chain(label => parseNgOptionsFor({select, label}));
 }
 
-function parseNgOptionsFor(expressions: {label:string,select?:string}): P.Parser<NgOptionsData> {
-    return P.string(" for ")
-        .then(P.takeWhile(c => c !== ' ').skip(P.string(" in ")))
-        .chain(value => P.takeWhile(c => c !== ' ')
+function parseNgOptionsFor(expressions: {label:NgFilterExpression,select?:NgFilterExpression}): P.Parser<NgOptionsData> {
+    return keyword("for")
+        .then(P.takeWhile(c => c !== ' ').skip(keyword("in")))
+        .chain(value => parseNgFilterExpression()
                .chain(array => parseNgOptionsTrackBy().atMost(1)
                       .map(trackBy => {
                           const r: NgOptionsData = {
@@ -120,7 +118,7 @@ function parseNgOptionsFor(expressions: {label:string,select?:string}): P.Parser
 }
 
 function parseNgOptionsTrackBy(): P.Parser<string> {
-    return P.string(" track by ").then(P.all);
+    return P.regexp(/\s+track\s+by\s+/).then(P.all);
 }
 
 const ngOptions: AttributeDirectiveHandler = {
@@ -134,14 +132,15 @@ const ngOptions: AttributeDirectiveHandler = {
                 console.warn(ngOptionsData);
                 return {source: ""};
             }
-            const addVar = (v:any) => (v ? `${registerVariable('any', v)}` : "");
-            const source = `angular.forEach(${addScopeAccessors(ngOptionsData.value.array)}, ${ngOptionsData.value.value} => {` +
-                addVar(ngOptionsData.value.select) +
-                (ngOptionsData.value.label ? filterExpressionToTypescript(
-                    ngOptionsData.value.label, registerVariable, addScopeAccessors) : "") +
+            const addVar = (v:string|undefined) => (v ? `${registerVariable('any', v)}` : "");
+            const addNgVar = (v:NgFilterExpression|undefined) => (v ? ngFilterExpressionToTypeScriptStandalone(
+                v, registerVariable, addScopeAccessors) : "");
+            const source = `angular.forEach(${ngFilterExpressionToTypeScriptEmbedded(ngOptionsData.value.array, registerVariable, addScopeAccessors)}, ${ngOptionsData.value.value} => {` +
+                addNgVar(ngOptionsData.value.select) +
+                addNgVar(ngOptionsData.value.label) +
                 addVar(ngOptionsData.value.trackexpr) +
                 "});";
-            return {source: source};
+            return {source};
         }
 };
 
