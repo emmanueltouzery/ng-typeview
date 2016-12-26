@@ -55,6 +55,15 @@ const numberAttrHandler: AttributeDirectiveHandler = {
         simpleDirectiveResponse(registerVariable("number", val))
 };
 
+const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-bind", "ng-bind-html"],
+    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
+        {
+            return {source: filterExpressionToTypescript(
+                attrValue, registerVariable, addScopeAccessors)};
+        }
+};
+
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-repeat", "data-ng-repeat"],
     handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
@@ -172,6 +181,7 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
 
 export const defaultAttrDirectiveHandlers = List.of(
     boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
+    ngBindAttrDirectiveHandler,
     ngRepeatAttrDirectiveHandler, ngOptions);
 export const defaultTagDirectiveHandlers = List.of(
     ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler);
