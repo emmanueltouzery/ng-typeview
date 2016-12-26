@@ -18,7 +18,7 @@ function getScopeInfo(iface: ts.InterfaceDeclaration): ScopeInfo {
         .map(m => maybeIdentifier(m.name).map(i => i.text))
         .flatMap(m => m.toList())
         .toArray();
-    return { contents: iface.getText(), fieldNames: fieldNames};
+    return { contents: iface.getText(), fieldNames};
 }
 
 const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
@@ -151,25 +151,25 @@ export function extractCtrlViewConnsAngularModule(
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     let ngModuleName = Maybe.None<string>();
     let controllerName = Maybe.None<string>();
-    let viewInfos:ControllerViewInfo[] = [];
+    let controllerViewInfos:ControllerViewInfo[] = [];
     return new Promise<ViewInfo>((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (node.kind == ts.SyntaxKind.CallExpression) {
                 const viewInfo = parseModalOpen(<ts.CallExpression>node, webappPath);
                 if (viewInfo.isSome()) {
-                    viewInfos.push(viewInfo.some());
+                    controllerViewInfos.push(viewInfo.some());
                 }
             } else if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
                 const linkInfo = parseModuleState(<ts.ObjectLiteralExpression>node, webappPath);
                 if (linkInfo.isSome()) {
-                    viewInfos.push(linkInfo.some());
+                    controllerViewInfos.push(linkInfo.some());
                 }
             } else if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
                 const mCtrlNgModule = parseAngularModule(<ts.ExpressionStatement>node);
                 ngModuleName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[0]);
                 controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
             }
-            viewInfos = viewInfos.concat(
+            controllerViewInfos = controllerViewInfos.concat(
                 List.fromArray(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
                     .flatMap(conn => List.fromArray(conn.getControllerView(node, webappPath)))
@@ -177,11 +177,7 @@ export function extractCtrlViewConnsAngularModule(
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);
-        resolve({
-            fileName: fileName,
-            ngModuleName: ngModuleName,
-            controllerName: controllerName,
-            controllerViewInfos: viewInfos});
+        resolve({fileName, ngModuleName, controllerName, controllerViewInfos});
     });
 }
 
@@ -210,7 +206,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise<ControllerScopeInfo>((resolve, reject) => {
-        let intfInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
+        let scopeInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
         let imports:string[] = [];
@@ -219,7 +215,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
                 if (curIntfInfo.isSome()) {
-                    intfInfo = curIntfInfo;
+                    scopeInfo = curIntfInfo;
                 } else {
                     nonExportedDeclarations.push(node.getText());
                 }
@@ -246,10 +242,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeInfo: intfInfo,
-            typeAliases: typeAliases,
-            imports: imports,
-            nonExportedDeclarations: nonExportedDeclarations
+            scopeInfo, typeAliases, imports, nonExportedDeclarations
         });
     });
 }
