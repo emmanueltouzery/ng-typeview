@@ -25,18 +25,25 @@ interface NgFilterCall {
 
 function parseNgFilterCall(): P.Parser<NgFilterCall> {
     return P.takeWhile(c => [' ', ':'].indexOf(c) < 0).chain(
-        fName => parseNgFilterParam().many()
-            .map(params => ({functionName: fName, functionParameters:params })));
+        functionName => parseNgFilterParam().many()
+            .map(functionParameters => ({functionName, functionParameters})));
 }
 
 function parseNgFilterParam() : P.Parser<string> {
-    return P.regex(/\s*:\s*/).then(P.takeWhile(c => [' ',':'].indexOf(c) < 0));
+    const simpleParam = P.takeWhile(c => [':', '|'].indexOf(c) < 0);
+    const objectLiteralParam = P.string("{")
+        .then(P.takeWhile(c => c !== "}")).skip(P.string("}")).map(s => "{" + s + "}");
+    return P.regex(/\s*:\s*/).then(objectLiteralParam.or(simpleParam));
 }
 
-function wrapFilterCall(soFar: string, ngFilterCall: NgFilterCall): string {
-    const params = ngFilterCall.functionParameters.join(', ');
-    const fnParams = params.length > 0 ? (', ' + params) : '';
-    return `f__${ngFilterCall.functionName}(${soFar}${fnParams})`
+function wrapFilterCall(addScAccessors: (x:string)=>string):
+    (soFar: string, ngFilterCall: NgFilterCall) => string {
+    return (soFar, ngFilterCall) => {
+        const params = ngFilterCall.functionParameters
+            .map(addScAccessors).join(', ');
+        const fnParams = params.length > 0 ? (', ' + params) : '';
+        return `f__${ngFilterCall.functionName}(${soFar}${fnParams})`
+    }
 }
 
 export function filterExpressionToTypescript(
@@ -53,7 +60,8 @@ export function filterExpressionToTypescript(
         return registerVariable("any", ngFilterExpr.value.expression);
     }
 
-    return ngFilterExpr.value.filterCalls.reduce(wrapFilterCall, addScAccessors(ngFilterExpr.value.expression)) + ";";
+    return ngFilterExpr.value.filterCalls.reduce(
+        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.value.expression)) + ";";
 }
 
 export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {

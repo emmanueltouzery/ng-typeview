@@ -18,6 +18,7 @@
                 ng-model="should.not-match"
                 <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>
             </div>
+            <div ng-bind="data.groups | orderBy: 'field' | filter: {field: user}"></div>
             </p>
             <ui-select close-on-select="true" style="width: 200px"
                        class="control-label" ng-model="data" style="width: 300px;">
@@ -25,7 +26,7 @@
                     {{$select.selected.firstname}}
                 </ui-select-match>
                 <ui-select-choices
-                    repeat="subtype in data.groups| orderBy: 'name'">
+                    repeat="subtype in data.groups| orderBy: 'nameAndCountry'">
                     {{subtype.name}}
                 </ui-select-choices>
             </ui-select>

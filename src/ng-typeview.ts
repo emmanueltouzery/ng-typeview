@@ -53,7 +53,7 @@ async function processControllerView(controllerPath: string, viewPath: string, n
     const moduleWrap = (x:string) => scopeContents.tsModuleName
         .map(n => wrapInModule(n, scopeContents, x))
         .orSome(x);
-    const filterParams = ngFilters.map(f => `f__${f.name}:${f.type}`).join(", ");
+    const filterParams = ngFilters.map(f => `f__${f.name}:${f.type}`).join(",\n    ")
     writeFileSync(outputFname, moduleWrap(
             scopeContents.scopeInfo.some().contents +
             `\n\nfunction ___f($scope: Scope, ${filterParams}) {\n` +
@@ -107,7 +107,8 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
 
 export const basicFilters = [new NgFilter("translate", "(key: string) => string"),
                              new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
-                             new NgFilter("orderBy", "<T, K extends keyof T>(input:T, field: K) => T[]")];
+                             new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
+                             new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]")];
 try {
     processProjectFolder({
         path: process.argv[2],

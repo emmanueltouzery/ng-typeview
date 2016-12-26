@@ -1,11 +1,10 @@
 import * as assert from 'assert'
 import {execSync} from 'child_process';
 import {readFileSync} from "fs";
-import {processProjectFolder, NgFilter} from "../src/ng-typeview"
+import {processProjectFolder, NgFilter, basicFilters} from "../src/ng-typeview"
 
-export const filters = [
-    new NgFilter("translate", "(key: string) => string"),
-    new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")];
+export const filters = basicFilters.concat([
+    new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")]);
 
 describe("processProjectFolder", () => {
     it("should generate view test files", async () => {

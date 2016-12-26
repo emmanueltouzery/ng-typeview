@@ -22,7 +22,11 @@ interface Scope extends ng.IScope {
         maxlength: number;
     }
 
-function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
+function ___f($scope: Scope, f__translate:(key: string) => string,
+    f__linky:(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string,
+    f__orderBy:<T, K extends keyof T>(input:T[], field: K) => T[],
+    f__filter:<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[],
+    f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
     const ___x0: boolean = $scope.data.showText['five'].function() === 6;
     const ___x1: boolean = !$scope.user.wantsData();
     const ___x2: boolean = $scope.showDiv;
@@ -63,6 +67,9 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
         let $odd = false;
         f__translate(f__linky(maintenanceTask.instructions, '_blank'));
         
+    });
+    f__filter(f__orderBy($scope.data.groups, 'field'), {
+        field: $scope.user
     });
     const ___x10: any = $scope.data;
     while (1) {
