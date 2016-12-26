@@ -1,23 +1,59 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Set} from "immutable";
+import * as P from "parsimmon"
 
 import {ScopeInfo} from "./controller-parser"
 import {VarType} from "./ng-directives"
 
+interface NgFilterExpression {
+    expression: string;
+    filterCalls: NgFilterCall[];
+}
+
+function parseNgFilterExpression(): P.Parser<NgFilterExpression> {
+    return P.takeWhile(c => c !== '|').map(e => e.trim())
+        .chain(expression => P.regex(/\s*\|\s*/).then(parseNgFilterCall()).many()
+               .map(filterCalls => ({expression, filterCalls})))
+        .skip(P.optWhitespace);
+}
+
+interface NgFilterCall {
+    functionName: string;
+    functionParameters: string[];
+}
+
+function parseNgFilterCall(): P.Parser<NgFilterCall> {
+    return P.takeWhile(c => [' ', ':'].indexOf(c) < 0).chain(
+        fName => parseNgFilterParam().many()
+            .map(params => ({functionName: fName, functionParameters:params })));
+}
+
+function parseNgFilterParam() : P.Parser<string> {
+    return P.regex(/\s*:\s*/).then(P.takeWhile(c => [' ',':'].indexOf(c) < 0));
+}
+
+function wrapFilterCall(soFar: string, ngFilterCall: NgFilterCall): string {
+    const params = ngFilterCall.functionParameters.join(', ');
+    const fnParams = params.length > 0 ? (', ' + params) : '';
+    return `f__${ngFilterCall.functionName}(${soFar}${fnParams})`
+}
+
 export function filterExpressionToTypescript(
     expr: string, registerVariable:(type:VarType,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
-    if (expr.indexOf("|") < 0) {
-        return registerVariable("any", expr);
-    } else {
-        let [input, filter] = expr.split("|");
-        let [filterName, ...filterParams] = filter.split(":");
-
-        const fParams = [addScAccessors(input.trim())]
-            .concat(filterParams.map(x => x.trim())).join(", ")
-        return `f__${filterName.trim()}(${fParams});`;
+    const ngFilterExpr = parseNgFilterExpression().parse(expr);
+    if (!ngFilterExpr.status) {
+        console.warn("Failed parsing filter expression");
+        console.warn(expr);
+        console.warn(ngFilterExpr);
+        return "";
     }
+    if (ngFilterExpr.value.filterCalls.length === 0) {
+        return registerVariable("any", ngFilterExpr.value.expression);
+    }
+
+    return ngFilterExpr.value.filterCalls.reduce(wrapFilterCall, addScAccessors(ngFilterExpr.value.expression)) + ";";
 }
 
 export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {

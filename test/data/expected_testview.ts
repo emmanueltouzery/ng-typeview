@@ -28,6 +28,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
     const ___x2: boolean = $scope.showDiv;
     const ___x3: any = $scope.triggerAction('six');
     f__translate('CLICK_ME');
+    f__translate('CLICK_ME');
     const ___x4: any = $scope.data.firstname;
     const ___x5: any = $scope.maxlength;
     angular.forEach($scope.data.groups, group => {
@@ -60,6 +61,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string, f__formatNumb
         let $last = true;
         let $even = true;
         let $odd = false;
+        f__translate(f__linky(maintenanceTask.instructions, '_blank'));
         
     });
     const ___x10: any = $scope.data;

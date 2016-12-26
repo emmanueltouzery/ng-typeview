@@ -5,6 +5,7 @@
             </table>
             <div ng-if="showDiv">
                 <button ng-click="triggerAction('six')" value="{{'CLICK_ME' | translate}}" />
+                <button value="{{ 'CLICK_ME'|translate }}" />
             </div>
             <input type="text" ng-model="data.firstname" maxlength="{{maxlength}}">
             <div data-ng-repeat="group in data.groups track by group.id">
@@ -15,6 +16,7 @@
             </div>
             <div data-ng-repeat="group in data.groups">
                 ng-model="should.not-match"
+                <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>
             </div>
             </p>
             <ui-select close-on-select="true" style="width: 200px"

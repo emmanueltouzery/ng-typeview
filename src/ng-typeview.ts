@@ -105,7 +105,8 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
                 ctrlName, viewName, prjSettings.ngFilters)).toArray())).toArray());
 }
 
-export const basicFilters = [new NgFilter("translate", "(key: string) => string")];
+export const basicFilters = [new NgFilter("translate", "(key: string) => string"),
+                             new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string")];
 try {
     processProjectFolder({
         path: process.argv[2],
