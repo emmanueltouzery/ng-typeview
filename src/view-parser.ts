@@ -8,7 +8,6 @@ import {filterExpressionToTypescript} from "./view-ngexpression-parser"
 interface NgLoop {
     readonly xpathDepth: number;
     readonly closeSource: ()=>string;
-    readonly handleAttr?: (attrN:string,attrV:string) => void;
 }
 
 var v: number = 0;
@@ -54,70 +53,52 @@ function getHandler(
     return {
         onopentag: (name: string, attribs:{[type:string]: string}) => {
             xpath = xpath.unshift(name);
+
+            // work on tag handlers
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.indexOf(name) >= 0);
-            const tagDirectiveResps = relevantTagHandlers
+            const tagDirectiveResps = listKeepDefined(relevantTagHandlers
                 .map(handler => handler.handleTag(
-                    name, addScopeAccessors, registerVariable));
-            expressions += listKeepDefined(tagDirectiveResps)
+                    name, attribs, addScopeAccessors, registerVariable)));
+            expressions += tagDirectiveResps
                 .map(x => x.source).join("");
-            const maybeCloseSources = tagDirectiveResps
-                .map(Maybe.fromNull).map(m => m.map(x => x.closeSource));
+            tagDirectiveResps
+                .filter(x => x.closeSource !== undefined)
+                .forEach(r => activeLoops = activeLoops.unshift(
+                    {
+                        xpathDepth: xpath.size,
+                        closeSource: requireDefined(r.closeSource)
+                    }));
 
-            // for each relevant tag handler, we already processed the tag itself,
-            // but must now register the loops and process individual attributes.
-            Iterable.Indexed(relevantTagHandlers).zip(maybeCloseSources)
-                .forEach(([tagHandler, closeSrc]:[TagDirectiveHandler, Maybe<()=>string>]) => {
-                    const tagHandleAttr = (attrN:string, attrV:string) => {
-                        const directiveR = tagHandler.handleAttribute(
-                            attrN, attrV, addScopeAccessors, registerVariable);
-                        if (directiveR) {
-                            expressions += directiveR.source;
-                            if (directiveR.closeSource) {
-                                activeLoops = activeLoops.unshift(
-                                    {
-                                        xpathDepth: xpath.size,
-                                        closeSource: directiveR.closeSource
-                                    });
-                            }
-                        }
-                    };
-                    activeLoops = activeLoops.unshift(
-                        {
-                            xpathDepth: xpath.size,
-                            closeSource: closeSrc.orSome(()=>""),
-                            handleAttr: tagHandleAttr
-                        });
-                    for (let attr in attribs) {
-                        tagHandleAttr(attr, attribs[attr]);
-                    }
-                });
+            // work on attribute handlers
+            for (let attrName in attribs) {
+                const attrValue = attribs[attrName];
+
+                const attrDirectiveResps = listKeepDefined(
+                    attrDirectiveHandlers
+                        .filter(d => d.forAttributes.indexOf(attrName) >= 0)
+                        .map(handler => handler.handleAttribute(
+                            attrName, attrValue, addScopeAccessors, registerVariable)));
+                expressions += attrDirectiveResps.map(x => x.source).join("");
+
+                listKeepDefined(attrDirectiveResps
+                                .map(x => x.closeSource))
+                    .forEach(closeSrc => {
+                        activeLoops = activeLoops.unshift(
+                            { xpathDepth: xpath.size, closeSource: closeSrc })});
+                expressions += extractInlineExpressions(
+                    attrValue, addScopeAccessors, registerVariable);
+            }
         },
         onclosetag: (name: string) => {
             if (xpath.first() !== name) {
                 console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
             }
             xpath = xpath.shift();
-            while (activeLoops.first() && activeLoops.first().xpathDepth >= xpath.size) {
+            while (activeLoops.first() && activeLoops.first().xpathDepth > xpath.size) {
                 expressions += activeLoops.first().closeSource();
                 activeLoops = activeLoops.shift();
             }
-        },
-        onattribute: (name: string, value: string) => {
-            activeLoops.forEach(l => l.handleAttr && l.handleAttr(name, value));
-
-            const attrDirectiveResps = listKeepDefined(attrDirectiveHandlers
-                .filter(d => d.forAttributes.indexOf(name) >= 0)
-                .map(handler => handler.handleAttribute(
-                    name, value, addScopeAccessors, registerVariable)));
-            expressions += attrDirectiveResps.map(x => x.source).join("");
-
-            listKeepDefined(attrDirectiveResps
-                            .map(x => x.closeSource))
-                .forEach(closeSrc => activeLoops = activeLoops.unshift(
-                    { xpathDepth: xpath.size, closeSource: closeSrc }));
-            expressions += extractInlineExpressions(
-                value, addScopeAccessors, registerVariable);
         },
         ontext: (text: string) => {
             expressions = expressions.concat(extractInlineExpressions(

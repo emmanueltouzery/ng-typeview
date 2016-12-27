@@ -73,18 +73,18 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     f__filter(f__orderBy($scope.data.groups, 'field'), {
         field: $scope.user
     });
-    const ___x12: any = $scope.data;
     while (1) {
         let $select = {
             search:'', selected: $scope.data
         };
+        const ___x12: any = $scope.data;
         const ___x13: any = $select.selected.firstname;
+        f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
+            const ___x14: any = subtype.name;
+            
+        });
         
     }
-    f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-        const ___x14: any = subtype.name;
-        
-    });
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
         const ___x15: any = item.subItem;
         const ___x16: any = item.label;

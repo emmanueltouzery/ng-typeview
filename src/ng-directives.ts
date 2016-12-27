@@ -22,11 +22,7 @@ export interface AttributeDirectiveHandler {
 export interface TagDirectiveHandler {
     forTags: string[];
     handleTag(
-        tagName: string,
-        addScopeAccessors: (js:string)=>string,
-        registerVariable:(type:VarType,val:string)=>string): DirectiveResponse|undefined;
-    handleAttribute(
-        attrName: string, attrValue: string,
+        tagName: string, attribs:{[type:string]: string},
         addScopeAccessors: (js:string)=>string,
         registerVariable:(type:VarType,val:string)=>string): DirectiveResponse|undefined;
 }
@@ -177,20 +173,25 @@ const ngOptions: AttributeDirectiveHandler = {
 
 const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select"],
-    handleTag: (tag, addScopeAccessors, registerVariable) =>
+    handleTag: (tag, attribs, addScopeAccessors, registerVariable) => {
         // a while just to introduce a new scope.
-        ({source: "while (1) {", closeSource: () => "}"}) ,
-    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
-        {
+        let source = "while (1) {";
+        for (let attrName in attribs){
+            const attrValue = attribs[attrName];
             switch (attrName) {
             case "ng-model":
-                return {source:`let $select = {search:'', selected: ${addScopeAccessors(attrValue)}};`};
+                source += `let $select = {search:'', selected: ${addScopeAccessors(attrValue)}};`;
+                break;
             case "allow-clear":
-                return {source:registerVariable("boolean", attrValue)};
+                source += registerVariable("boolean", attrValue);
+                break;
             case "ui-lock-choice":
-                return {source:registerVariable("any", attrValue)};
+                source += registerVariable("any", attrValue);
+                break;
             }
         }
+        return {source, closeSource: () => "}"}
+    }
 };
 
 interface NgUiSelectChoicesData {
@@ -212,24 +213,24 @@ function parseNgUiSelectChoicesSelect(): P.Parser<NgUiSelectChoicesData> {
 
 const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select-choices"],
-    handleTag: (tag, addScopeAccessors, registerVariable) => undefined,
-    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
-        {
-            if (attrName !== "repeat") {
-                return undefined;
+    handleTag: (tag, attribs, addScopeAccessors, registerVariable) => {
+        for (let attrName in attribs) {
+            if (attrName === "repeat") {
+                const attrValue = attribs[attrName];
+                const selectData = parseNgUiSelectChoicesSelect().parse(attrValue);
+                if (!selectData.status) {
+                    console.warn("failed parsing a ui-select-choices select clause!");
+                    console.warn(attrValue);
+                    console.warn(selectData);
+                    return {source: ""};
+                }
+                const enumerable = ngFilterExpressionToTypeScriptEmbedded(
+                    selectData.value.expression, registerVariable, addScopeAccessors);
+                return {source: `${enumerable}.forEach(${selectData.value.variable} => {`,
+                        closeSource: () => "});"};
             }
-            const selectData = parseNgUiSelectChoicesSelect().parse(attrValue);
-            if (!selectData.status) {
-                console.warn("failed parsing a ui-select-choices select clause!");
-                console.warn(attrValue);
-                console.warn(selectData);
-                return {source: ""};
-            }
-            const enumerable = ngFilterExpressionToTypeScriptEmbedded(
-                selectData.value.expression, registerVariable, addScopeAccessors);
-            return {source: `${enumerable}.forEach(${selectData.value.variable} => {`,
-                    closeSource: () => "});"};
         }
+    }
 };
 
 export const defaultAttrDirectiveHandlers = List.of(
