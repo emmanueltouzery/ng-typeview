@@ -36,6 +36,16 @@ function listKeepDefined<T>(l:Iterable<number,T|undefined>): Iterable<number, T>
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
+// http://stackoverflow.com/a/16184477/516188
+export function normalizeTagAttrName(name: string): string {
+    return name
+        .replace("_", "-")
+        .replace(":", "-")
+        .replace(/^x\-/, "")
+        .replace(/^data\-/, "")
+        .replace(/([A-Z])/g, l => "-" + l.toLowerCase());
+}
+
 function getHandler(
     fileName: string, addScopeAccessors: (js:string) => string,
     tagDirectiveHandlers: List<TagDirectiveHandler>,
@@ -51,7 +61,12 @@ function getHandler(
         }
     }
     return {
-        onopentag: (name: string, attribs:{[type:string]: string}) => {
+        onopentag: (_name: string, _attribs:{[type:string]: string}) => {
+            const name = normalizeTagAttrName(_name);
+            const attribs:{[type:string]: string} = {};
+            for (let k in _attribs) {
+                attribs[normalizeTagAttrName(k)] = _attribs[k];
+            }
             xpath = xpath.unshift(name);
 
             // work on tag handlers

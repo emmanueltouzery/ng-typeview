@@ -84,7 +84,7 @@ function parseNgRepeat(): P.Parser<NgRepeatData> {
 }
 
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-repeat", "data-ng-repeat"],
+    forAttributes: ["ng-repeat"],
     handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
         {
             const ngRepeatData = parseNgRepeat().parse(attrValue);
