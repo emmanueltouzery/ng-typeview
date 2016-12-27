@@ -193,6 +193,23 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
         }
 };
 
+interface NgUiSelectChoicesData {
+    readonly variable: string;
+    readonly expression: NgFilterExpression;
+}
+
+function parseNgUiSelectChoicesSelect(): P.Parser<NgUiSelectChoicesData> {
+    return parseAtom()
+        .chain(variable => keyword("in")
+               .then(parseNgFilterExpression())
+               .map(expression => {
+                   const r: NgUiSelectChoicesData = {
+                       variable, expression
+                   };
+                   return r;
+               }))
+}
+
 const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select-choices"],
     handleTag: (tag, addScopeAccessors, registerVariable) => undefined,
@@ -201,11 +218,17 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
             if (attrName !== "repeat") {
                 return undefined;
             }
-            const [lhs, rhs] = attrValue.split(" in ");
-            const rest = rhs.split("|");
-            // TODO we skip the filters. example:
-            // repeat="subtype in model.subtypes| filter:$select.search | filter: {typeId: auxItem.typeId} | orderBy: 'name'"
-            return {source: `${addScopeAccessors(rest[0].trim())}.forEach(${lhs} => {`, closeSource: () => "});"};
+            const selectData = parseNgUiSelectChoicesSelect().parse(attrValue);
+            if (!selectData.status) {
+                console.warn("failed parsing a ui-select-choices select clause!");
+                console.warn(attrValue);
+                console.warn(selectData);
+                return {source: ""};
+            }
+            const enumerable = ngFilterExpressionToTypeScriptEmbedded(
+                selectData.value.expression, registerVariable, addScopeAccessors);
+            return {source: `${enumerable}.forEach(${selectData.value.variable} => {`,
+                    closeSource: () => "});"};
         }
 };
 

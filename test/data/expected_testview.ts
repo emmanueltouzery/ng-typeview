@@ -81,7 +81,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const ___x13: any = $select.selected.firstname;
         
     }
-    $scope.data.groups.forEach(subtype => {
+    f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
         const ___x14: any = subtype.name;
         
     });
