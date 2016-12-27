@@ -4,7 +4,8 @@ import * as P from "parsimmon"
 
 import {filterExpressionToTypescript, parseNgFilterExpression,
         NgFilterExpression, ngFilterExpressionToTypeScriptStandalone,
-        ngFilterExpressionToTypeScriptEmbedded, keyword} from "./view-ngexpression-parser"
+        ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom
+       } from "./view-ngexpression-parser"
 
 export type VarType = "boolean" | "any" | "string" | "number";
 
@@ -66,27 +67,55 @@ const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
         }
 };
 
+interface NgRepeatData {
+    readonly variable: string;
+    readonly expression: NgFilterExpression;
+    readonly trackingExpression?: string;
+}
+
+function parseNgRepeat(): P.Parser<NgRepeatData> {
+    return parseAtom()
+        .chain(variable => keyword("in")
+               .then(parseNgFilterExpression())
+               .chain(expression => parseNgOptionsTrackBy().atMost(1)
+                      .map(trackBy => {
+                          const r: NgRepeatData = {
+                              variable, expression,
+                              trackingExpression: trackBy ? trackBy[0] : undefined
+                          };
+                          return r;
+                      })))
+}
+
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-repeat", "data-ng-repeat"],
     handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
         {
-            const [lhs, rhs] = attrValue.split(" in ");
-            const [enumerable, tracker] = rhs.split(" track by ");
-            const source =`angular.forEach(${addScopeAccessors(enumerable)}, ${lhs} => {` +
+            const ngRepeatData = parseNgRepeat().parse(attrValue);
+            if (!ngRepeatData.status) {
+                console.warn("failed parsing a ng-repeat clause!");
+                console.warn(attrValue);
+                console.warn(ngRepeatData);
+                return {source: ""};
+            }
+            const enumerable = ngFilterExpressionToTypeScriptEmbedded(
+                ngRepeatData.value.expression, registerVariable, addScopeAccessors);
+            const source =`angular.forEach(${enumerable}, ${ngRepeatData.value.variable} => {` +
                     "let $index = 0;let $first = true;let $middle = true;" +
                     "let $last = true;let $even = true;let $odd = false;" +
-                    (tracker ? `${registerVariable('any', tracker)}` : "");
-            return {source: source, closeSource: () => "});"};
+                (ngRepeatData.value.trackingExpression ?
+                 `${registerVariable('any', ngRepeatData.value.trackingExpression)}` : "");
+            return {source, closeSource: () => "});"};
         }
 };
 
 // https://docs.angularjs.org/api/ng/directive/ngOptions
 interface NgOptionsData {
-    select?: NgFilterExpression;
-    label: NgFilterExpression;
-    value: string;
-    array: NgFilterExpression;
-    trackexpr?: string;
+    readonly select?: NgFilterExpression;
+    readonly label: NgFilterExpression;
+    readonly value: string;
+    readonly array: NgFilterExpression;
+    readonly trackexpr?: string;
 }
 
 function parseNgOptions(): P.Parser<NgOptionsData> {
@@ -135,7 +164,9 @@ const ngOptions: AttributeDirectiveHandler = {
             const addVar = (v:string|undefined) => (v ? `${registerVariable('any', v)}` : "");
             const addNgVar = (v:NgFilterExpression|undefined) => (v ? ngFilterExpressionToTypeScriptStandalone(
                 v, registerVariable, addScopeAccessors) : "");
-            const source = `angular.forEach(${ngFilterExpressionToTypeScriptEmbedded(ngOptionsData.value.array, registerVariable, addScopeAccessors)}, ${ngOptionsData.value.value} => {` +
+            const enumerable = ngFilterExpressionToTypeScriptEmbedded(
+                ngOptionsData.value.array, registerVariable, addScopeAccessors);
+            const source = `angular.forEach(${enumerable}, ${ngOptionsData.value.value} => {` +
                 addNgVar(ngOptionsData.value.select) +
                 addNgVar(ngOptionsData.value.label) +
                 addVar(ngOptionsData.value.trackexpr) +

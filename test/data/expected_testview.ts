@@ -60,7 +60,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         f__formatNumber($scope.maxlength, 'hex');
         
     });
-    angular.forEach($scope.data.groups, group => {
+    angular.forEach(f__orderBy($scope.data.groups, 'field'), group => {
         let $index = 0;
         let $first = true;
         let $middle = true;

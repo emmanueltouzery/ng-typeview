@@ -15,7 +15,7 @@ export function keyword(txt: string): P.Parser<string> {
     return P.whitespace.then(P.string(txt)).skip(P.whitespace);
 }
 
-function parseAtom(): P.Parser<string> {
+export function parseAtom(): P.Parser<string> {
     return P.takeWhile(c => [' ', '|'].indexOf(c) < 0);
 }
 

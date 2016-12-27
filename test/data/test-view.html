@@ -16,7 +16,7 @@
                 </div>
                 The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>
-            <div data-ng-repeat="group in data.groups">
+            <div data-ng-repeat="group in data.groups | orderBy: 'field'">
                 ng-model="should.not-match"
                 <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>
             </div>
