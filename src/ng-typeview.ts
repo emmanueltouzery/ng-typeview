@@ -35,6 +35,10 @@ function wrapInModule(moduleName: string, scopeInfo: ControllerScopeInfo,
         "}\n";
 }
 
+function getViewTestFilename(ctrlFname: string, viewFname: string): string {
+    return `${ctrlFname}_${viewFname}_viewtest.ts`;
+}
+
 async function processControllerView(controllerPath: string, viewPath: string, ngFilters: NgFilter[]) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
@@ -49,7 +53,8 @@ async function processControllerView(controllerPath: string, viewPath: string, n
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
     // may be used for several views.
-    const outputFname = `${pathInfo.dir}/${pathInfo.name}_${viewPathInfo.name}_viewtest.ts`;
+    const outputFname = pathInfo.dir + "/" +
+        getViewTestFilename(pathInfo.name, viewPathInfo.name);
     const moduleWrap = (x:string) => scopeContents.tsModuleName
         .map(n => wrapInModule(n, scopeContents, x))
         .orSome(x);
@@ -73,7 +78,7 @@ export interface ProjectSettings {
 }
 
 function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
-    const files = sync(prjSettings.path + "/**/*_*_viewtest\.ts",
+    const files = sync(prjSettings.path + "/**/" + getViewTestFilename("*", "*"),
                        {nodir:true, ignore: prjSettings.blacklist});
     files.forEach(f => unlinkSync(f));
 }
