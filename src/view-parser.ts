@@ -2,7 +2,7 @@ import {Maybe} from "monet"
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {Iterable, List, Stack} from "immutable";
-import {VarType, AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
+import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript} from "./view-ngexpression-parser"
 
 interface NgLoop {
@@ -14,7 +14,7 @@ var v: number = 0;
 
 function extractInlineExpressions(
     text: string, addScopeAccessors: (x:string) => string,
-    registerVariable:(type:VarType,val:string)=>string): string {
+    registerVariable:(type:string,val:string)=>string): string {
     const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
     let result: string = "";
@@ -53,7 +53,7 @@ function getHandler(
     let expressions: string = "";
     let xpath = Stack<string>();
     let activeLoops = Stack<NgLoop>();
-    const registerVariable:(type:VarType,val:string)=>string = (type,val) => {
+    const registerVariable:(type:string,val:string)=>string = (type,val) => {
         if (val.length > 0) {
             return `const ___x${v++}: ${type} = ${addScopeAccessors(val)};`;
         } else {

@@ -7,8 +7,6 @@ import {filterExpressionToTypescript, parseNgFilterExpression,
         ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom
        } from "./view-ngexpression-parser"
 
-export type VarType = "boolean" | "any" | "string" | "number";
-
 export type DirectiveResponse = { source: string, closeSource?: ()=>string };
 
 export interface AttributeDirectiveHandler {
@@ -16,7 +14,7 @@ export interface AttributeDirectiveHandler {
     handleAttribute(
         attrName: string, attrValue: string,
         addScopeAccessors: (js:string)=>string,
-        registerVariable:(type:VarType,val:string)=>string): DirectiveResponse|undefined;
+        registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
 }
 
 export interface TagDirectiveHandler {
@@ -24,7 +22,7 @@ export interface TagDirectiveHandler {
     handleTag(
         tagName: string, attribs:{[type:string]: string},
         addScopeAccessors: (js:string)=>string,
-        registerVariable:(type:VarType,val:string)=>string): DirectiveResponse|undefined;
+        registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
 }
 
 const simpleDirectiveResponse: (v:string) => DirectiveResponse = v => ({ source: v});
@@ -266,10 +264,10 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
     }
 };
 
-export const defaultAttrDirectiveHandlers = List.of(
-    boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
+export const defaultAttrDirectiveHandlers =
+    [boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
     ngBindAttrDirectiveHandler,
-    ngRepeatAttrDirectiveHandler, ngOptions);
-export const defaultTagDirectiveHandlers = List.of(
-    ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler,
-    ngSwitch, ngSwitchWhen);
+    ngRepeatAttrDirectiveHandler, ngOptions];
+export const defaultTagDirectiveHandlers =
+    [ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler,
+    ngSwitch, ngSwitchWhen];

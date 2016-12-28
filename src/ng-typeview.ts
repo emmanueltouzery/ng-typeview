@@ -5,7 +5,10 @@ import {parse} from "path";
 import * as ts from "typescript";
 
 import {parseView} from "./view-parser"
-import {defaultAttrDirectiveHandlers, defaultTagDirectiveHandlers} from "./ng-directives"
+import {AttributeDirectiveHandler, TagDirectiveHandler,
+        defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
+export {AttributeDirectiveHandler, TagDirectiveHandler,
+        defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
         ControllerScopeInfo, ScopeInfo} from "./controller-parser"
@@ -39,7 +42,10 @@ function getViewTestFilename(ctrlFname: string, viewFname: string): string {
     return `${ctrlFname}_${viewFname}_viewtest.ts`;
 }
 
-async function processControllerView(controllerPath: string, viewPath: string, ngFilters: NgFilter[]) {
+async function processControllerView(
+    controllerPath: string, viewPath: string, ngFilters: NgFilter[],
+    tagDirectives: TagDirectiveHandler[],
+    attributeDirectives: AttributeDirectiveHandler[]) {
     console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
     if (scopeContents.scopeInfo.isNone()) {
@@ -48,7 +54,7 @@ async function processControllerView(controllerPath: string, viewPath: string, n
     }
     const addScope = (js: string) => addScopeAccessors(js, scopeContents.scopeInfo.some());
     const viewExprs = await parseView(
-        viewPath, addScope, defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers);
+        viewPath, addScope, List(tagDirectives), List(attributeDirectives));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -75,6 +81,8 @@ export interface ProjectSettings {
     blacklist: string[];
     ngFilters: NgFilter[];
     ctrlViewConnectors: ControllerViewConnector[];
+    tagDirectives: TagDirectiveHandler[];
+    attributeDirectives: AttributeDirectiveHandler[];
 }
 
 function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
@@ -114,7 +122,9 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(
-                ctrlName, viewName, prjSettings.ngFilters)).toArray())).toArray());
+                ctrlName, viewName, prjSettings.ngFilters,
+                prjSettings.tagDirectives,
+                prjSettings.attributeDirectives)).toArray())).toArray());
 }
 
 export const basicFilters = [
@@ -127,7 +137,9 @@ try {
         path: process.argv[2],
         blacklist: process.argv.slice(3),
         ngFilters: basicFilters,
-        ctrlViewConnectors: []
+        ctrlViewConnectors: [],
+        tagDirectives: defaultTagDirectiveHandlers,
+        attributeDirectives: defaultAttrDirectiveHandlers
     });
 } catch (e) {
     console.log(e);

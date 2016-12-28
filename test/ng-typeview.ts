@@ -2,6 +2,7 @@ import * as assert from 'assert'
 import {execSync} from 'child_process';
 import {readFileSync} from "fs";
 import {processProjectFolder, NgFilter, basicFilters} from "../src/ng-typeview"
+import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
 
 export const filters = basicFilters.concat([
     new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")]);
@@ -13,7 +14,9 @@ describe("processProjectFolder", () => {
             path: "test/data",
             blacklist: [],
             ngFilters :filters,
-            ctrlViewConnectors: []});
+            ctrlViewConnectors: [],
+            tagDirectives: defaultTagDirectiveHandlers,
+            attributeDirectives: defaultAttrDirectiveHandlers});
         const actualContents = readFileSync("test/data/test-ctrl_test-view_viewtest.ts").toString();
         const expectedContents = readFileSync("test/data/expected_testview.ts").toString();
         assert.equal(expectedContents, actualContents);

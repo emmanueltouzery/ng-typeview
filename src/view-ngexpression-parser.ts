@@ -4,7 +4,6 @@ import {Set} from "immutable";
 import * as P from "parsimmon"
 
 import {ScopeInfo} from "./controller-parser"
-import {VarType} from "./ng-directives"
 
 export interface NgFilterExpression {
     expression: string;
@@ -88,7 +87,7 @@ function wrapFilterCall(addScAccessors: (x:string)=>string):
 }
 
 export function filterExpressionToTypescript(
-    expr: string, registerVariable:(type:VarType,val:string)=>string,
+    expr: string, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
     const ngFilterExpr = parseNgFilterExpression().skip(P.optWhitespace).parse(expr);
     if (!ngFilterExpr.status) {
@@ -102,7 +101,7 @@ export function filterExpressionToTypescript(
 }
 
 export function ngFilterExpressionToTypeScriptStandalone(
-    ngFilterExpr: NgFilterExpression, registerVariable:(type:VarType,val:string)=>string,
+    ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
     if (ngFilterExpr.filterCalls.length === 0) {
         return registerVariable("any", ngFilterExpr.expression);
@@ -113,7 +112,7 @@ export function ngFilterExpressionToTypeScriptStandalone(
 }
 
 export function ngFilterExpressionToTypeScriptEmbedded(
-    ngFilterExpr: NgFilterExpression, registerVariable:(type:VarType,val:string)=>string,
+    ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
     if (ngFilterExpr.filterCalls.length === 0) {
         return addScAccessors(ngFilterExpr.expression);
