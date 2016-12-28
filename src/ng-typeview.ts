@@ -1,4 +1,4 @@
-import {writeFileSync, readdirSync, statSync} from "fs";
+import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
 import {sync} from "glob";
 import {Map, List, Seq, Iterable} from "immutable";
 import {parse} from "path";
@@ -72,7 +72,14 @@ export interface ProjectSettings {
     ctrlViewConnectors: ControllerViewConnector[];
 }
 
+function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
+    const files = sync(prjSettings.path + "/**/*_*_viewtest\.ts",
+                       {nodir:true, ignore: prjSettings.blacklist});
+    files.forEach(f => unlinkSync(f));
+}
+
 export async function processProjectFolder(prjSettings: ProjectSettings): Promise<any> {
+    deletePreviouslyGeneratedFiles(prjSettings);
     const files = sync(prjSettings.path + "/**/*.@(js|ts)",
                        {nodir:true, ignore: prjSettings.blacklist});
     const viewInfos = await Promise.all(
@@ -105,10 +112,11 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
                 ctrlName, viewName, prjSettings.ngFilters)).toArray())).toArray());
 }
 
-export const basicFilters = [new NgFilter("translate", "(key: string) => string"),
-                             new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
-                             new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
-                             new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]")];
+export const basicFilters = [
+    new NgFilter("translate", "(key: string) => string"),
+    new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
+    new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
+    new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]")];
 try {
     processProjectFolder({
         path: process.argv[2],
