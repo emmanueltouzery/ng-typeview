@@ -71,7 +71,7 @@ function getHandler(
 
             // work on tag handlers
             const relevantTagHandlers = tagDirectiveHandlers
-                .filter(d => d.forTags.indexOf(name) >= 0);
+                .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers
                 .map(handler => handler.handleTag(
                     name, attribs, addScopeAccessors, registerVariable)));

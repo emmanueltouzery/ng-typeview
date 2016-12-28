@@ -34,5 +34,10 @@
             </ui-select>
            <select ng-options="item.subItem as item.label for item in data.groups | orderBy:'labelSort'" ng-model="user"></select>
            <select ng-options="item.subItem | translate for item in data.groups track by item.id" ng-model="user"></select>
+           <div ng-switch on="showDiv">
+               <div ng-switch-when="data.firstname|maxlength" ng-switch-when-separator="|">Settings Div</div>
+               <div ng-switch-when="user">Home Span</div>
+               <div ng-switch-default>default</div>
+           </div>
     </body>
 </html>

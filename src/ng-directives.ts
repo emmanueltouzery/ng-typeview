@@ -171,6 +171,39 @@ const ngOptions: AttributeDirectiveHandler = {
         }
 };
 
+// ng-switch should work on the attribute level, but the spec requires to read
+// multiple attributes at once... Eg "on"
+const ngSwitch: TagDirectiveHandler = {
+    forTags: [],
+    handleTag: (tag, attribs, addScopeAccessors, registerVariable) =>
+        {
+            if (!attribs.hasOwnProperty('ng-switch')) { return; }
+            const expr = attribs.hasOwnProperty('on') ?
+                attribs['on'] : attribs['ng-switch'];
+            return {
+                source: `switch (${addScopeAccessors(expr)}) {`,
+                closeSource: () => "}"
+            };
+        }
+};
+
+// ng-switch-when should work on the attribute level, but the spec requires to read
+// multiple attributes at once... Eg "ng-switch-when-separator"
+const ngSwitchWhen: TagDirectiveHandler = {
+    forTags: [],
+    handleTag: (tag, attribs, addScopeAccessors, registerVariable) =>
+        {
+            if (!attribs.hasOwnProperty("ng-switch-when")) { return; }
+            if (attribs.hasOwnProperty("ng-switch-when-separator")) {
+                const values = attribs['ng-switch-when'].split(attribs['ng-switch-when-separator']);
+                const source = values.map(addScopeAccessors).map(v => `case ${v}: break;`).join("");
+                return {source};
+            } else {
+                return {source: `case ${addScopeAccessors(attribs['ng-switch-when'])}: break;`};
+            }
+        }
+};
+
 const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select"],
     handleTag: (tag, attribs, addScopeAccessors, registerVariable) => {
@@ -238,4 +271,5 @@ export const defaultAttrDirectiveHandlers = List.of(
     ngBindAttrDirectiveHandler,
     ngRepeatAttrDirectiveHandler, ngOptions);
 export const defaultTagDirectiveHandlers = List.of(
-    ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler);
+    ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler,
+    ngSwitch, ngSwitchWhen);
