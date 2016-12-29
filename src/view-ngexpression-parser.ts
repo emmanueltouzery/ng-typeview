@@ -10,10 +10,16 @@ export interface NgFilterExpression {
     filterCalls: NgFilterCall[];
 }
 
+/**
+ * @hidden
+ */
 export function keyword(txt: string): P.Parser<string> {
     return P.whitespace.then(P.string(txt)).skip(P.whitespace);
 }
 
+/**
+ * @hidden
+ */
 export function parseAtom(): P.Parser<string> {
     return P.takeWhile(c => [' ', '|'].indexOf(c) < 0);
 }

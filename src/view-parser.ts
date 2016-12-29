@@ -36,7 +36,10 @@ function listKeepDefined<T>(l:Iterable<number,T|undefined>): Iterable<number, T>
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
-// http://stackoverflow.com/a/16184477/516188
+/**
+ * http://stackoverflow.com/a/16184477/516188
+ * @hidden
+ */
 export function normalizeTagAttrName(name: string): string {
     return name
         .replace("_", "-")
@@ -173,6 +176,9 @@ function indentSource(src: string): string {
     return result;
 }
 
+/**
+ * @hidden
+ */
 export function parseView(
     fileName: string, addScopeAccessors: (js:string) => string,
     tagDirectiveHandlers: List<TagDirectiveHandler>,

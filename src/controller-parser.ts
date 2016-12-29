@@ -131,6 +131,9 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]
     return Maybe.None<[string,string]>();
 }
 
+/**
+ * @hidden
+ */
 export interface ViewInfo {
     readonly fileName: string;
     readonly ngModuleName: Maybe<string>;
@@ -143,6 +146,9 @@ export interface ControllerViewConnector {
     getControllerView: (call: ts.Node, projectPath: string) => ControllerViewInfo[];
 }
 
+/**
+ * @hidden
+ */
 export function extractCtrlViewConnsAngularModule(
     fileName: string, webappPath: string,
     ctrlViewConnectors: ControllerViewConnector[]): Promise<ViewInfo> {
@@ -181,11 +187,17 @@ export function extractCtrlViewConnsAngularModule(
     });
 }
 
+/**
+ * @hidden
+ */
 export interface ScopeInfo {
     readonly contents: string;
     readonly fieldNames: string[];
 }
 
+/**
+ * @hidden
+ */
 export interface ControllerScopeInfo {
     readonly tsModuleName: Maybe<string>;
     readonly scopeInfo: Maybe<ScopeInfo>;
@@ -201,6 +213,9 @@ function nodeIsExported(node: ts.Node): boolean {
         .isSome();
 }
 
+/**
+ * @hidden
+ */
 export function extractControllerScopeInfo(fileName: string): Promise<ControllerScopeInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),

@@ -7,10 +7,36 @@ import {filterExpressionToTypescript, parseNgFilterExpression,
         ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom
        } from "./view-ngexpression-parser"
 
+/**
+ * When handling an angular directive, you can generate TS source code for
+ * type-safety testing. You can generate two things:
+ * 1. Field `source`: code inserted right now
+ * 2. Field `closeSource`: code that'll be inserted when this tag gets closed.
+ */
 export type DirectiveResponse = { source: string, closeSource?: ()=>string };
 
+/**
+ * Allows to handle a specific angular directive, which is tied to an attribute
+ * (so, not tied to any particular HTML tag). For instance `<ANY ng-repeat>`.
+ */
 export interface AttributeDirectiveHandler {
+    /**
+     * List of attribute names which will trigger this handler. Note that
+     * we use the ng-xxx syntax, and other forms get normalized to this one.
+     */
     forAttributes: string[];
+    /**
+     * handle a certain attribute appearing in the view.
+     * @param attrName The normalized name of the attribute (always in the form ng-xxx)
+     * @param attrValue The value for the attribute
+     * @param addScopeAccessors Add scope accessors to a JS expression. For instance,
+     *     "data.name" will become "$scope.data.name" if the scope
+     *     has a field named 'data'
+     * @param registerVariable Generate a TS expression declaring a variable of
+     *     the type and value that you give. Will automatically call
+     *     `addScopeAccessors` on the value.
+     * @returns The TS source to generate for that attribute, and the closing source if needed.
+     */
     handleAttribute(
         attrName: string, attrValue: string,
         addScopeAccessors: (js:string)=>string,

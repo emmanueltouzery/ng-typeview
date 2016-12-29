@@ -72,16 +72,54 @@ async function processControllerView(
             "\n}\n") + "\n");
 }
 
+/**
+ * An angular filter. They can be registered through the [[ProjectSettings]] setup.
+ * You must give a name, and the type for the filter.
+ * Example:
+ * ```new NgFilter("translate", "(key: string) => string")```
+ */
 export class NgFilter {
+    /**
+     * @param name The name of the angular filter
+     * @param type The type that'll be used to type-check uses of the filter.
+     */
     constructor(public readonly name: string, public readonly type: string) {}
 }
 
 export interface ProjectSettings {
+    /**
+     * The path for the project on disk (root folder)
+     */
     path: string;
+    /**
+     * Folders within the project to exclude from analysis
+     * (for instance external JS libraries, the folder where
+     * your typescript is compiled to javascript, and so on).
+     */
     blacklist: string[];
+    /**
+     * List of angular filters to handle during the analysis.
+     * You can use [[basicFilters]], add to that list, or specify your own.
+     */
     ngFilters: NgFilter[];
+    /**
+     * List of controller-view connectors to use besides the default ones.
+     * By default the app connects controllers and views on disk by parsing
+     * `$modal.open()` calls and module state configuration, but you can add
+     * extra mechanisms.
+     */
     ctrlViewConnectors: ControllerViewConnector[];
+    /**
+     * List of tag-bound angular directives to handle during the analysis.
+     * [[defaultTagDirectiveHandlers]] contains a default list; you can use
+     * that, add to that list, or specify your own.
+     */
     tagDirectives: TagDirectiveHandler[];
+    /**
+     * List of attribute-bound angular directives to handle during the analysis.
+     * [[defaultAttrDirectiveHandlers]] contains a default list; you can use
+     * that, add to that list, or specify your own.
+     */
     attributeDirectives: AttributeDirectiveHandler[];
 }
 
@@ -91,6 +129,12 @@ function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
     files.forEach(f => unlinkSync(f));
 }
 
+/**
+ * Will go through the views and controllers in the project folder and
+ * generate viewtest typescript files to ascertain type-safety of the views.
+ * NOTE: The function returns a promise but is not fully async: a good part of its
+ * runtime is spend running synchronous functions.
+ */
 export async function processProjectFolder(prjSettings: ProjectSettings): Promise<any> {
     deletePreviouslyGeneratedFiles(prjSettings);
     const files = sync(prjSettings.path + "/**/*.@(js|ts)",

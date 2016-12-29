@@ -4,7 +4,7 @@ import {readFileSync} from "fs";
 import {processProjectFolder, NgFilter, basicFilters} from "../src/ng-typeview"
 import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
 
-export const filters = basicFilters.concat([
+const filters = basicFilters.concat([
     new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")]);
 
 describe("processProjectFolder", () => {
