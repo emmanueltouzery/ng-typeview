@@ -1,7 +1,25 @@
 {
   "name": "ng-typeview",
   "version": "0.0.1",
+  "description": "library to enable type-checking of angular views when using typescript",
+  "keywords": [
+    "angularjs",
+    "angular",
+    "typescript"
+  ],
+  "homepage": "https://github.com/emmanueltouzery/ng-typeview",
+  "main": "dist/src/index.js",
+  "typings": "dist/src/index.d.ts",
   "license": "MIT",
+  "author": "Emmanuel Touzery",
+  "contributors": [],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/emmanueltouzery/ng-typeview.git"
+  },
+  "bugs": {
+    "url": "https://github.com/emmanueltouzery/ng-typeview/issues"
+  },
   "dependencies": {
     "@types/es6-promise": "0.0.32",
     "@types/glob": "5.0.30",
