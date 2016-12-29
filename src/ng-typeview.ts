@@ -11,7 +11,7 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
-        ControllerScopeInfo, ScopeInfo} from "./controller-parser"
+        ControllerScopeInfo, ScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
@@ -102,14 +102,13 @@ export interface ProjectSettings {
     blacklistedPaths: string[];
     /**
      * List of angular filters to handle during the analysis.
-     * You can use [[basicFilters]], add to that list, or specify your own.
+     * You can use [[defaultNgFilters]], add to that list, or specify your own.
      */
     ngFilters: NgFilter[];
     /**
-     * List of controller-view connectors to use besides the default ones.
-     * By default the app connects controllers and views on disk by parsing
-     * `$modal.open()` calls and module state configuration, but you can add
-     * extra mechanisms.
+     * List of controller-view connectors to use.
+     * [[defaultCtrlViewConnectors]] contains a default list; you can use
+     * that, add to that list, or specify your own.
      */
     ctrlViewConnectors: ControllerViewConnector[];
     /**
@@ -138,7 +137,7 @@ function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
  * NOTE: The function returns a promise but is not fully async: a good part of its
  * runtime is spend running synchronous functions.
  */
-export async function processProjectFolder(prjSettings: ProjectSettings): Promise<any> {
+export async function processProject(prjSettings: ProjectSettings): Promise<any> {
     deletePreviouslyGeneratedFiles(prjSettings);
     const files = sync(prjSettings.path + "/**/*.@(js|ts)",
                        {nodir:true, ignore: prjSettings.blacklistedPaths});
@@ -186,11 +185,11 @@ export const defaultNgFilters = [
     new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]")];
 
 try {
-    processProjectFolder({
+    processProject({
         path: process.argv[2],
         blacklistedPaths: process.argv.slice(3),
         ngFilters: defaultNgFilters,
-        ctrlViewConnectors: [],
+        ctrlViewConnectors: defaultCtrlViewConnectors,
         tagDirectives: defaultTagDirectiveHandlers,
         attributeDirectives: defaultAttrDirectiveHandlers
     });

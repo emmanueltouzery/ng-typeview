@@ -177,6 +177,26 @@ export interface ControllerViewConnector {
     getControllerView: (node: ts.Node, projectPath: string) => ControllerViewInfo[];
 }
 
+const modalOpenViewConnector : ControllerViewConnector = {
+    interceptAstNode: ts.SyntaxKind.CallExpression,
+    getControllerView: (node, projectPath) =>
+        parseModalOpen(<ts.CallExpression>node, projectPath).toList().toArray()
+};
+
+const moduleStateViewConnector: ControllerViewConnector = {
+    interceptAstNode: ts.SyntaxKind.ObjectLiteralExpression,
+    getControllerView: (node, projectPath) =>
+        parseModuleState(<ts.ObjectLiteralExpression>node, projectPath).toList().toArray()
+};
+
+/**
+ * Default set of [[ControllerViewConnector]] which can recognize connections between
+ * angular controllers and views from the typescript source.
+ * You can give this list in [[ProjectSettings.ctrlViewConnectors]], or you can add
+ * your own or provide your own list entirely.
+ */
+export const defaultCtrlViewConnectors = [modalOpenViewConnector, moduleStateViewConnector];
+
 /**
  * @hidden
  */
@@ -191,17 +211,7 @@ export function extractCtrlViewConnsAngularModule(
     let controllerViewInfos:ControllerViewInfo[] = [];
     return new Promise<ViewInfo>((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
-            if (node.kind == ts.SyntaxKind.CallExpression) {
-                const viewInfo = parseModalOpen(<ts.CallExpression>node, webappPath);
-                if (viewInfo.isSome()) {
-                    controllerViewInfos.push(viewInfo.some());
-                }
-            } else if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
-                const linkInfo = parseModuleState(<ts.ObjectLiteralExpression>node, webappPath);
-                if (linkInfo.isSome()) {
-                    controllerViewInfos.push(linkInfo.some());
-                }
-            } else if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
+            if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
                 const mCtrlNgModule = parseAngularModule(<ts.ExpressionStatement>node);
                 ngModuleName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[0]);
                 controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);

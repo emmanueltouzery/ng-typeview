@@ -2,7 +2,7 @@ import * as assert from 'assert'
 import {Maybe} from "monet";
 import {extractControllerScopeInfo, ControllerScopeInfo,
         extractCtrlViewConnsAngularModule,
-        ControllerViewInfo} from '../src/controller-parser'
+        ControllerViewInfo, defaultCtrlViewConnectors} from '../src/controller-parser'
 import * as ts from "typescript";
 
 const ctrlViewConn = {
@@ -28,7 +28,7 @@ const ctrlViewConn = {
 describe("extractModalOpenAngularModule", () => {
     it("should recognize the statements", async () => {
         const modalModuleInfo = await extractCtrlViewConnsAngularModule(
-            "test/data/test-ctrl.ts", "webapp", [ctrlViewConn]);
+            "test/data/test-ctrl.ts", "webapp", defaultCtrlViewConnectors.concat([ctrlViewConn]));
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
         assert.deepEqual(Maybe.Some("my.ng.module.name"), modalModuleInfo.ngModuleName);
         assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.controllerName);
