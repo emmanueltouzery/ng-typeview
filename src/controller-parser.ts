@@ -32,8 +32,20 @@ const maybeIdentifier = maybeNodeType<ts.Identifier>(ts.SyntaxKind.Identifier);
 const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringLiteral);
 const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
 
+/**
+ * Returned by [[ControllerViewConnector.getControllerView]]
+ * Describes a connection between a controller (TS file)
+ * and a view (HTML file).
+ */
 export interface ControllerViewInfo {
+    /**
+     * Name of an angular controller
+     */
     readonly controllerName : string;
+    /**
+     * Path to an angular view (file name within the project,
+     * NOT absolute path on disk).
+     */
     readonly viewPath: string;
 }
 
@@ -141,9 +153,28 @@ export interface ViewInfo {
     readonly controllerViewInfos: ControllerViewInfo[]
 }
 
+/**
+ * You can register such a connector using [[ProjectSettings.ctrlViewConnectors]].
+ * Will be called when parsing typescript files, allows you to tell ng-typeview
+ * about connections between controllers and views made in your code, for instance
+ * if you wrapped `$modal.open()` through your own helper classes or things like that.
+ * For an example, check `ctrlViewConn` in `test/controller-parser.ts`.
+ */
 export interface ControllerViewConnector {
+    /**
+     * Which AST node you want to be listening for
+     */
     interceptAstNode: ts.SyntaxKind;
-    getControllerView: (call: ts.Node, projectPath: string) => ControllerViewInfo[];
+    /**
+     * When your view connector is registered and we parse a TS file and
+     * ecounter an AST node with the type you specified through [[interceptAstNode]],
+     * this function will be called.
+     * @param node the AST node which matched your specification
+     * @param projectPath the path of the project on disk
+     * @returns the controller-view connections that you detected for this node,
+     *     if any (the empty array if you didn't detect any).
+     */
+    getControllerView: (node: ts.Node, projectPath: string) => ControllerViewInfo[];
 }
 
 /**

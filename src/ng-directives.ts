@@ -21,8 +21,9 @@ export type DirectiveResponse = { source: string, closeSource?: ()=>string };
  */
 export interface AttributeDirectiveHandler {
     /**
-     * List of attribute names which will trigger this handler. Note that
-     * we use the ng-xxx syntax, and other forms get normalized to this one.
+     * List of attribute names which will trigger this handler. You must
+     * use the ng-xxx syntax here (other forms present in your application's
+     * source will get normalized to this syntax, so it'll match).
      */
     forAttributes: string[];
     /**
@@ -43,8 +44,31 @@ export interface AttributeDirectiveHandler {
         registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
 }
 
+/**
+ * Allows to handle a specific angular directive, which tied to a specific
+ * HTML tag. For instance `ui-select`.
+ */
 export interface TagDirectiveHandler {
+    /**
+     * List of tag names which will trigger this handler. You must use the
+     * ng-xxx syntax here (other forms present in your application's source
+     * will get normalized to this syntax, so it'll match).
+     * NOTE: If you return the empty list here, you will be called for every tag.
+     */
     forTags: string[];
+    /**
+     * handle a certain tag appearing in the view.
+     * @param tagName The normalized name of the tag (always in the form ng-xxx)
+     * @param attribs A dictionary object, the keys being the normalized (ng-xxx)
+     *     attribute names, the value the attribute values
+     * @param addScopeAccessors Add scope accessors to a JS expression. For instance,
+     *     "data.name" will become "$scope.data.name" if the scope
+     *     has a field named 'data'
+     * @param registerVariable Generate a TS expression declaring a variable of
+     *     the type and value that you give. Will automatically call
+     *     `addScopeAccessors` on the value.
+     * @returns The TS source to generate for that attribute, and the closing source if needed.
+     */
     handleTag(
         tagName: string, attribs:{[type:string]: string},
         addScopeAccessors: (js:string)=>string,
