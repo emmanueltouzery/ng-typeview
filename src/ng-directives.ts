@@ -314,10 +314,21 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
     }
 };
 
+/**
+ * Set of angular attribute directives supported out of the box. You can give this
+ * list in [[ProjectSettings.attributeDirectives]], or you can add your own or provide
+ * your own list entirely.
+ */
 export const defaultAttrDirectiveHandlers =
     [boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
     ngBindAttrDirectiveHandler,
     ngRepeatAttrDirectiveHandler, ngOptions];
+
+/**
+ * Set of angular tag directives supported out of the box. You can give this
+ * list in [[ProjectSettings.tagDirectives]], or you can add your own or provide
+ * your own list entirely.
+ */
 export const defaultTagDirectiveHandlers =
     [ngUiSelectDirectiveTagHandler, ngUiSelectChoicesTagHandler,
     ngSwitch, ngSwitchWhen];

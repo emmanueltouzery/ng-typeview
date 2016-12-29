@@ -171,11 +171,17 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
                 prjSettings.attributeDirectives)).toArray())).toArray());
 }
 
+/**
+ * Set of angular filters supported out of the box. You can give this list in
+ * [[ProjectSettings.ngFilters]], or you can add your own or provide your own
+ * list entirely.
+ */
 export const basicFilters = [
     new NgFilter("translate", "(key: string) => string"),
     new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
     new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
     new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]")];
+
 try {
     processProjectFolder({
         path: process.argv[2],

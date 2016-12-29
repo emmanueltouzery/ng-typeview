@@ -128,6 +128,9 @@ export function ngFilterExpressionToTypeScriptEmbedded(
         wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression));
 }
 
+/**
+ * @hidden
+ */
 export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {
     let sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
