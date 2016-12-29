@@ -2,3 +2,5 @@ node_modules/
 *.js
 test/data/test-ctrl_test-view_viewtest.ts
 .#*
+apidoc/
+dist/

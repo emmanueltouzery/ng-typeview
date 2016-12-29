@@ -17,9 +17,12 @@
     "@types/parsimmon": "1.0.1"
   },
   "devDependencies": {
-    "mocha": "^3.2.0"
+    "mocha": "^3.2.0",
+    "typedoc": "^0.5.3"
   },
   "scripts": {
-    "test": "tsc && ./node_modules/mocha/bin/mocha"
+    "test": "tsc && ./node_modules/mocha/bin/mocha ./dist/test/*.js",
+    "clean": "rm -Rf ./dist",
+    "docgen": "./node_modules/typedoc/bin/typedoc --mode file --out apidoc --excludePrivate --excludeExternals --excludeNotExported --ignoreCompilerErrors src/index.ts"
   }
 }
