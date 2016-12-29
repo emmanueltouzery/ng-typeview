@@ -1,10 +1,10 @@
 import * as assert from 'assert'
 import {execSync} from 'child_process';
 import {readFileSync} from "fs";
-import {processProjectFolder, NgFilter, basicFilters} from "../src/ng-typeview"
+import {processProjectFolder, NgFilter, defaultNgFilters} from "../src/ng-typeview"
 import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
 
-const filters = basicFilters.concat([
+const filters = defaultNgFilters.concat([
     new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")]);
 
 describe("processProjectFolder", () => {
@@ -12,7 +12,7 @@ describe("processProjectFolder", () => {
         execSync("git clean -xf test/data");
         await processProjectFolder({
             path: "test/data",
-            blacklist: [],
+            blacklistedPaths: [],
             ngFilters :filters,
             ctrlViewConnectors: [],
             tagDirectives: defaultTagDirectiveHandlers,

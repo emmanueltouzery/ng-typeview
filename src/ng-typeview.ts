@@ -99,7 +99,7 @@ export interface ProjectSettings {
      * (for instance external JS libraries, the folder where
      * your typescript is compiled to javascript, and so on).
      */
-    blacklist: string[];
+    blacklistedPaths: string[];
     /**
      * List of angular filters to handle during the analysis.
      * You can use [[basicFilters]], add to that list, or specify your own.
@@ -128,7 +128,7 @@ export interface ProjectSettings {
 
 function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
     const files = sync(prjSettings.path + "/**/" + getViewTestFilename("*", "*"),
-                       {nodir:true, ignore: prjSettings.blacklist});
+                       {nodir:true, ignore: prjSettings.blacklistedPaths});
     files.forEach(f => unlinkSync(f));
 }
 
@@ -141,7 +141,7 @@ function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
 export async function processProjectFolder(prjSettings: ProjectSettings): Promise<any> {
     deletePreviouslyGeneratedFiles(prjSettings);
     const files = sync(prjSettings.path + "/**/*.@(js|ts)",
-                       {nodir:true, ignore: prjSettings.blacklist});
+                       {nodir:true, ignore: prjSettings.blacklistedPaths});
     const viewInfos = await Promise.all(
         files.map(f => extractCtrlViewConnsAngularModule(
             f, prjSettings.path, prjSettings.ctrlViewConnectors)));
@@ -179,7 +179,7 @@ export async function processProjectFolder(prjSettings: ProjectSettings): Promis
  * [[ProjectSettings.ngFilters]], or you can add your own or provide your own
  * list entirely.
  */
-export const basicFilters = [
+export const defaultNgFilters = [
     new NgFilter("translate", "(key: string) => string"),
     new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
     new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
@@ -188,8 +188,8 @@ export const basicFilters = [
 try {
     processProjectFolder({
         path: process.argv[2],
-        blacklist: process.argv.slice(3),
-        ngFilters: basicFilters,
+        blacklistedPaths: process.argv.slice(3),
+        ngFilters: defaultNgFilters,
         ctrlViewConnectors: [],
         tagDirectives: defaultTagDirectiveHandlers,
         attributeDirectives: defaultAttrDirectiveHandlers
