@@ -5,9 +5,39 @@ import * as P from "parsimmon"
 
 import {ScopeInfo} from "./controller-parser"
 
+/**
+ * An angular filter expression. For instance
+ * "data.items | orderBy: 'name'"
+ * For that example, `expression` will contain "data.items"
+ * and `filterCalls` will contain a single filter, "orderBy" with a parameter
+ * of "name".
+ */
 export interface NgFilterExpression {
+    /**
+     * The base expression for the filter expression
+     */
     expression: string;
+    /**
+     * List of the filter calls applied to the base expression.
+     */
     filterCalls: NgFilterCall[];
+}
+
+/**
+ * An angular filter call. For instance "orderBy: 'name'".
+ * For that example, `functionName` will contain "orderBy",
+ * and `functionParameters` will contain a single parameter
+ * of "name".
+ */
+export interface NgFilterCall {
+    /**
+     * The name of the filter function.
+     */
+    functionName: string;
+    /**
+     * List of the function parameters.
+     */
+    functionParameters: string[];
 }
 
 /**
@@ -58,15 +88,16 @@ function parseExpr() : P.Parser<string> {
         .or(parseAtom());
 }
 
+/**
+ * [Parsimmon](https://github.com/jneen/parsimmon) parser for angular filter
+ * expressions. You can then use [[ngFilterExpressionToTypeScriptEmbedded]]
+ * and [[ngFilterExpressionToTypeScriptStandalone]] to operate on the data.
+ * @returns a [Parsimmon](https://github.com/jneen/parsimmon) Parser of [[NgFilterExpression]]
+ */
 export function parseNgFilterExpression(): P.Parser<NgFilterExpression> {
     return P.optWhitespace.then(parseExpr())
         .chain(expression => P.regex(/\s*\|\s*/).then(parseNgFilterCall()).many()
                .map(filterCalls => ({expression, filterCalls})));
-}
-
-export interface NgFilterCall {
-    functionName: string;
-    functionParameters: string[];
 }
 
 function parseNgFilterCall(): P.Parser<NgFilterCall> {
@@ -92,6 +123,19 @@ function wrapFilterCall(addScAccessors: (x:string)=>string):
     }
 }
 
+/**
+ * Convert an angular filter expression to typescript code.
+ * For instance, "data.items | orderBy: 'name'" will become:
+ * "f___orderBy($scope.data.items, 'name');".
+ * Calls [[ngFilterExpressionToTypeScriptStandalone]] under the hood.
+ * @param expr The angular filter expression
+ * @param registerVariable Callback to generate a string containing
+ *     the typescript code to register a variable
+ * @param addScAccessors Callback to generate a string containing the
+ *     typescript code to add scope accessors to an expression
+ * @returns A typescript expression for type-checking the angular filters,
+ *     or the empty string in case of parse error.
+ */
 export function filterExpressionToTypescript(
     expr: string, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
@@ -106,6 +150,18 @@ export function filterExpressionToTypescript(
         ngFilterExpr.value, registerVariable, addScAccessors);
 }
 
+/**
+ * Convert a parsed angular filter expression to typescript code.
+ * For instance, "data.items | orderBy: 'name'" will become:
+ * "f___orderBy($scope.data.items, 'name');".
+ * @param ngFilterExpr The parsed angular filter expression
+ * @param registerVariable Callback to generate a string containing
+ *     the typescript code to register a variable
+ * @param addScAccessors Callback to generate a string containing the
+ *     typescript code to add scope accessors to an expression
+ * @returns A typescript expression for type-checking the angular filters,
+ *     or the empty string in case of parse error.
+ */
 export function ngFilterExpressionToTypeScriptStandalone(
     ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {
@@ -117,6 +173,25 @@ export function ngFilterExpressionToTypeScriptStandalone(
         wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression)) + ";";
 }
 
+/**
+ * Convert a parsed angular filter expression to typescript code.
+ * For instance, "data.items | orderBy: 'name'" will become:
+ * "f___orderBy($scope.data.items, 'name')".
+ * Unlike [[ngFilterExpressionToTypeScriptStandalone]], this version will
+ * generate typescript code to be reused by further code, not to be generated
+ * standalone. For instance:
+ * `ng-options="item.subItem as item.label for item in data.groups | orderBy:'labelSort'"`
+ * In that case we can generate a typescript embeddable expression for:
+ * `data.groups | orderBy:'labelSort'` and then include it in the rest of the
+ * outer expression.
+ * @param ngFilterExpr The parsed angular filter expression
+ * @param registerVariable Callback to generate a string containing
+ *     the typescript code to register a variable
+ * @param addScAccessors Callback to generate a string containing the
+ *     typescript code to add scope accessors to an expression
+ * @returns A typescript expression for type-checking the angular filters,
+ *     or the empty string in case of parse error.
+ */
 export function ngFilterExpressionToTypeScriptEmbedded(
     ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
     addScAccessors: (x:string)=>string): string {

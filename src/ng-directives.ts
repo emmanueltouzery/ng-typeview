@@ -37,6 +37,7 @@ export interface AttributeDirectiveHandler {
      *     the type and value that you give. Will automatically call
      *     `addScopeAccessors` on the value.
      * @returns The TS source to generate for that attribute, and the closing source if needed.
+     *     You can also return `undefined` in case you don't want to handle the attribute.
      */
     handleAttribute(
         attrName: string, attrValue: string,
@@ -68,6 +69,7 @@ export interface TagDirectiveHandler {
      *     the type and value that you give. Will automatically call
      *     `addScopeAccessors` on the value.
      * @returns The TS source to generate for that attribute, and the closing source if needed.
+     *     You can also return `undefined` in case you don't want to handle the tag.
      */
     handleTag(
         tagName: string, attribs:{[type:string]: string},

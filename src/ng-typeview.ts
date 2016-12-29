@@ -86,6 +86,9 @@ export class NgFilter {
     constructor(public readonly name: string, public readonly type: string) {}
 }
 
+/**
+ * Configuration for a ng-typeview project.
+ */
 export interface ProjectSettings {
     /**
      * The path for the project on disk (root folder)
