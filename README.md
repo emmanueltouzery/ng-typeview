@@ -1,4 +1,5 @@
 # ng-typeview
+[![NPM version][npm-image]][npm-url]
 
 ## Purpose
 
@@ -40,13 +41,13 @@ to be executed, only to be used for type-checking.
 In addition you can also define your own directives and filters so they'll get
 extracted from the views & properly converted to typescript code for type-checking.
 
-You can view an example of the operation by looking in the source, in the
+You can view an example of the operation by looking in the ng-typeview source, in the
 `test/data` subfolder, there is a controller, a view, and the expected generated
 typescript code, that can confirm whether the view type-checks or not.
 
 ## API docs
 
-You can see the full API documentation [by clicking here.](http://emmanueltouzery.github.io/ng-typeview/)
+You can see the full API documentation [by clicking here.](http://emmanueltouzery.github.io/ng-typeview/globals.html)
 
 The main entry point is the [processProject](http://emmanueltouzery.github.io/ng-typeview/globals.html#processproject) function.
 You must prepare a [ProjectSettings](http://emmanueltouzery.github.io/ng-typeview/interfaces/projectsettings.html)
@@ -109,3 +110,6 @@ You can also register your directives. There you must generate typescript code
     npm test
 
     npm run-script docgen
+
+[npm-image]: https://img.shields.io/npm/v/ng-typeview.svg?style=flat-square
+[npm-url]: https://www.npmjs.com/package/ng-typeview
