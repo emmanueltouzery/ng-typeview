@@ -8,9 +8,10 @@ are html files with special purpose markers (special tags & annotations) which a
 registered as angular directives and filters, which cooperate with the matching
 controller(s) which are written in javascript.
 
-It is possible to use `typescript` instead of javascript; in that case you get
-type-checking for the controllers and the remaining client-side code, but still
-no type-checking for the views, which are exercised only at runtime.
+It is possible to use `typescript` instead of javascript for angular applications;
+in that case you get type-checking for the controllers and the remaining
+client-side code, but still no type-checking for the views, which are exercised
+only at runtime.
 
 ng-typeview allows to extract the code from the views in new 'viewtest' typescript
 files, which can then get type-checked against the controllers.
@@ -24,10 +25,12 @@ options of an executable.
 
 ng-typeview expects that in the controllers you define an interface for the scope:
 
-    interface Scope extends ng.IScope {
-        modal: {title: string};
-        showTitle: boolean;
-    }
+```typescript
+interface Scope extends ng.IScope {
+    modal: {title: string};
+    showTitle: boolean;
+}
+```
 
 In the matching view, ng-typeview searches for expressions like `{{title}}`,
 or `ng-if='showTitle'`, and similar.
@@ -38,8 +41,9 @@ such as `ng-repeat`, `ng-switch` are also supported. Filters such as
 `myList | orderBy: 'name'` as well. The generated typescript code is not meant
 to be executed, only to be used for type-checking.
 
-In addition you can also define your own directives and filters so they'll get
-extracted from the views & properly converted to typescript code for type-checking.
+In addition you can also let ng-typeview know about your own directives and
+filters so they'll get extracted from the views & properly converted to
+typescript code for type-checking.
 
 You can view an example of the operation by looking in the ng-typeview source, in the
 `test/data` subfolder, there is a controller, a view, and the expected generated
@@ -78,7 +82,7 @@ It must find out that the controller `app/core/user-list-ctrl.ts` matches the vi
 `app/core/user-list-view.html`. ng-typeview makes no assumption on files layout
 or naming conventions (especially since the controller-view connection may not
 be 1:1).
-by default ng-typeview can detect `$modal.open()` calls, which connect controllers and views,
+By default ng-typeview can detect `$modal.open()` calls, which connect controllers and views,
 and also module state declarations.
 You can register new ways of connecting controllers and views, for instance if your
 app wraps these calls through helper functions, preventing ng-typeview from spotting them.
@@ -94,6 +98,7 @@ and parameter types.
 ### ProjectSettings.attributeDirectives & tagDirectives
 You can also register your directives. There you must generate typescript code
 (as string), used to check the type-safety of the expressions found in the views.
+As input you get the contents of tags & attributes from the view.
 
 ## Caveats
 
