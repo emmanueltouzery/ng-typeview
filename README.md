@@ -102,6 +102,8 @@ You can also register your directives. There you must generate typescript code
   for now)
 * incomplete mapping of standard directives & filters (ng-typeview does not support
   all of the syntaxes of `ng-repeat` for instance.. Pull requests welcome :-) )
+* probably incomplete in just about all the aspects, as angular is huge
+* angular1 only
 
 ## Commands
 
