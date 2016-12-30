@@ -40,6 +40,10 @@ to be executed, only to be used for type-checking.
 In addition you can also define your own directives and filters so they'll get
 extracted from the views & properly converted to typescript code for type-checking.
 
+You can view an example of the operation by looking in the source, in the
+`test/data` subfolder, there is a controller, a view, and the expected generated
+typescript code, that can confirm whether the view type-checks or not.
+
 ## API docs
 
 You can see the full API documentation [by clicking here.](http://emmanueltouzery.github.io/ng-typeview/)
