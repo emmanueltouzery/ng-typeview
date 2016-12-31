@@ -102,6 +102,7 @@ As input you get the contents of tags & attributes from the view.
 
 ## Caveats
 
+* was tested only against two projects from a single company for now
 * won't detect scopes with inheritance (the `Scope` in the controller must inherit
   from `ng.IScope`, if you use inheritance with your scopes, ng-typeview won't work,
   for now)
