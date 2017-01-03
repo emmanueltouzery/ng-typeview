@@ -16,6 +16,7 @@ describe("processProject", () => {
             blacklistedPaths: [],
             ngFilters :filters,
             ctrlViewConnectors: defaultCtrlViewConnectors,
+            extraCtrlViewConnections: [],
             tagDirectives: defaultTagDirectiveHandlers,
             attributeDirectives: defaultAttrDirectiveHandlers});
         const actualContents = readFileSync("test/data/test-ctrl_test-view_viewtest.ts").toString();

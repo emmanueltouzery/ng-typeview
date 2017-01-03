@@ -111,6 +111,13 @@ export interface ProjectSettings {
      */
     ctrlViewConnectors: ControllerViewConnector[];
     /**
+     * Hardcoded controller/view connections that'll be added
+     * to the ones which were autodetected through ctrlViewConnectors.
+     * Useful in case it's too hard to parse some connections
+     * from source.
+     */
+    extraCtrlViewConnections: ControllerViewInfo[];
+    /**
      * List of tag-bound angular directives to handle during the analysis.
      * [[defaultTagDirectiveHandlers]] contains a default list; you can use
      * that, add to that list, or specify your own.
@@ -146,6 +153,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
     const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
         List(viewInfos)
         .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
+        .concat(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
         Map<string,string>(
@@ -189,6 +197,7 @@ try {
         blacklistedPaths: process.argv.slice(3),
         ngFilters: defaultNgFilters,
         ctrlViewConnectors: defaultCtrlViewConnectors,
+        extraCtrlViewConnections: [],
         tagDirectives: defaultTagDirectiveHandlers,
         attributeDirectives: defaultAttrDirectiveHandlers
     });
