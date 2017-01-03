@@ -46,7 +46,6 @@ async function processControllerView(
     controllerPath: string, viewPath: string, ngFilters: NgFilter[],
     tagDirectives: TagDirectiveHandler[],
     attributeDirectives: AttributeDirectiveHandler[]) {
-    console.log(`Processing view controller ${controllerPath} ${viewPath}`);
     const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
     if (scopeContents.scopeInfo.isNone()) {
         // no point of writing anything if there is no scope block
