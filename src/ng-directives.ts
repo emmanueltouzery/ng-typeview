@@ -77,31 +77,40 @@ export interface TagDirectiveHandler {
         registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
 }
 
-const simpleDirectiveResponse: (v:string) => DirectiveResponse = v => ({ source: v});
-
 const boolAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-show", "ng-if", "ng-required", "ng-disabled"],
+    forAttributes: ["ng-required", "ng-disabled"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        simpleDirectiveResponse(registerVariable("boolean", val))
+        ({ source: registerVariable("boolean", val) })
+};
+
+// ng-show and ng-if introduce a scope. The reason is flow-control in typescript:
+// if (variable.kind === ...) { /* typescript now knows the kind is X */ }
+const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-show", "ng-if"],
+    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
+        ({
+            source: registerVariable("boolean", val) + `if (${addScopeAccessors(val)}) {`,
+            closeSource: () => "}"
+        })
 };
 
 const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
                     "ng-submit", "ng-class", "ng-style"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        simpleDirectiveResponse(registerVariable("any", val))
+        ({ source: registerVariable("any", val) })
 };
 
 const stringAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-include", "ng-src"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        simpleDirectiveResponse(registerVariable("string", val))
+        ({ source: registerVariable("string", val) })
 };
 
 const numberAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-maxlength"],
     handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        simpleDirectiveResponse(registerVariable("number", val))
+        ({ source: registerVariable("number", val) })
 };
 
 const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
@@ -322,7 +331,8 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
  * your own list entirely.
  */
 export const defaultAttrDirectiveHandlers =
-    [boolAttrHandler, anyAttrHandler, stringAttrHandler, numberAttrHandler,
+    [boolAttrHandler, boolWithScopeAttrHandler,
+     anyAttrHandler, stringAttrHandler, numberAttrHandler,
     ngBindAttrDirectiveHandler,
     ngRepeatAttrDirectiveHandler, ngOptions];
 
