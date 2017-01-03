@@ -6,6 +6,34 @@ import * as P from "parsimmon"
 import {ScopeInfo} from "./controller-parser"
 
 /**
+ * Helper functions to assist with code generation.
+ */
+export interface CodegenHelpers {
+    /**
+     * Add scope accessors to a JS expression. For instance,
+     * "data.name" will become "$scope.data.name" if the scope
+     * has a field named 'data'
+     * @param js the javascript from the angular view
+     * @returns new source with the scope accessors added
+     */
+    addScopeAccessors: (js:string)=>string;
+    /**
+     * Get a new unique variable name
+     * @returns new unique variable name
+     */
+    getNewVariableName: ()=>string;
+    /**
+     * Generate a TS expression declaring a variable of
+     * the type and value that you give. Will automatically call
+     * `addScopeAccessors` on the value.
+     * @param type typescript type for the variable
+     * @param val value for the variable
+     * @returns typescript expression that registers the variable, as string.
+     */
+    registerVariable:(type:string,val:string)=>string;
+}
+
+/**
  * An angular filter expression. For instance
  * "data.items | orderBy: 'name'"
  * For that example, `expression` will contain "data.items"
@@ -129,16 +157,13 @@ function wrapFilterCall(addScAccessors: (x:string)=>string):
  * "f___orderBy($scope.data.items, 'name');".
  * Calls [[ngFilterExpressionToTypeScriptStandalone]] under the hood.
  * @param expr The angular filter expression
- * @param registerVariable Callback to generate a string containing
- *     the typescript code to register a variable
- * @param addScAccessors Callback to generate a string containing the
- *     typescript code to add scope accessors to an expression
+ * @param codegenHelpers Object which contains functions
+ *     to assist with typescript code generation.
  * @returns A typescript expression for type-checking the angular filters,
  *     or the empty string in case of parse error.
  */
 export function filterExpressionToTypescript(
-    expr: string, registerVariable:(type:string,val:string)=>string,
-    addScAccessors: (x:string)=>string): string {
+    expr: string, codegenHelpers: CodegenHelpers): string {
     const ngFilterExpr = parseNgFilterExpression().skip(P.optWhitespace).parse(expr);
     if (!ngFilterExpr.status) {
         console.warn("Failed parsing filter expression");
@@ -147,7 +172,7 @@ export function filterExpressionToTypescript(
         return "";
     }
     return ngFilterExpressionToTypeScriptStandalone(
-        ngFilterExpr.value, registerVariable, addScAccessors);
+        ngFilterExpr.value, codegenHelpers);
 }
 
 /**
@@ -155,22 +180,20 @@ export function filterExpressionToTypescript(
  * For instance, "data.items | orderBy: 'name'" will become:
  * "f___orderBy($scope.data.items, 'name');".
  * @param ngFilterExpr The parsed angular filter expression
- * @param registerVariable Callback to generate a string containing
- *     the typescript code to register a variable
- * @param addScAccessors Callback to generate a string containing the
- *     typescript code to add scope accessors to an expression
+ * @param codegenHelpers Object which contains functions
+ *     to assist with typescript code generation.
  * @returns A typescript expression for type-checking the angular filters,
  *     or the empty string in case of parse error.
  */
 export function ngFilterExpressionToTypeScriptStandalone(
-    ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
-    addScAccessors: (x:string)=>string): string {
+    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelpers): string {
     if (ngFilterExpr.filterCalls.length === 0) {
-        return registerVariable("any", ngFilterExpr.expression);
+        return codegenHelpers.registerVariable("any", ngFilterExpr.expression);
     }
 
     return ngFilterExpr.filterCalls.reduce(
-        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression)) + ";";
+        wrapFilterCall(codegenHelpers.addScopeAccessors),
+        codegenHelpers.addScopeAccessors(ngFilterExpr.expression)) + ";";
 }
 
 /**
@@ -185,22 +208,19 @@ export function ngFilterExpressionToTypeScriptStandalone(
  * `data.groups | orderBy:'labelSort'` and then include it in the rest of the
  * outer expression.
  * @param ngFilterExpr The parsed angular filter expression
- * @param registerVariable Callback to generate a string containing
- *     the typescript code to register a variable
- * @param addScAccessors Callback to generate a string containing the
- *     typescript code to add scope accessors to an expression
+ * @param codegenHelpers Code generation helpers
  * @returns A typescript expression for type-checking the angular filters,
  *     or the empty string in case of parse error.
  */
 export function ngFilterExpressionToTypeScriptEmbedded(
-    ngFilterExpr: NgFilterExpression, registerVariable:(type:string,val:string)=>string,
-    addScAccessors: (x:string)=>string): string {
+    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelpers): string {
     if (ngFilterExpr.filterCalls.length === 0) {
-        return addScAccessors(ngFilterExpr.expression);
+        return codegenHelpers.addScopeAccessors(ngFilterExpr.expression);
     }
 
     return ngFilterExpr.filterCalls.reduce(
-        wrapFilterCall(addScAccessors), addScAccessors(ngFilterExpr.expression));
+        wrapFilterCall(codegenHelpers.addScopeAccessors),
+        codegenHelpers.addScopeAccessors(ngFilterExpr.expression));
 }
 
 /**

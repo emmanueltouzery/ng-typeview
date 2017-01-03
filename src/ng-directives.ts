@@ -4,7 +4,8 @@ import * as P from "parsimmon"
 
 import {filterExpressionToTypescript, parseNgFilterExpression,
         NgFilterExpression, ngFilterExpressionToTypeScriptStandalone,
-        ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom
+        ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom,
+        CodegenHelpers
        } from "./view-ngexpression-parser"
 
 /**
@@ -30,19 +31,14 @@ export interface AttributeDirectiveHandler {
      * handle a certain attribute appearing in the view.
      * @param attrName The normalized name of the attribute (always in the form ng-xxx)
      * @param attrValue The value for the attribute
-     * @param addScopeAccessors Add scope accessors to a JS expression. For instance,
-     *     "data.name" will become "$scope.data.name" if the scope
-     *     has a field named 'data'
-     * @param registerVariable Generate a TS expression declaring a variable of
-     *     the type and value that you give. Will automatically call
-     *     `addScopeAccessors` on the value.
+     * @param codegenHelpers Object containing helper functions
+     *     to assist with typescript code generation
      * @returns The TS source to generate for that attribute, and the closing source if needed.
      *     You can also return `undefined` in case you don't want to handle the attribute.
      */
     handleAttribute(
         attrName: string, attrValue: string,
-        addScopeAccessors: (js:string)=>string,
-        registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
+        codegenHelpers: CodegenHelpers): DirectiveResponse|undefined;
 }
 
 /**
@@ -62,34 +58,30 @@ export interface TagDirectiveHandler {
      * @param tagName The normalized name of the tag (always in the form ng-xxx)
      * @param attribs A dictionary object, the keys being the normalized (ng-xxx)
      *     attribute names, the value the attribute values
-     * @param addScopeAccessors Add scope accessors to a JS expression. For instance,
-     *     "data.name" will become "$scope.data.name" if the scope
-     *     has a field named 'data'
-     * @param registerVariable Generate a TS expression declaring a variable of
-     *     the type and value that you give. Will automatically call
-     *     `addScopeAccessors` on the value.
+     * @param codegenHelpers Object containing helper functions
+     *     to assist with typescript code generation
      * @returns The TS source to generate for that attribute, and the closing source if needed.
      *     You can also return `undefined` in case you don't want to handle the tag.
      */
     handleTag(
         tagName: string, attribs:{[type:string]: string},
-        addScopeAccessors: (js:string)=>string,
-        registerVariable:(type:string,val:string)=>string): DirectiveResponse|undefined;
+        codegenHelpers: CodegenHelpers): DirectiveResponse|undefined;
 }
 
 const boolAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-required", "ng-disabled"],
-    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        ({ source: registerVariable("boolean", val) })
+    handleAttribute: (attrName, val, codegenHelpers) =>
+        ({ source: codegenHelpers.registerVariable("boolean", val) })
 };
 
 // ng-show and ng-if introduce a scope. The reason is flow-control in typescript:
 // if (variable.kind === ...) { /* typescript now knows the kind is X */ }
 const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-show", "ng-if"],
-    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
+    handleAttribute: (attrName, val, codegenHelpers) =>
         ({
-            source: registerVariable("boolean", val) + `if (${addScopeAccessors(val)}) {`,
+            source: codegenHelpers.registerVariable("boolean", val) +
+                `if (${codegenHelpers.addScopeAccessors(val)}) {`,
             closeSource: () => "}"
         })
 };
@@ -97,28 +89,27 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
 const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
                     "ng-submit", "ng-class", "ng-style"],
-    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        ({ source: registerVariable("any", val) })
+    handleAttribute: (attrName, val, codegenHelpers) =>
+        ({ source: codegenHelpers.registerVariable("any", val) })
 };
 
 const stringAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-include", "ng-src"],
-    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        ({ source: registerVariable("string", val) })
+    handleAttribute: (attrName, val, codegenHelpers) =>
+        ({ source: codegenHelpers.registerVariable("string", val) })
 };
 
 const numberAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-maxlength"],
-    handleAttribute: (attrName, val, addScopeAccessors, registerVariable) =>
-        ({ source: registerVariable("number", val) })
+    handleAttribute: (attrName, val, codegenHelpers) =>
+        ({ source: codegenHelpers.registerVariable("number", val) })
 };
 
 const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-bind", "ng-bind-html"],
-    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
+    handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
-            return {source: filterExpressionToTypescript(
-                attrValue, registerVariable, addScopeAccessors)};
+            return {source: filterExpressionToTypescript(attrValue, codegenHelpers)};
         }
 };
 
@@ -144,7 +135,7 @@ function parseNgRepeat(): P.Parser<NgRepeatData> {
 
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-repeat"],
-    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
+    handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
             const ngRepeatData = parseNgRepeat().parse(attrValue);
             if (!ngRepeatData.status) {
@@ -154,12 +145,12 @@ const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
                 return {source: ""};
             }
             const enumerable = ngFilterExpressionToTypeScriptEmbedded(
-                ngRepeatData.value.expression, registerVariable, addScopeAccessors);
+                ngRepeatData.value.expression, codegenHelpers);
             const source =`angular.forEach(${enumerable}, ${ngRepeatData.value.variable} => {` +
                     "let $index = 0;let $first = true;let $middle = true;" +
                     "let $last = true;let $even = true;let $odd = false;" +
                 (ngRepeatData.value.trackingExpression ?
-                 `${registerVariable('any', ngRepeatData.value.trackingExpression)}` : "");
+                 `${codegenHelpers.registerVariable('any', ngRepeatData.value.trackingExpression)}` : "");
             return {source, closeSource: () => "});"};
         }
 };
@@ -207,7 +198,7 @@ function parseNgOptionsTrackBy(): P.Parser<string> {
 
 const ngOptions: AttributeDirectiveHandler = {
     forAttributes: ["ng-options"],
-    handleAttribute: (attrName, attrValue, addScopeAccessors, registerVariable) =>
+    handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
             const ngOptionsData = parseNgOptions().parse(attrValue);
             if (!ngOptionsData.status) {
@@ -216,11 +207,11 @@ const ngOptions: AttributeDirectiveHandler = {
                 console.warn(ngOptionsData);
                 return {source: ""};
             }
-            const addVar = (v:string|undefined) => (v ? `${registerVariable('any', v)}` : "");
-            const addNgVar = (v:NgFilterExpression|undefined) => (v ? ngFilterExpressionToTypeScriptStandalone(
-                v, registerVariable, addScopeAccessors) : "");
+            const addVar = (v:string|undefined) => (v ? `${codegenHelpers.registerVariable('any', v)}` : "");
+            const addNgVar = (v:NgFilterExpression|undefined) =>
+                (v ? ngFilterExpressionToTypeScriptStandalone(v, codegenHelpers) : "");
             const enumerable = ngFilterExpressionToTypeScriptEmbedded(
-                ngOptionsData.value.array, registerVariable, addScopeAccessors);
+                ngOptionsData.value.array, codegenHelpers);
             const source = `angular.forEach(${enumerable}, ${ngOptionsData.value.value} => {` +
                 addNgVar(ngOptionsData.value.select) +
                 addNgVar(ngOptionsData.value.label) +
@@ -234,13 +225,13 @@ const ngOptions: AttributeDirectiveHandler = {
 // multiple attributes at once... Eg "on"
 const ngSwitch: TagDirectiveHandler = {
     forTags: [],
-    handleTag: (tag, attribs, addScopeAccessors, registerVariable) =>
+    handleTag: (tag, attribs, codegenHelpers) =>
         {
             if (!attribs.hasOwnProperty('ng-switch')) { return; }
             const expr = attribs.hasOwnProperty('on') ?
                 attribs['on'] : attribs['ng-switch'];
             return {
-                source: `switch (${addScopeAccessors(expr)}) {`,
+                source: `switch (${codegenHelpers.addScopeAccessors(expr)}) {`,
                 closeSource: () => "}"
             };
         }
@@ -250,35 +241,35 @@ const ngSwitch: TagDirectiveHandler = {
 // multiple attributes at once... Eg "ng-switch-when-separator"
 const ngSwitchWhen: TagDirectiveHandler = {
     forTags: [],
-    handleTag: (tag, attribs, addScopeAccessors, registerVariable) =>
+    handleTag: (tag, attribs, codegenHelpers) =>
         {
             if (!attribs.hasOwnProperty("ng-switch-when")) { return; }
             if (attribs.hasOwnProperty("ng-switch-when-separator")) {
                 const values = attribs['ng-switch-when'].split(attribs['ng-switch-when-separator']);
-                const source = values.map(addScopeAccessors).map(v => `case ${v}: break;`).join("");
+                const source = values.map(codegenHelpers.addScopeAccessors).map(v => `case ${v}: break;`).join("");
                 return {source};
             } else {
-                return {source: `case ${addScopeAccessors(attribs['ng-switch-when'])}: break;`};
+                return {source: `case ${codegenHelpers.addScopeAccessors(attribs['ng-switch-when'])}: break;`};
             }
         }
 };
 
 const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select"],
-    handleTag: (tag, attribs, addScopeAccessors, registerVariable) => {
+    handleTag: (tag, attribs, codegenHelpers) => {
         // a while just to introduce a new scope.
         let source = "while (1) {";
         for (let attrName in attribs){
             const attrValue = attribs[attrName];
             switch (attrName) {
             case "ng-model":
-                source += `let $select = {search:'', selected: ${addScopeAccessors(attrValue)}};`;
+                source += `let $select = {search:'', selected: ${codegenHelpers.addScopeAccessors(attrValue)}};`;
                 break;
             case "allow-clear":
-                source += registerVariable("boolean", attrValue);
+                source += codegenHelpers.registerVariable("boolean", attrValue);
                 break;
             case "ui-lock-choice":
-                source += registerVariable("any", attrValue);
+                source += codegenHelpers.registerVariable("any", attrValue);
                 break;
             }
         }
@@ -305,7 +296,7 @@ function parseNgUiSelectChoicesSelect(): P.Parser<NgUiSelectChoicesData> {
 
 const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
     forTags: ["ui-select-choices"],
-    handleTag: (tag, attribs, addScopeAccessors, registerVariable) => {
+    handleTag: (tag, attribs, codegenHelpers) => {
         for (let attrName in attribs) {
             if (attrName === "repeat") {
                 const attrValue = attribs[attrName];
@@ -317,7 +308,7 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                     return {source: ""};
                 }
                 const enumerable = ngFilterExpressionToTypeScriptEmbedded(
-                    selectData.value.expression, registerVariable, addScopeAccessors);
+                    selectData.value.expression, codegenHelpers);
                 return {source: `${enumerable}.forEach(${selectData.value.variable} => {`,
                         closeSource: () => "});"};
             }
