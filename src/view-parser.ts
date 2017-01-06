@@ -3,17 +3,21 @@ import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
 import {Iterable, List, Stack} from "immutable";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
-import {filterExpressionToTypescript, CodegenHelpers} from "./view-ngexpression-parser"
+import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
 
-interface NgLoop {
+/**
+ * @hidden
+ */
+export interface NgScope {
     readonly xpathDepth: number;
     readonly closeSource: ()=>string;
+    readonly variables: string[];
 }
 
 var v: number = 0;
 
 function extractInlineExpressions(
-    text: string, codegenHelpers: CodegenHelpers): string {
+    text: string, codegenHelpers: CodegenHelper): string {
     const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
     let result: string = "";
@@ -48,26 +52,28 @@ export function normalizeTagAttrName(name: string): string {
         .replace(/([A-Z])/g, l => "-" + l.toLowerCase());
 }
 
+function handleDirectiveResponses(xpath: Stack<string>,
+                                  codegenHelpers: CodegenHelper,
+                                  resps: Iterable<number,DirectiveResponse>)
+                                  : Iterable<number,NgScope> {
+    return resps
+        .filter(x => x.closeSource !== undefined ||
+                codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
+        .map(r => (
+            {
+                xpathDepth: xpath.size,
+                closeSource: r.closeSource || (() => ""),
+                variables: codegenHelpers.ngScopeInfo.curScopeVars
+            }));
+}
+
 function getHandler(
-    fileName: string, addScopeAccessors: (js:string) => string,
-    tagDirectiveHandlers: List<TagDirectiveHandler>,
+    fileName: string, tagDirectiveHandlers: List<TagDirectiveHandler>,
     attrDirectiveHandlers: List<AttributeDirectiveHandler>, f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Stack<string>();
-    let activeLoops = Stack<NgLoop>();
+    let activeScopes = Stack<NgScope>();
     const getNewVariableName = () => `___x${v++}`;
-    const registerVariable:(type:string,val:string)=>string = (type,val) => {
-        if (val.length > 0) {
-            return `const ${getNewVariableName()}: ${type} = ${addScopeAccessors(val)};`;
-        } else {
-            return ""; // angular tolerates empty attributes and ignores them, for instance ng-submit=""
-        }
-    }
-    const codegenHelpers: CodegenHelpers = {
-        registerVariable,
-        addScopeAccessors,
-        getNewVariableName
-    };
     return {
         onopentag: (_name: string, _attribs:{[type:string]: string}) => {
             const name = normalizeTagAttrName(_name);
@@ -78,39 +84,29 @@ function getHandler(
             xpath = xpath.unshift(name);
 
             // work on tag handlers
+            const codegenHelpersTag = new CodegenHelper(activeScopes, getNewVariableName);
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
-            const tagDirectiveResps = listKeepDefined(relevantTagHandlers
-                .map(handler => handler.handleTag(
-                    name, attribs, codegenHelpers)));
-            expressions += tagDirectiveResps
-                .map(x => x.source).join("");
-            tagDirectiveResps
-                .filter(x => x.closeSource !== undefined)
-                .forEach(r => activeLoops = activeLoops.unshift(
-                    {
-                        xpathDepth: xpath.size,
-                        closeSource: requireDefined(r.closeSource)
-                    }));
+            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
+                handler => handler.handleTag(name, attribs, codegenHelpersTag)));
+            expressions += tagDirectiveResps.map(x => x.source).join("");
+            activeScopes = activeScopes.unshiftAll(
+                handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
             // work on attribute handlers
             for (let attrName in attribs) {
+                const codegenHelpersAttr = new CodegenHelper(activeScopes, getNewVariableName);
                 const attrValue = attribs[attrName];
 
                 const attrDirectiveResps = listKeepDefined(
                     attrDirectiveHandlers
                         .filter(d => d.forAttributes.indexOf(attrName) >= 0)
-                        .map(handler => handler.handleAttribute(
-                            attrName, attrValue, codegenHelpers)));
+                        .map(handler => handler.handleAttribute(attrName, attrValue, codegenHelpersAttr)));
                 expressions += attrDirectiveResps.map(x => x.source).join("");
 
-                listKeepDefined(attrDirectiveResps
-                                .map(x => x.closeSource))
-                    .forEach(closeSrc => {
-                        activeLoops = activeLoops.unshift(
-                            { xpathDepth: xpath.size, closeSource: closeSrc })});
-                expressions += extractInlineExpressions(
-                    attrValue, codegenHelpers);
+                activeScopes = activeScopes.unshiftAll(
+                    handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
+                expressions += extractInlineExpressions(attrValue, codegenHelpersAttr);
             }
         },
         onclosetag: (name: string) => {
@@ -118,14 +114,15 @@ function getHandler(
                 console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
             }
             xpath = xpath.shift();
-            while (activeLoops.first() && activeLoops.first().xpathDepth > xpath.size) {
-                expressions += activeLoops.first().closeSource();
-                activeLoops = activeLoops.shift();
+            while (activeScopes.first() && activeScopes.first().xpathDepth > xpath.size) {
+                expressions += activeScopes.first().closeSource();
+                activeScopes = activeScopes.shift();
             }
         },
         ontext: (text: string) => {
-            expressions = expressions.concat(extractInlineExpressions(
-                text, codegenHelpers));
+            const codegenHelpers = new CodegenHelper(activeScopes, getNewVariableName);
+            expressions = expressions.concat(
+                extractInlineExpressions(text, codegenHelpers));
         },
         onend: () => {
             f(indentSource(expressions));
@@ -185,13 +182,11 @@ function indentSource(src: string): string {
  * @hidden
  */
 export function parseView(
-    fileName: string, addScopeAccessors: (js:string) => string,
-    tagDirectiveHandlers: List<TagDirectiveHandler>,
+    fileName: string, tagDirectiveHandlers: List<TagDirectiveHandler>,
     attrDirectiveHandlers: List<AttributeDirectiveHandler>) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(
-            fileName, addScopeAccessors,
-            tagDirectiveHandlers, attrDirectiveHandlers, resolve));
+            fileName, tagDirectiveHandlers, attrDirectiveHandlers, resolve));
         parser.write(readFileSync(fileName).toString());
         parser.done();
     });

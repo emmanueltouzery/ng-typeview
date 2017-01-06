@@ -67,10 +67,7 @@ describe("extractControllerScopeInfo", () => {
                      "        triggerAction: boolean\n" +
                      "        user: string;\n" +
                      "        maxlength: number;\n" +
-                     "    }", scopeInfo.scopeInfo.some().contents);
-        assert.deepEqual(
-            ["showDiv", "showText", "data", "triggerAction", "user", "maxlength"],
-            scopeInfo.scopeInfo.some().fieldNames);
+                     "    }", scopeInfo.scopeInfo.some());
         assert.deepEqual(["type STR = string;", "type INT = number;"], scopeInfo.typeAliases);
         assert.deepEqual(["import Aa = api.Aa;", "import Bb = api.Bb;"], scopeInfo.imports);
         assert.deepEqual(

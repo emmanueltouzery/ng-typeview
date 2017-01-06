@@ -1,27 +1,65 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Set} from "immutable";
+import {Set, Stack} from "immutable";
 import * as P from "parsimmon"
 
-import {ScopeInfo} from "./controller-parser"
+import {NgScope} from "./view-parser"
 
 /**
- * Helper functions to assist with code generation.
+ * Scope info used by ng-typeview. Directive authors can
+ * consider it an opaque type (type synonym on purpose
+ * so typedoc doesn't document it).
  */
-export interface CodegenHelpers {
+export type NgScopeInfo = {
+    readonly soFar: Stack<NgScope>,
+    curScopeVars: string[]
+};
+
+/**
+ * Companion object to assist typescript code generation.
+ * It manages the scope behind the scenes so its state
+ * changes as you call its methods.
+ * If you do not let it know about variables you declare
+ * in your typescript, there will be issues of '$scope.'
+ * being prepended to the generated code when it shouldn't be.
+ */
+export class CodegenHelper {
+    public readonly ngScopeInfo: NgScopeInfo;
+    private getNewVarName: ()=>string;
+
+    constructor(scope: Stack<NgScope>, getNewVarName: ()=>string) {
+        this.ngScopeInfo = {soFar: scope, curScopeVars: []};
+        this.getNewVarName = getNewVarName;
+    }
+
     /**
      * Add scope accessors to a JS expression. For instance,
      * "data.name" will become "$scope.data.name" if the scope
      * has a field named 'data'
+     * NOTE using an instance function so this will be properly
+     * bound when used as a callback =>
+     * https://github.com/Microsoft/TypeScript/wiki/'this'-in-TypeScript#use-instance-functions
      * @param js the javascript from the angular view
      * @returns new source with the scope accessors added
      */
-    addScopeAccessors: (js:string)=>string;
+    public addScopeAccessors = (js:string): string => {
+        return addScopeAccessors(this.ngScopeInfo.soFar.unshift({
+            // hardcoding 1...I just need to let addScopeAccessors
+            // know about these local variables. a bit of a hack.
+            xpathDepth:1,
+            closeSource:()=>"",
+            variables: this.ngScopeInfo.curScopeVars
+        }), js);
+    }
+
     /**
      * Get a new unique variable name
      * @returns new unique variable name
      */
-    getNewVariableName: ()=>string;
+    public getNewVariableName(): string {
+        return this.registerVariable(this.getNewVarName());
+    }
+
     /**
      * Generate a TS expression declaring a variable of
      * the type and value that you give. Will automatically call
@@ -30,7 +68,28 @@ export interface CodegenHelpers {
      * @param val value for the variable
      * @returns typescript expression that registers the variable, as string.
      */
-    registerVariable:(type:string,val:string)=>string;
+    public declareVariable(type:string,val:string): string {
+        if (val.length > 0) {
+            return `const ${this.getNewVariableName()}: ${type} = ${this.addScopeAccessors(val)};`;
+        } else {
+            return ""; // angular tolerates empty attributes and ignores them, for instance ng-submit=""
+        }
+    }
+
+    /**
+     * You must register a variable name when you declare a variable
+     * while generating code without going through [[generateVariable]]
+     * or [[getNewVariableName]].
+     * Otherwise generation will add a `$scope.` accessor to it even though
+     * it shouldn't.
+     * Since `registerVariable` will return you the variable name you gave,
+     * you can use this function as a pass-through, just wrap your var
+     * name with this call.
+     */
+    public registerVariable(name:string): string {
+        this.ngScopeInfo.curScopeVars.push(name);
+        return name;
+    }
 }
 
 /**
@@ -163,7 +222,7 @@ function wrapFilterCall(addScAccessors: (x:string)=>string):
  *     or the empty string in case of parse error.
  */
 export function filterExpressionToTypescript(
-    expr: string, codegenHelpers: CodegenHelpers): string {
+    expr: string, codegenHelpers: CodegenHelper): string {
     const ngFilterExpr = parseNgFilterExpression().skip(P.optWhitespace).parse(expr);
     if (!ngFilterExpr.status) {
         console.warn("Failed parsing filter expression");
@@ -186,9 +245,9 @@ export function filterExpressionToTypescript(
  *     or the empty string in case of parse error.
  */
 export function ngFilterExpressionToTypeScriptStandalone(
-    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelpers): string {
+    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelper): string {
     if (ngFilterExpr.filterCalls.length === 0) {
-        return codegenHelpers.registerVariable("any", ngFilterExpr.expression);
+        return codegenHelpers.declareVariable("any", ngFilterExpr.expression);
     }
 
     return ngFilterExpr.filterCalls.reduce(
@@ -213,7 +272,7 @@ export function ngFilterExpressionToTypeScriptStandalone(
  *     or the empty string in case of parse error.
  */
 export function ngFilterExpressionToTypeScriptEmbedded(
-    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelpers): string {
+    ngFilterExpr: NgFilterExpression, codegenHelpers: CodegenHelper): string {
     if (ngFilterExpr.filterCalls.length === 0) {
         return codegenHelpers.addScopeAccessors(ngFilterExpr.expression);
     }
@@ -226,10 +285,10 @@ export function ngFilterExpressionToTypeScriptEmbedded(
 /**
  * @hidden
  */
-export function addScopeAccessors(input: string, scopeInfo: ScopeInfo): string {
+export function addScopeAccessors(scopes: Stack<NgScope>, input: string): string {
     let sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    return sourceFile.statements.map(stmtAddScopeAccessors(scopeInfo)).join(";\n");
+    return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join(";\n");
 }
 
 const nodeKindPassthroughList = Set(
@@ -239,48 +298,48 @@ const nodeKindPassthroughList = Set(
      ts.SyntaxKind.TrueKeyword,
      ts.SyntaxKind.FalseKeyword]);
 
-function stmtAddScopeAccessors(scopeInfo: ScopeInfo) : (node: ts.Node) => string {
+function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => string {
     return node => {
         if (node.kind === ts.SyntaxKind.ExpressionStatement) {
-            return stmtAddScopeAccessors(scopeInfo)((<ts.ExpressionStatement>node).expression);
+            return stmtAddScopeAccessors(scopes)((<ts.ExpressionStatement>node).expression);
         } else if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
             const prop = <ts.PropertyAccessExpression>node;
-            return stmtAddScopeAccessors(scopeInfo)(prop.expression) + "." + prop.name.getText();
+            return stmtAddScopeAccessors(scopes)(prop.expression) + "." + prop.name.getText();
         } else if (node.kind === ts.SyntaxKind.Identifier) {
-            return addScopePrefixIfNeeded(scopeInfo, node.getText());
+            return addScopePrefixIfNeeded(scopes, node.getText());
         } else if (node.kind === ts.SyntaxKind.PrefixUnaryExpression) {
             const op = <ts.PrefixUnaryExpression>node;
-            return ts.tokenToString(op.operator) + stmtAddScopeAccessors(scopeInfo)(op.operand);
+            return ts.tokenToString(op.operator) + stmtAddScopeAccessors(scopes)(op.operand);
         } else if (node.kind === ts.SyntaxKind.CallExpression) {
             const expr = <ts.CallExpression>node;
-            return addScopePrefixIfNeeded(scopeInfo, expr.expression.getText()) + "(" +
-                expr.arguments.map(stmtAddScopeAccessors(scopeInfo)).join(", ") + ")";
+            return addScopePrefixIfNeeded(scopes, expr.expression.getText()) + "(" +
+                expr.arguments.map(stmtAddScopeAccessors(scopes)).join(", ") + ")";
         } else if (node.kind === ts.SyntaxKind.BinaryExpression) {
             const expr = <ts.BinaryExpression>node;
-            return stmtAddScopeAccessors(scopeInfo)(expr.left)
+            return stmtAddScopeAccessors(scopes)(expr.left)
                 + " " + expr.operatorToken.getText() + " "
-                + stmtAddScopeAccessors(scopeInfo)(expr.right);
+                + stmtAddScopeAccessors(scopes)(expr.right);
         } else if (node.kind === ts.SyntaxKind.ElementAccessExpression) {
             const acc = <ts.ElementAccessExpression>node;
             const argValue = acc.argumentExpression
-                ? stmtAddScopeAccessors(scopeInfo)(acc.argumentExpression)
+                ? stmtAddScopeAccessors(scopes)(acc.argumentExpression)
                 : "";
-            return stmtAddScopeAccessors(scopeInfo)(acc.expression) +
+            return stmtAddScopeAccessors(scopes)(acc.expression) +
                 "["+ argValue + "]";
         } else if (node.kind === ts.SyntaxKind.ConditionalExpression) {
             const cond = <ts.ConditionalExpression>node;
-            return stmtAddScopeAccessors(scopeInfo)(cond.condition) + " ? " +
-                stmtAddScopeAccessors(scopeInfo)(cond.whenTrue) + " : " +
-                stmtAddScopeAccessors(scopeInfo)(cond.whenFalse);
+            return stmtAddScopeAccessors(scopes)(cond.condition) + " ? " +
+                stmtAddScopeAccessors(scopes)(cond.whenTrue) + " : " +
+                stmtAddScopeAccessors(scopes)(cond.whenFalse);
         } else if (node.kind === ts.SyntaxKind.Block) {
             // it's most likely in fact not a block per se, but an object literal.
             const block = <ts.Block>node;
-            return block.getChildren().map(stmtAddScopeAccessors(scopeInfo)).join("");
+            return block.getChildren().map(stmtAddScopeAccessors(scopes)).join("");
         } else if (node.kind === ts.SyntaxKind.LabeledStatement) {
             const lStat = <ts.LabeledStatement>node;
-            return lStat.label.text + ": " + stmtAddScopeAccessors(scopeInfo)(lStat.statement);
+            return lStat.label.text + ": " + stmtAddScopeAccessors(scopes)(lStat.statement);
         } else if (node.kind === ts.SyntaxKind.SyntaxList) {
-            return node.getChildren().map(stmtAddScopeAccessors(scopeInfo)).join("");
+            return node.getChildren().map(stmtAddScopeAccessors(scopes)).join("");
         } else if (nodeKindPassthroughList.contains(node.kind)) {
             return node.getText();
         } else if (node.kind >= ts.SyntaxKind.FirstToken && node.kind <= ts.SyntaxKind.LastToken) {
@@ -288,23 +347,22 @@ function stmtAddScopeAccessors(scopeInfo: ScopeInfo) : (node: ts.Node) => string
         }
         console.log("Add scope accessors: unhandled node: " + node.kind + " -- "+ node.getText());
         return node.getText();
-    };
+    }
 }
 
-function addScopePrefixIfNeeded(scopeInfo: ScopeInfo, expression: string): string {
+function addScopePrefixIfNeeded(scopes: Stack<NgScope>, expression: string): string {
     // extract the field name from the expression, which can be...
     // data.user.getName(), or getName() or things like that.
     // so we stop at the first "." or "(" to get respectively
     // "data" or "getName".
     const fieldName = expression.replace(/[\(\.].*$/, "");
 
-    // is the field name present in the scope declaration?
-    if (scopeInfo.fieldNames.indexOf(fieldName) >= 0) {
+    // is the field name present in any of the parent scopes?
+    if (scopes.find(s => s.variables.indexOf(expression) >= 0)) {
         // YES => read it from there.
-        return "$scope." + expression;
-    } else {
-        // NO => the expression is accessed from elsewhere than the scope
-        // (parent loop in the view, global namespace...)
         return expression;
+    } else {
+        return "$scope." + expression;
     }
+
 }

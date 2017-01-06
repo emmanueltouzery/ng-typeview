@@ -11,7 +11,7 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
-        ControllerScopeInfo, ScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
+        ControllerScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
@@ -22,6 +22,9 @@ declare global {
         repeat(c: number): string;
         endsWith(t: string): boolean;
         startsWith(t: string): boolean;
+    }
+    interface Array<T> {
+        find(p: (item:T) => boolean): T|undefined
     }
 }
 
@@ -51,9 +54,7 @@ async function processControllerView(
         // no point of writing anything if there is no scope block
         return;
     }
-    const addScope = (js: string) => addScopeAccessors(js, scopeContents.scopeInfo.some());
-    const viewExprs = await parseView(
-        viewPath, addScope, List(tagDirectives), List(attributeDirectives));
+    const viewExprs = await parseView(viewPath, List(tagDirectives), List(attributeDirectives));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -65,7 +66,7 @@ async function processControllerView(
         .orSome(x);
     const filterParams = ngFilters.map(f => `f__${f.name}:${f.type}`).join(",\n    ")
     writeFileSync(outputFname, moduleWrap(
-            scopeContents.scopeInfo.some().contents +
+            scopeContents.scopeInfo.some() +
             `\n\nfunction ___f($scope: Scope, ${filterParams}) {\n` +
             viewExprs +
             "\n}\n") + "\n");

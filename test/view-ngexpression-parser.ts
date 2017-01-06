@@ -1,15 +1,24 @@
 import * as assert from 'assert'
+import {Stack} from "immutable";
 import {addScopeAccessors} from '../src/view-ngexpression-parser'
-import {ScopeInfo} from "../src/controller-parser"
+import {NgScope} from "../src/view-parser"
 
 describe("addScopeAccessors", () => {
     it ("should add $scope properly", () => {
-        const fakeScopeInfo: ScopeInfo = {
-            contents: "",
-            fieldNames: ["data", "wasProvidedWorkbook", "info", "movieInfo",
-                         "selectedScreen", "getSelectedImage", "fType", "idx"]
-        };
-        const assertScopeAcc = (expected:string,input:string) => assert.equal(expected, addScopeAccessors(input, fakeScopeInfo));
+        const fakeScopeInfo: Stack<NgScope> = Stack([
+            {
+                xpathDepth: 1,
+                closeSource: ()=>"",
+                variables: []
+            },
+            {
+                xpathDepth: 2,
+                closeSource: ()=>"",
+                variables: []
+            }
+        ]);
+        const assertScopeAcc = (expected:string,input:string) => assert.equal(
+            expected, addScopeAccessors(fakeScopeInfo, input));
         assertScopeAcc("$scope.data.value", "data.value");
         assertScopeAcc("!$scope.wasProvidedWorkbook()", "!wasProvidedWorkbook()");
         assertScopeAcc("$scope.info.subscribedEmails.length > 0", "info.subscribedEmails.length > 0");

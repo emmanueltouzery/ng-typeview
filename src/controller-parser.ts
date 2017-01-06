@@ -2,7 +2,7 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe, List} from "monet";
 
-function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<ScopeInfo> {
+function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     const typeIsIScope = (t: ts.ExpressionWithTypeArguments) =>
         t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
         (<ts.PropertyAccessExpression>t.expression).name.text === "IScope";
@@ -10,15 +10,7 @@ function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<ScopeInfo> {
         Maybe.fromNull(c.types).filter(ts => ts.some(typeIsIScope)).isSome();
     return Maybe.fromNull(iface.heritageClauses)
         .filter(clauses => clauses.some(heritageClauseHasIScope))
-        .map(_ => getScopeInfo(iface));
-}
-
-function getScopeInfo(iface: ts.InterfaceDeclaration): ScopeInfo {
-    const fieldNames = List.fromArray(iface.members)
-        .map(m => maybeIdentifier(m.name).map(i => i.text))
-        .flatMap(m => m.toList())
-        .toArray();
-    return { contents: iface.getText(), fieldNames};
+        .map(_ => iface.getText());
 }
 
 const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
@@ -231,17 +223,9 @@ export function extractCtrlViewConnsAngularModule(
 /**
  * @hidden
  */
-export interface ScopeInfo {
-    readonly contents: string;
-    readonly fieldNames: string[];
-}
-
-/**
- * @hidden
- */
 export interface ControllerScopeInfo {
     readonly tsModuleName: Maybe<string>;
-    readonly scopeInfo: Maybe<ScopeInfo>;
+    readonly scopeInfo: Maybe<string>;
     readonly typeAliases: string[];
     readonly imports: string[];
     readonly nonExportedDeclarations: string[];
@@ -262,7 +246,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise<ControllerScopeInfo>((resolve, reject) => {
-        let scopeInfo: Maybe<ScopeInfo> = Maybe.None<ScopeInfo>();
+        let scopeInfo: Maybe<string> = Maybe.None<string>();
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
         let imports:string[] = [];

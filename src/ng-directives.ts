@@ -5,16 +5,25 @@ import * as P from "parsimmon"
 import {filterExpressionToTypescript, parseNgFilterExpression,
         NgFilterExpression, ngFilterExpressionToTypeScriptStandalone,
         ngFilterExpressionToTypeScriptEmbedded, keyword, parseAtom,
-        CodegenHelpers
+        CodegenHelper
        } from "./view-ngexpression-parser"
 
 /**
  * When handling an angular directive, you can generate TS source code for
- * type-safety testing. You can generate two things:
- * 1. Field `source`: code inserted right now
- * 2. Field `closeSource`: code that'll be inserted when this tag gets closed.
+ * type-safety testing. This is what your directive can return to ng-typeview.
  */
-export type DirectiveResponse = { source: string, closeSource?: ()=>string };
+export interface DirectiveResponse {
+    /**
+     * The code you want to insert in the generated typescript
+     */
+    source: string;
+    /**
+     * An optional function returning the code that'll be inserted
+     * when this tag gets closed (typically you'll give nothing,
+     * or `}` or `})` for instance).
+     */
+    closeSource?: ()=>string;
+};
 
 /**
  * Allows to handle a specific angular directive, which is tied to an attribute
@@ -38,7 +47,7 @@ export interface AttributeDirectiveHandler {
      */
     handleAttribute(
         attrName: string, attrValue: string,
-        codegenHelpers: CodegenHelpers): DirectiveResponse|undefined;
+        codegenHelpers: CodegenHelper): DirectiveResponse|undefined;
 }
 
 /**
@@ -65,13 +74,13 @@ export interface TagDirectiveHandler {
      */
     handleTag(
         tagName: string, attribs:{[type:string]: string},
-        codegenHelpers: CodegenHelpers): DirectiveResponse|undefined;
+        codegenHelpers: CodegenHelper): DirectiveResponse|undefined;
 }
 
 const boolAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-required", "ng-disabled"],
     handleAttribute: (attrName, val, codegenHelpers) =>
-        ({ source: codegenHelpers.registerVariable("boolean", val) })
+        ({ source: codegenHelpers.declareVariable("boolean", val) })
 };
 
 // ng-show and ng-if introduce a scope. The reason is flow-control in typescript:
@@ -80,7 +89,7 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-show", "ng-if"],
     handleAttribute: (attrName, val, codegenHelpers) =>
         ({
-            source: codegenHelpers.registerVariable("boolean", val) +
+            source: codegenHelpers.declareVariable("boolean", val) +
                 `if (${codegenHelpers.addScopeAccessors(val)}) {`,
             closeSource: () => "}"
         })
@@ -90,19 +99,19 @@ const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
                     "ng-submit", "ng-class", "ng-style"],
     handleAttribute: (attrName, val, codegenHelpers) =>
-        ({ source: codegenHelpers.registerVariable("any", val) })
+        ({ source: codegenHelpers.declareVariable("any", val) })
 };
 
 const stringAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-include", "ng-src"],
     handleAttribute: (attrName, val, codegenHelpers) =>
-        ({ source: codegenHelpers.registerVariable("string", val) })
+        ({ source: codegenHelpers.declareVariable("string", val) })
 };
 
 const numberAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-maxlength"],
     handleAttribute: (attrName, val, codegenHelpers) =>
-        ({ source: codegenHelpers.registerVariable("number", val) })
+        ({ source: codegenHelpers.declareVariable("number", val) })
 };
 
 const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
@@ -146,12 +155,20 @@ const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
             }
             const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                 ngRepeatData.value.expression, codegenHelpers);
-            const source =`angular.forEach(${enumerable}, ${ngRepeatData.value.variable} => {` +
-                    "let $index = 0;let $first = true;let $middle = true;" +
-                    "let $last = true;let $even = true;let $odd = false;" +
+            const source =`angular.forEach(${enumerable}, ${
+                codegenHelpers.registerVariable(ngRepeatData.value.variable)} => {` +
+                `let ${codegenHelpers.registerVariable('$index')} = 0;` +
+                `let ${codegenHelpers.registerVariable('$first')} = true;` +
+                `let ${codegenHelpers.registerVariable('$middle')} = true;` +
+                `let ${codegenHelpers.registerVariable('$last')} = true;` +
+                `let ${codegenHelpers.registerVariable('$even')} = true;` +
+                `let ${codegenHelpers.registerVariable('$odd')} = false;` +
                 (ngRepeatData.value.trackingExpression ?
-                 `${codegenHelpers.registerVariable('any', ngRepeatData.value.trackingExpression)}` : "");
-            return {source, closeSource: () => "});"};
+                 `${codegenHelpers.declareVariable('any', ngRepeatData.value.trackingExpression)}` : "");
+            return {
+                source,
+                closeSource: () => "});"
+            };
         }
 };
 
@@ -207,12 +224,12 @@ const ngOptions: AttributeDirectiveHandler = {
                 console.warn(ngOptionsData);
                 return {source: ""};
             }
-            const addVar = (v:string|undefined) => (v ? `${codegenHelpers.registerVariable('any', v)}` : "");
+            const addVar = (v:string|undefined) => (v ? `${codegenHelpers.declareVariable('any', v)}` : "");
             const addNgVar = (v:NgFilterExpression|undefined) =>
                 (v ? ngFilterExpressionToTypeScriptStandalone(v, codegenHelpers) : "");
             const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                 ngOptionsData.value.array, codegenHelpers);
-            const source = `angular.forEach(${enumerable}, ${ngOptionsData.value.value} => {` +
+            const source = `angular.forEach(${enumerable}, ${codegenHelpers.registerVariable(ngOptionsData.value.value)} => {` +
                 addNgVar(ngOptionsData.value.select) +
                 addNgVar(ngOptionsData.value.label) +
                 addVar(ngOptionsData.value.trackexpr) +
@@ -263,17 +280,18 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
             const attrValue = attribs[attrName];
             switch (attrName) {
             case "ng-model":
-                source += `let $select = {search:'', selected: ${codegenHelpers.addScopeAccessors(attrValue)}};`;
+                source += `let ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
+                    codegenHelpers.addScopeAccessors(attrValue)}};`;
                 break;
             case "allow-clear":
-                source += codegenHelpers.registerVariable("boolean", attrValue);
+                source += codegenHelpers.declareVariable("boolean", attrValue);
                 break;
             case "ui-lock-choice":
-                source += codegenHelpers.registerVariable("any", attrValue);
+                source += codegenHelpers.declareVariable("any", attrValue);
                 break;
             }
         }
-        return {source, closeSource: () => "}"}
+        return {source, closeSource: () => "}"};
     }
 };
 
@@ -309,8 +327,11 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 }
                 const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                     selectData.value.expression, codegenHelpers);
-                return {source: `${enumerable}.forEach(${selectData.value.variable} => {`,
-                        closeSource: () => "});"};
+                return {
+                    source: `${enumerable}.forEach(${
+                        codegenHelpers.registerVariable(selectData.value.variable)} => {`,
+                    closeSource: () => "});"
+                };
             }
         }
     }

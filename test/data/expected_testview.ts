@@ -71,7 +71,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             let $last = true;
             let $even = true;
             let $odd = false;
-            f__translate(f__linky(maintenanceTask.instructions, '_blank'));
+            f__translate(f__linky($scope.maintenanceTask.instructions, '_blank'));
             
         });
         f__filter(f__orderBy($scope.data.groups, 'field'), {
