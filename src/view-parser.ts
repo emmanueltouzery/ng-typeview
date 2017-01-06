@@ -68,11 +68,17 @@ function handleDirectiveResponses(xpath: Stack<string>,
 }
 
 function getHandler(
-    fileName: string, tagDirectiveHandlers: List<TagDirectiveHandler>,
-    attrDirectiveHandlers: List<AttributeDirectiveHandler>, f: (expr: string) => void): Handler {
+    fileName: string, defaultScope: string[],
+    tagDirectiveHandlers: List<TagDirectiveHandler>,
+    attrDirectiveHandlers: List<AttributeDirectiveHandler>,
+    f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Stack<string>();
-    let activeScopes = Stack<NgScope>();
+    let activeScopes = Stack<NgScope>([{
+        xpathDepth: 0,
+        closeSource: ()=>"",
+        variables: defaultScope
+    }]);
     const getNewVariableName = () => `___x${v++}`;
     return {
         onopentag: (_name: string, _attribs:{[type:string]: string}) => {
@@ -181,12 +187,15 @@ function indentSource(src: string): string {
 /**
  * @hidden
  */
-export function parseView(
-    fileName: string, tagDirectiveHandlers: List<TagDirectiveHandler>,
+export function parseView(resolveImportsAsNonScope: boolean,
+    fileName: string, importNames: string[],
+    tagDirectiveHandlers: List<TagDirectiveHandler>,
     attrDirectiveHandlers: List<AttributeDirectiveHandler>) : Promise<string> {
+    const defaultScope = resolveImportsAsNonScope ? importNames : [];
     return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(
-            fileName, tagDirectiveHandlers, attrDirectiveHandlers, resolve));
+            fileName, defaultScope,
+            tagDirectiveHandlers, attrDirectiveHandlers, resolve));
         parser.write(readFileSync(fileName).toString());
         parser.done();
     });

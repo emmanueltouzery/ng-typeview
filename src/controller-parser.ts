@@ -225,6 +225,7 @@ export interface ControllerScopeInfo {
     readonly scopeInfo: Maybe<string>;
     readonly typeAliases: string[];
     readonly imports: string[];
+    readonly importNames: string[];
     readonly nonExportedDeclarations: string[];
 }
 
@@ -247,6 +248,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
         let imports:string[] = [];
+        let importNames:string[] = [];
         let nonExportedDeclarations:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
@@ -273,13 +275,14 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
             }
             if (node.kind === ts.SyntaxKind.ImportEqualsDeclaration) {
                 imports.push(node.getText());
+                importNames.push((<ts.ImportEqualsDeclaration>node).name.getText());
             }
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeInfo, typeAliases, imports, nonExportedDeclarations
+            scopeInfo, typeAliases, imports, importNames, nonExportedDeclarations
         });
     });
 }

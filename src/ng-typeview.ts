@@ -45,7 +45,7 @@ function getViewTestFilename(ctrlFname: string, viewFname: string): string {
     return `${ctrlFname}_${viewFname}_viewtest.ts`;
 }
 
-async function processControllerView(
+async function processControllerView(prjSettings: ProjectSettings,
     controllerPath: string, viewPath: string, ngFilters: NgFilter[],
     tagDirectives: TagDirectiveHandler[],
     attributeDirectives: AttributeDirectiveHandler[]) {
@@ -54,7 +54,8 @@ async function processControllerView(
         // no point of writing anything if there is no scope block
         return;
     }
-    const viewExprs = await parseView(viewPath, List(tagDirectives), List(attributeDirectives));
+    const viewExprs = await parseView(prjSettings.resolveImportsAsNonScope || false,
+        viewPath, scopeContents.importNames, List(tagDirectives), List(attributeDirectives));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -130,6 +131,27 @@ export interface ProjectSettings {
      * that, add to that list, or specify your own.
      */
     attributeDirectives: AttributeDirectiveHandler[];
+    /**
+     * When resolving the scope for variables in the view, we prefix "$scope."
+     * for all variables except those defined in the view. For instance, a
+     * `ng-repeat` will define local variables. For these, we do not prefix with
+     * "$scope.". 99% of the time, that works great.
+     * One issue that can come up though, is if you have static fields for
+     * instance. If you read `MyClass.MY_STATIC_FIELD`... That'll work in javascript
+     * and angular, due to the TS->JS transpilation. But in ng-typeview, we
+     * can't declare on the scope a field of type [class of MyClass], so that
+     * field.MY_STATIC_FIELD would work.
+     * So a workaround is to specify in your controller:
+     * `import MyClass = api.MyClass;`
+     * In that case, if you enable this `resolveImportsAsNonScope` option
+     * (disabled by default), ng-typeview will not resolve
+     * `MyClass.MY_STATIC_FIELD` as `$scope.MyClass.MY_STATIC_FIELD` anymore,
+     * but as `MyClass.MY_STATIC_FIELD`. And since we copy the imports in the
+     * viewtest, it should work.
+     * But it's pretty messy, so we rather encourage you to avoid statics if
+     * at all possible.
+     */
+    resolveImportsAsNonScope?: boolean;
 }
 
 function deletePreviouslyGeneratedFiles(prjSettings: ProjectSettings): void {
@@ -175,7 +197,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                  .filter((name:string) => name)]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
-            ctrlName => processControllerView(
+            ctrlName => processControllerView(prjSettings,
                 ctrlName, viewName, prjSettings.ngFilters,
                 prjSettings.tagDirectives,
                 prjSettings.attributeDirectives)).toArray())).toArray());
