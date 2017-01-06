@@ -19,7 +19,9 @@
             <div data-ng-repeat="group in data.groups | orderBy: 'field'">
                 ng-model="should.not-match"
                 <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>
+                This {{group}} should be taken from the local variable, not from the scope.
             </div>
+            This {{group}} should be taken from the scope, not as a local variable.
             <div ng-bind="data.groups | orderBy: 'field' | filter: {field: user}"></div>
             </p>
             <ui-select close-on-select="true" style="width: 200px"
