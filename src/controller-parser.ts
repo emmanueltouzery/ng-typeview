@@ -2,15 +2,12 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe, List} from "monet";
 
+function maybeWhen<T>(p: boolean, v: T): Maybe<T> {
+    return p ? Maybe.Some(v) : Maybe.None<T>();
+}
+
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
-    const typeIsIScope = (t: ts.ExpressionWithTypeArguments) =>
-        t.expression.kind === ts.SyntaxKind.PropertyAccessExpression &&
-        (<ts.PropertyAccessExpression>t.expression).name.text === "IScope";
-    const heritageClauseHasIScope = (c:ts.HeritageClause) =>
-        Maybe.fromNull(c.types).filter(ts => ts.some(typeIsIScope)).isSome();
-    return Maybe.fromNull(iface.heritageClauses)
-        .filter(clauses => clauses.some(heritageClauseHasIScope))
-        .map(_ => iface.getText());
+    return maybeWhen(iface.name.getText() === "Scope", iface.getText());
 }
 
 const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
