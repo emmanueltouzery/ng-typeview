@@ -74,6 +74,13 @@ You can look at `test/ng-typeview.ts` for a sample set-up.
 That's good for a first run, but then you probably have to customize ng-typeview
 for your application.
 
+ng-typeview leaves the generated 'testview' files in your source code directory; it's
+probably best not to commit them to source control. If you minify your javascript,
+they won't be included since nothing links to them. If you don't, they might be
+copied to your server, but since noone links to them and they have no side-effects
+they shouldn't pose any problem. That said, deleting them is trivial, as they have
+a clear filename pattern.
+
 ## Customizations
 
 ng-typeview uses the [typescript compiler API](https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API)
@@ -103,7 +110,18 @@ and parameter types.
 ### ProjectSettings.attributeDirectives & tagDirectives
 You can also register your directives. There you must generate typescript code
 (as string), used to check the type-safety of the expressions found in the views.
+You implement either a [AttributeDirectiveHandler](http://emmanueltouzery.github.io/ng-typeview/interfaces/attributedirectivehandler.html),
+or a [TagDirectiveHandler](http://emmanueltouzery.github.io/ng-typeview/interfaces/tagdirectivehandler.html).
+
 As input you get the contents of tags & attributes from the view.
+You are given some API to assist with the code generation,
+[CodegenHelper](http://emmanueltouzery.github.io/ng-typeview/classes/codegenhelper.html);
+in fact you must use it, because ng-typeview must know when you declare new
+variables.
+
+The directives that ng-typeview supports out of the box are developed using that
+mechanism, so you can also look at `src/ng-directives.ts` for examples of use.
+
 
 ## Caveats
 
