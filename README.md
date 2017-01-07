@@ -68,6 +68,9 @@ just need to call `processProject`. Then ng-typeview will generate the 'testview
 files in the folder of your application. Then try to compile your application.
 The typescript compiler will warn you in case some code from the views doesn't
 match code from the controllers.
+
+You can look at `test/ng-typeview.ts` for a sample set-up.
+
 That's good for a first run, but then you probably have to customize ng-typeview
 for your application.
 
