@@ -95,7 +95,7 @@ It must find out that the controller `app/core/user-list-ctrl.ts` matches the vi
 or naming conventions (especially since the controller-view connection may not
 be 1:1).
 By default ng-typeview can detect `$modal.open()` calls, which connect controllers and views,
-and also module state declarations.
+and also module state declarations (the `ng-controller` directive is ignored though for now).
 You can register new ways of connecting controllers and views, for instance if your
 app wraps these calls through helper functions, preventing ng-typeview from spotting them.
 
