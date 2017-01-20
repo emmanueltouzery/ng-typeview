@@ -21,7 +21,7 @@ const ctrlViewConn = {
         }
         return [{
             controllerName: (<ts.StringLiteral>call.arguments[1]).text,
-            viewPath: projectPath + "/" + (<ts.StringLiteral>call.arguments[2]).text}];
+            viewPath: (<ts.StringLiteral>call.arguments[2]).text}];
     }
 };
 
@@ -35,23 +35,23 @@ describe("extractModalOpenAngularModule", () => {
         assert.deepEqual([
             {
                 controllerName: "CtrlState1",
-                viewPath: "webapp/app/view/url1.html"
+                viewPath: "app/view/url1.html"
             },
             {
                 controllerName: "CtrlState2",
-                viewPath: "webapp/app/view/url2.html"
+                viewPath: "app/view/url2.html"
             },
             {
                 controllerName: "ControllerName",
-                viewPath: "webapp/test-view.html"
+                viewPath: "test-view.html"
             },
             {
                 controllerName: "AnotherControllerName",
-                viewPath: "webapp/path/to/another/view.html"
+                viewPath: "path/to/another/view.html"
             },
             {
                 controllerName: "YupYetAnotherCtrl",
-                viewPath: "webapp/and/yet/another/view.html"
+                viewPath: "and/yet/another/view.html"
             }], modalModuleInfo.controllerViewInfos);
     });
 });

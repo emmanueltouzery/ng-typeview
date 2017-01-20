@@ -198,7 +198,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(prjSettings,
-                ctrlName, viewName, prjSettings.ngFilters,
+                ctrlName, prjSettings.path + "/" + viewName, prjSettings.ngFilters,
                 prjSettings.tagDirectives,
                 prjSettings.attributeDirectives)).toArray())).toArray());
 }

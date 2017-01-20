@@ -51,7 +51,7 @@ function objectLiteralGetStringLiteralField(
         .flatMap(p => getFieldStringLiteralValue(p));
 }
 
-function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<ControllerViewInfo> {
+function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo> {
     const paramObjectElements = Maybe.of(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
                 .indexOf(c.expression.getText()) >= 0)
@@ -66,12 +66,12 @@ function parseModalOpen(callExpr : ts.CallExpression, folder: string): Maybe<Con
     const rawViewPath = getField("templateUrl");
 
     const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
-        ({controllerName: ctrlName, viewPath: folder + "/" + rawViewPath});
+        ({controllerName: ctrlName, viewPath: rawViewPath});
 
     return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
 }
 
-function parseModuleState(prop : ts.ObjectLiteralExpression, folder: string): Maybe<ControllerViewInfo> {
+function parseModuleState(prop : ts.ObjectLiteralExpression): Maybe<ControllerViewInfo> {
     const objectLiteralFields = prop.properties
         .map(e => maybeIdentifier(e.name))
         .filter(i => i.isSome())
@@ -86,7 +86,7 @@ function parseModuleState(prop : ts.ObjectLiteralExpression, folder: string): Ma
             "templateUrl", List.fromArray(prop.properties));
 
         const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
-            ({controllerName: ctrlName, viewPath: folder + "/" + rawViewPath});
+            ({controllerName: ctrlName, viewPath: rawViewPath});
         return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
     }
     return Maybe.None<ControllerViewInfo>();
@@ -165,13 +165,13 @@ export interface ControllerViewConnector {
 const modalOpenViewConnector : ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
     getControllerView: (node, projectPath) =>
-        parseModalOpen(<ts.CallExpression>node, projectPath).toList().toArray()
+        parseModalOpen(<ts.CallExpression>node).toList().toArray()
 };
 
 const moduleStateViewConnector: ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.ObjectLiteralExpression,
     getControllerView: (node, projectPath) =>
-        parseModuleState(<ts.ObjectLiteralExpression>node, projectPath).toList().toArray()
+        parseModuleState(<ts.ObjectLiteralExpression>node).toList().toArray()
 };
 
 /**
