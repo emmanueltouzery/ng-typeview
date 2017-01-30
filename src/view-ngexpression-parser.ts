@@ -149,10 +149,10 @@ function parseLogicalOperator(): P.Parser<string> {
     return keyword("&&").or(keyword("||"));
 }
 
-function parseArithmetic(): P.Parser<string> {
+function parseBinaryOperations(): P.Parser<string> {
     return parseString().or(parseAtom())
         .chain(expr => parseLogicalOperator().or(parseArithmeticOperator())
-            .chain(op => parseString().or(parseArithmetic()).or(parseAtom())
+            .chain(op => parseString().or(parseBinaryOperations()).or(parseAtom())
                 .map(expr2 => expr + op + expr2)));
 }
 
@@ -175,7 +175,7 @@ function parseString(): P.Parser<string> {
 function parseExpr() : P.Parser<string> {
     return parseString()
         .or(parseTernary())
-        .or(parseArithmetic())
+        .or(parseBinaryOperations())
         .or(parseAtom());
 }
 
