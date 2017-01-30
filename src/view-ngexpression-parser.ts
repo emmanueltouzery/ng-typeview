@@ -145,19 +145,23 @@ function parseArithmeticOperator(): P.Parser<string> {
     return keyword("+").or(keyword("-")).or(keyword("*")).or(keyword("/"));
 }
 
+function parseLogicalOperator(): P.Parser<string> {
+    return keyword("&&").or(keyword("||"));
+}
+
 function parseArithmetic(): P.Parser<string> {
     return parseString().or(parseAtom())
-        .chain(expr => parseArithmeticOperator()
-               .chain(op => parseString().or(parseAtom())
-                      .map(expr2 => expr + op + expr2)));
+        .chain(expr => parseLogicalOperator().or(parseArithmeticOperator())
+            .chain(op => parseString().or(parseArithmetic()).or(parseAtom())
+                .map(expr2 => expr + op + expr2)));
 }
 
 function parseTernary(): P.Parser<string> {
     return parseAtom()
         .skip(keyword("?"))
         .chain(expr => parseString().or(parseAtom())
-               .chain(expr2 => keyword(":").then(parseString().or(parseAtom()))
-                      .map(expr3 => expr + " ? " + expr2 + ":" + expr3)));
+            .chain(expr2 => keyword(":").then(parseString().or(parseAtom()))
+                .map(expr3 => expr + " ? " + expr2 + ":" + expr3)));
 }
 
 function parseString(): P.Parser<string> {
@@ -170,8 +174,8 @@ function parseString(): P.Parser<string> {
 
 function parseExpr() : P.Parser<string> {
     return parseString()
-        .or(parseArithmetic())
         .or(parseTernary())
+        .or(parseArithmetic())
         .or(parseAtom());
 }
 

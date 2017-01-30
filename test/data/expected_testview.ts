@@ -20,6 +20,9 @@ interface Scope extends ng.IScope {
         triggerAction: boolean
         user: string;
         maxlength: number;
+        boolean1: boolean;
+        boolean2: boolean;
+        boolean3: boolean;
     }
 
 function ___f($scope: Scope, f__translate:(key: string) => string,
@@ -64,6 +67,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             f__formatNumber($scope.maxlength, 'hex');
             
         });
+        const ___x12: any = $scope.boolean1 && !$scope.boolean2 || $scope.boolean3;
         angular.forEach(f__orderBy($scope.data.groups, 'field'), group => {
             let $index = 0;
             let $first = true;
@@ -72,10 +76,10 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             let $even = true;
             let $odd = false;
             f__translate(f__linky($scope.maintenanceTask.instructions, '_blank'));
-            const ___x12: any = group;
+            const ___x13: any = group;
             
         });
-        const ___x13: any = $scope.group;
+        const ___x14: any = $scope.group;
         f__filter(f__orderBy($scope.data.groups, 'field'), {
             field: $scope.user
         });
@@ -85,26 +89,26 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         let $select = {
             search:'', selected: $scope.data
         };
-        const ___x14: any = $scope.data;
-        const ___x15: any = $select.selected.firstname;
+        const ___x15: any = $scope.data;
+        const ___x16: any = $select.selected.firstname;
         f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-            const ___x16: any = subtype.name;
+            const ___x17: any = subtype.name;
             
         });
         
     }
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
-        const ___x17: any = item.subItem;
-        const ___x18: any = item.label;
+        const ___x18: any = item.subItem;
+        const ___x19: any = item.label;
         
     });
-    const ___x19: any = $scope.user;
+    const ___x20: any = $scope.user;
     angular.forEach($scope.data.groups, item => {
         f__translate(item.subItem);
-        const ___x20: any = item.id;
+        const ___x21: any = item.id;
         
     });
-    const ___x21: any = $scope.user;
+    const ___x22: any = $scope.user;
     switch ($scope.showDiv) {
         case $scope.data.firstname: break;
         case $scope.maxlength: break;
