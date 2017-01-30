@@ -67,6 +67,9 @@ describe("extractControllerScopeInfo", () => {
                      "        triggerAction: boolean\n" +
                      "        user: string;\n" +
                      "        maxlength: number;\n" +
+                     "        boolean1: boolean;\n" +
+                     "        boolean2: boolean;\n" +
+                     "        boolean3: boolean;\n" +
                      "    }", scopeInfo.scopeInfo.some());
         assert.deepEqual(["type STR = string;", "type INT = number;"], scopeInfo.typeAliases);
         assert.deepEqual(["import Aa = api.Aa;", "import Bb = api.Bb;"], scopeInfo.imports);

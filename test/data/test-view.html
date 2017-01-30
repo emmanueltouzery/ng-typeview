@@ -16,6 +16,9 @@
                 </div>
                 The max length is {{maxlength | formatNumber: 'hex'}}.
             </div>
+            <div>
+                Recursive expression parsing result: {{ boolean1 && !boolean2 || boolean3 }}
+            </div>
             <div data-ng-repeat="group in data.groups | orderBy: 'field'">
                 ng-model="should.not-match"
                 <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>

@@ -32,6 +32,9 @@ module multipart.module.name {
         triggerAction: boolean
         user: string;
         maxlength: number;
+        boolean1: boolean;
+        boolean2: boolean;
+        boolean3: boolean;
     }
 
     $scope.register =
