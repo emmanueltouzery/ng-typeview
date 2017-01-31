@@ -19,6 +19,7 @@
             <div>
                 Recursive expression parsing result: {{ boolean1 && !boolean2 || boolean3 }}
                 Some complex expression parsed: {{ 'a' + 2 + 'b' }}
+                Some complex expression parsed: {{ user + '/' + user }}
                 Complex ternary operator: {{ 'a' === user.wantsData() ? 'equal' : 'not equal'  }}
                 Nested ternary operator: {{ boolean1 ? 'str a' : boolean2 ? 'str b' : 'str c' }}
                 Nested ternary operator variant 2: {{ !boolean1 ? boolean2 ? 'str b' : 'str c' : 'str a'  }}
