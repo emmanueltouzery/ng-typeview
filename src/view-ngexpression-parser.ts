@@ -318,7 +318,7 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
             return ts.tokenToString(op.operator) + stmtAddScopeAccessors(scopes)(op.operand);
         } else if (node.kind === ts.SyntaxKind.CallExpression) {
             const expr = <ts.CallExpression>node;
-            return addScopePrefixIfNeeded(scopes, expr.expression.getText()) + "(" +
+            return stmtAddScopeAccessors(scopes)(expr.expression) + "(" +
                 expr.arguments.map(stmtAddScopeAccessors(scopes)).join(", ") + ")";
         } else if (node.kind === ts.SyntaxKind.BinaryExpression) {
             const expr = <ts.BinaryExpression>node;
@@ -350,6 +350,9 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
             return node.getText();
         } else if (node.kind >= ts.SyntaxKind.FirstToken && node.kind <= ts.SyntaxKind.LastToken) {
             return ts.tokenToString(node.kind);
+        } else if (node.kind === ts.SyntaxKind.ParenthesizedExpression) {
+            return "(" + stmtAddScopeAccessors(scopes)(
+                (<ts.ParenthesizedExpression>node).expression) + ")";
         }
         console.log("Add scope accessors: unhandled node: " + node.kind + " -- "+ node.getText());
         return node.getText();
