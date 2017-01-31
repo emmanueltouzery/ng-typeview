@@ -168,6 +168,7 @@ function parseString(): P.Parser<string> {
     const str = (sep:string) => P.string(sep)
         .then(P.noneOf(sep).many())
         .skip(P.string(sep))
+        .skip(P.eof)
         .map(s => sep + s.join("") + sep);
     return str("'").or(str('"'));
 }
