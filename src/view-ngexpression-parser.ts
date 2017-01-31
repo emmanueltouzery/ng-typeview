@@ -157,10 +157,10 @@ function parseBinaryOperations(): P.Parser<string> {
 }
 
 function parseTernary(): P.Parser<string> {
-    return parseAtom()
+    return parseBinaryOperations().or(parseAtom())
         .skip(keyword("?"))
-        .chain(expr => parseString().or(parseAtom())
-            .chain(expr2 => keyword(":").then(parseString().or(parseAtom()))
+        .chain(expr => parseExpr()
+            .chain(expr2 => keyword(":").then(parseExpr())
                 .map(expr3 => expr + " ? " + expr2 + ":" + expr3)));
 }
 
