@@ -173,9 +173,9 @@ function parseString(): P.Parser<string> {
 }
 
 function parseExpr() : P.Parser<string> {
-    return parseString()
-        .or(parseTernary())
+    return parseTernary()
         .or(parseBinaryOperations())
+        .or(parseString())
         .or(parseAtom());
 }
 
