@@ -142,17 +142,19 @@ export function parseAtom(): P.Parser<string> {
 }
 
 function parseArithmeticOperator(): P.Parser<string> {
-    return keyword("+").or(keyword("-")).or(keyword("*")).or(keyword("/"));
+    return keyword("+").or(keyword("-")).or(keyword("*")).or(keyword("/")).or(keyword("%"));
 }
 
 function parseLogicalOperator(): P.Parser<string> {
-    return keyword("&&").or(keyword("||"));
+    return keyword("&&").or(keyword("||"))
+        .or(keyword("===")).or(keyword("!=="))
+        .or(keyword("<")).or(keyword("<=")).or(keyword(">")).or(keyword(">="));
 }
 
 function parseBinaryOperations(): P.Parser<string> {
-    return parseString().or(parseAtom())
+    return parseStringFollowedByOptExpr().or(parseAtom())
         .chain(expr => parseLogicalOperator().or(parseArithmeticOperator())
-            .chain(op => parseString().or(parseBinaryOperations()).or(parseAtom())
+            .chain(op => parseStringFollowedByOptExpr().or(parseBinaryOperations()).or(parseAtom())
                 .map(expr2 => expr + op + expr2)));
 }
 
@@ -164,17 +166,17 @@ function parseTernary(): P.Parser<string> {
                 .map(expr3 => expr + " ? " + expr2 + ":" + expr3)));
 }
 
-function parseString(): P.Parser<string> {
+function parseStringFollowedByOptExpr(): P.Parser<string> {
     const str = (sep:string) => P.string(sep)
         .then(P.noneOf(sep).many())
         .skip(P.string(sep))
-        .skip(P.eof)
-        .map(s => sep + s.join("") + sep);
+        .chain(s => parseExpr().or(P.eof)
+            .map(expr => sep + s.join("") + sep + expr));
     return str("'").or(str('"'));
 }
 
 function parseExpr() : P.Parser<string> {
-    return parseString()
+    return parseStringFollowedByOptExpr()
         .or(parseTernary())
         .or(parseBinaryOperations())
         .or(parseAtom());
