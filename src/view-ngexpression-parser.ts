@@ -154,7 +154,7 @@ function parseLogicalOperator(): P.Parser<string> {
 function parseBinaryOperations(): P.Parser<string> {
     return parseString().or(parseAtom())
         .chain(expr => parseLogicalOperator().or(parseArithmeticOperator())
-            .chain(op => parseString().or(parseBinaryOperations()).or(parseAtom())
+            .chain(op => parseBinaryOperations().or(parseString()).or(parseAtom())
                 .map(expr2 => expr + op + expr2)));
 }
 
