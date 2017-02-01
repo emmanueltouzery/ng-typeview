@@ -7,6 +7,8 @@
                 <button ng-click="triggerAction('six')" value="{{'CLICK_ME' | translate}}" />
                 <button value="{{ 'CLICK_ME'|translate }}" />
             </div>
+            <img ng-src="{{url}}" alt="Description" />
+            <img ng-src="http://www.gravatar.com/avatar/{{hash}}" alt="Description" />
             <input type="text" ng-model="data.firstname" maxlength="{{maxlength}}">
             <div data-ng-repeat="group in data.groups track by group.id">
                 <div data-ng-repeat="item in group track by $index">

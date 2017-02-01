@@ -40,8 +40,10 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             f__translate('CLICK_ME');
             
         }
-        const ___x4: any = $scope.data.firstname;
-        const ___x5: any = $scope.maxlength;
+        const ___x4: any = $scope.url;
+        const ___x5: any = $scope.hash;
+        const ___x6: any = $scope.data.firstname;
+        const ___x7: any = $scope.maxlength;
         angular.forEach($scope.data.groups, group => {
             let $index = 0;
             let $first = true;
@@ -49,7 +51,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             let $last = true;
             let $even = true;
             let $odd = false;
-            const ___x6: any = group.id;
+            const ___x8: any = group.id;
             angular.forEach(group, item => {
                 let $index = 0;
                 let $first = true;
@@ -57,23 +59,23 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
                 let $last = true;
                 let $even = true;
                 let $odd = false;
-                const ___x7: any = $index;
-                const ___x8: any = item.name + ' ' + $scope.user.wantsData();
-                const ___x9: any = $scope.triggerAction('five');
-                const ___x10: any = $index + 1;
-                const ___x11: any = $first ? "first" : "not first!";
+                const ___x9: any = $index;
+                const ___x10: any = item.name + ' ' + $scope.user.wantsData();
+                const ___x11: any = $scope.triggerAction('five');
+                const ___x12: any = $index + 1;
+                const ___x13: any = $first ? "first" : "not first!";
                 
             });
             f__formatNumber($scope.maxlength, 'hex');
             
         });
-        const ___x12: any = $scope.boolean1 && !$scope.boolean2 || $scope.boolean3;
-        const ___x13: any = 'a' + 2 + 'b';
-        const ___x14: any = $scope.user + '/' + $scope.user;
-        const ___x15: any = 'a' === $scope.user.wantsData() ? 'equal' : 'not equal';
-        const ___x16: any = $scope.boolean1 ? 'str a' : $scope.boolean2 ? 'str b' : 'str c';
-        const ___x17: any = !$scope.boolean1 ? $scope.boolean2 ? 'str b' : 'str c' : 'str a';
-        const ___x18: any = ($scope.card.storedValue / 100).toFixed(2);
+        const ___x14: any = $scope.boolean1 && !$scope.boolean2 || $scope.boolean3;
+        const ___x15: any = 'a' + 2 + 'b';
+        const ___x16: any = $scope.user + '/' + $scope.user;
+        const ___x17: any = 'a' === $scope.user.wantsData() ? 'equal' : 'not equal';
+        const ___x18: any = $scope.boolean1 ? 'str a' : $scope.boolean2 ? 'str b' : 'str c';
+        const ___x19: any = !$scope.boolean1 ? $scope.boolean2 ? 'str b' : 'str c' : 'str a';
+        const ___x20: any = ($scope.card.storedValue / 100).toFixed(2);
         angular.forEach(f__orderBy($scope.data.groups, 'field'), group => {
             let $index = 0;
             let $first = true;
@@ -82,10 +84,10 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             let $even = true;
             let $odd = false;
             f__translate(f__linky($scope.maintenanceTask.instructions, '_blank'));
-            const ___x19: any = group;
+            const ___x21: any = group;
             
         });
-        const ___x20: any = $scope.group;
+        const ___x22: any = $scope.group;
         f__filter(f__orderBy($scope.data.groups, 'field'), {
             field: $scope.user
         });
@@ -95,26 +97,26 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         let $select = {
             search:'', selected: $scope.data
         };
-        const ___x21: any = $scope.data;
-        const ___x22: any = $select.selected.firstname;
+        const ___x23: any = $scope.data;
+        const ___x24: any = $select.selected.firstname;
         f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-            const ___x23: any = subtype.name;
+            const ___x25: any = subtype.name;
             
         });
         
     }
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
-        const ___x24: any = item.subItem;
-        const ___x25: any = item.label;
-        
-    });
-    const ___x26: any = $scope.user;
-    angular.forEach($scope.data.groups, item => {
-        f__translate(item.subItem);
-        const ___x27: any = item.id;
+        const ___x26: any = item.subItem;
+        const ___x27: any = item.label;
         
     });
     const ___x28: any = $scope.user;
+    angular.forEach($scope.data.groups, item => {
+        f__translate(item.subItem);
+        const ___x29: any = item.id;
+        
+    });
+    const ___x30: any = $scope.user;
     switch ($scope.showDiv) {
         case $scope.data.firstname: break;
         case $scope.maxlength: break;

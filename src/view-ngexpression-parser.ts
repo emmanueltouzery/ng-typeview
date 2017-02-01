@@ -69,7 +69,9 @@ export class CodegenHelper {
      * @returns typescript expression that registers the variable, as string.
      */
     public declareVariable(type:string,val:string): string {
-        if (val.length > 0) {
+        // if there are embedded {{}} blocks, ignore this and we'll grab them
+        // in the html source in general through other means.
+        if (val.length > 0 && val.indexOf("{{") < 0) {
             return `const ${this.getNewVariableName()}: ${type} = ${this.addScopeAccessors(val)};`;
         } else {
             return ""; // angular tolerates empty attributes and ignores them, for instance ng-submit=""
@@ -141,6 +143,10 @@ export function parseAtom(): P.Parser<string> {
     return P.takeWhile(c => [' ', '|'].indexOf(c) < 0);
 }
 
+function parseNgExpr(): P.Parser<string> {
+    return P.string("{{").then(P.lazy(parseExpr)).skip(P.string("}}"));
+}
+
 function parseArithmeticOperator(): P.Parser<string> {
     return keyword("+").or(keyword("-")).or(keyword("*")).or(keyword("/"));
 }
@@ -175,7 +181,8 @@ function parseString(): P.Parser<string> {
 }
 
 function parseExpr() : P.Parser<string> {
-    return parseTernary()
+    return parseNgExpr()
+        .or(parseTernary())
         .or(parseBinaryOperations())
         .or(parseString())
         .or(parseAtom());
