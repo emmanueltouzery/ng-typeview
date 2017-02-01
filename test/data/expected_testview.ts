@@ -29,6 +29,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     f__linky:(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string,
     f__orderBy:<T, K extends keyof T>(input:T[], field: K) => T[],
     f__filter:<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[],
+    f__limitTo:<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string | number,
     f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
     const ___x0: boolean = $scope.data.showText['five'].function() === 6;
     if ($scope.data.showText['five'].function() === 6) {
@@ -76,6 +77,8 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const ___x18: any = $scope.boolean1 ? 'str a' : $scope.boolean2 ? 'str b' : 'str c';
         const ___x19: any = !$scope.boolean1 ? $scope.boolean2 ? 'str b' : 'str c' : 'str a';
         const ___x20: any = ($scope.card.storedValue / 100).toFixed(2);
+        f__limitTo("brown fox jumps over the lazy dog", 10);
+        f__limitTo($scope.data.groups, 3);
         angular.forEach(f__orderBy($scope.data.groups, 'field'), group => {
             let $index = 0;
             let $first = true;
