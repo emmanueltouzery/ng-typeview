@@ -210,7 +210,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
  */
 export const defaultNgFilters = [
     new NgFilter("translate", "(key: string) => string"),
-    new NgFilter("linky", "(text:string, target: '_blank'|'_self'|'_parent'|'_top') => string"),
+    new NgFilter("linky", "(text:string | null, target: '_blank'|'_self'|'_parent'|'_top') => string"),
     new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
     new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]"),
     new NgFilter("limitTo", "<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string")
