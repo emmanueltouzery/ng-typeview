@@ -11,7 +11,8 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
-        ControllerScopeInfo, defaultCtrlViewConnectors, StringValue} from "./controller-parser"
+        ControllerScopeInfo, defaultCtrlViewConnectors,
+        StringValue, stringValuesMatch} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
@@ -193,7 +194,8 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .mapEntries<string,Iterable<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
                 [viewFname, ctrlViewInfos
-                 .map((cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))
+                 .map((cvi: ControllerViewInfo) =>
+                      controllerNameToFilename.find((fName, ctrlName) => stringValuesMatch(ctrlName, cvi.controllerName)))
                  .filter((name:string) => name)]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(

@@ -2,6 +2,7 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe, List} from "monet";
 import {Map} from "immutable";
+import {requireDefined} from "./view-parser";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
@@ -66,9 +67,9 @@ function parseModalOpen(callExpr : ts.CallExpression, variableDeclarations: Map<
     const rawViewPath = getField("templateUrl");
 
     const buildCtrlViewInfo = (rawViewPath:StringValue) => (ctrlName:StringValue):ControllerViewInfo =>
-        ({controllerName: ctrlName, viewPath: rawViewPath.varValue});
+        ({controllerName: ctrlName, viewPath: requireDefined(rawViewPath.varValue)});
 
-    return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+    return controllerName.ap(rawViewPath.filter(vp => vp.varValue !== undefined).map(buildCtrlViewInfo));
 }
 
 function parseModuleState(prop : ts.ObjectLiteralExpression, variableDeclarations: Map<string,string>): Maybe<ControllerViewInfo> {
@@ -86,8 +87,8 @@ function parseModuleState(prop : ts.ObjectLiteralExpression, variableDeclaration
             "templateUrl", List.fromArray(prop.properties), variableDeclarations);
 
         const buildCtrlViewInfo = (rawViewPath:StringValue) => (ctrlName:StringValue):ControllerViewInfo =>
-            ({controllerName: ctrlName, viewPath: rawViewPath.varValue});
-        return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+            ({controllerName: ctrlName, viewPath: requireDefined(rawViewPath.varValue)});
+        return controllerName.ap(rawViewPath.filter(vp => vp.varValue !== undefined).map(buildCtrlViewInfo));
     }
     return Maybe.None<ControllerViewInfo>();
 }
@@ -96,7 +97,7 @@ function parseModuleState(prop : ts.ObjectLiteralExpression, variableDeclaration
  * A string value represented in source through a variable, like:
  * const varName = "varValue";
  */
-export interface StringVariable { kind: "variable", varName: string, varValue: string};
+export interface StringVariable { kind: "variable", varName: string, varValue: string|undefined};
 /**
  * A string value represented in source a string literal, like: "varValue"
  */
@@ -107,15 +108,34 @@ export interface StringLiteral { kind: "literal", varValue: string};
 export type StringValue = StringVariable | StringLiteral;
 
 /**
+ * Do the string values match?
+ * If they both have values, we compare by value.
+ * If not, and we have two identifiers (presumably one from the file
+ * where the variable was defined, the other referencing it from another
+ * file, so only one would have a value), we'll check the variable names.
+ * If not, we compare by value.
+ */
+export function stringValuesMatch(a: StringValue, b: StringValue): boolean {
+    if (a.varValue && b.varValue) {
+        return a.varValue === b.varValue;
+    }
+    if (a.kind === "variable" && b.kind === "variable") {
+        return a.varName === b.varName;
+    }
+    return a.varValue === b.varValue;
+}
+
+/**
  * Parse a string value from a TS AST node. Will recognize either a
  * string literal or an identifier containing a string which was declared
  * earlier in the source.
+ * If we do not find the value, we'll put undefined in the value. That should
+ * happen only if the variable was defined in another file.
  */
 export function maybeStringValue(node: ts.Node, variableDeclarations: Map<string,string>): Maybe<StringValue> {
     return maybeStringLiteral(node).map(a => (<StringValue>{kind: "literal", varValue: a.text}))
-        .orElse(maybeIdentifier(node)
-                .flatMap(i => Maybe.of(variableDeclarations.get(i.text))
-                         .map(t => (<StringValue>{kind: "variable", varName: i.text, varValue: t}))));
+        .orElse(maybeIdentifier(node).map(i => (<StringValue>{
+            kind: "variable", varName: i.text, varValue: variableDeclarations.get(i.text)})));
 }
 
 function parseAngularModule(variableDeclarations: Map<string,string>, expr: ts.ExpressionStatement): Maybe<{moduleName: string, ctrlName: StringValue}> {

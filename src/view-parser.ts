@@ -28,7 +28,10 @@ function extractInlineExpressions(
     return result;
 }
 
-function requireDefined<T>(x:T|undefined): T {
+/**
+ * @hidden
+ */
+export function requireDefined<T>(x:T|undefined): T {
     if (typeof x === "undefined") {
         throw "unexpected undefined!";
     }
