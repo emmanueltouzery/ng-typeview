@@ -108,6 +108,7 @@ export interface StringLiteral { kind: "literal", varValue: string};
 export type StringValue = StringVariable | StringLiteral;
 
 /**
+ * @hidden
  * Do the string values match?
  * If they both have values, we compare by value.
  * If not, and we have two identifiers (presumably one from the file
@@ -202,6 +203,7 @@ export interface ControllerViewConnector {
      * this function will be called.
      * @param node the AST node which matched your specification
      * @param projectPath the path of the project on disk
+     * @param variableDeclarations list of variables declared so far in the file (var name/value)
      * @returns the controller-view connections that you detected for this node,
      *     if any (the empty array if you didn't detect any).
      */
