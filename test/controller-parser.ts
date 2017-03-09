@@ -1,13 +1,14 @@
 import * as assert from 'assert'
 import {Maybe} from "monet";
 import {extractControllerScopeInfo, ControllerScopeInfo,
-        extractCtrlViewConnsAngularModule,
+        extractCtrlViewConnsAngularModule, maybeStringValue,
         ControllerViewInfo, defaultCtrlViewConnectors} from '../src/controller-parser'
+import {Map} from "immutable";
 import * as ts from "typescript";
 
 const ctrlViewConn = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
-    getControllerView: (node: ts.Node, projectPath: string): ControllerViewInfo[] => {
+    getControllerView: (node: ts.Node, projectPath: string, variableDeclarations: Map<string,string>): ControllerViewInfo[] => {
         const call = <ts.CallExpression>node;
         if (["displayDialog", "core.displayDialog"].indexOf(call.expression.getText()) < 0) {
             return [];
@@ -20,7 +21,7 @@ const ctrlViewConn = {
             return [];
         }
         return [{
-            controllerName: (<ts.StringLiteral>call.arguments[1]).text,
+            controllerName: maybeStringValue(call.arguments[1], variableDeclarations).just(),
             viewPath: (<ts.StringLiteral>call.arguments[2]).text}];
     }
 };
@@ -31,26 +32,26 @@ describe("extractModalOpenAngularModule", () => {
             "test/data/test-ctrl.ts", "webapp", defaultCtrlViewConnectors.concat([ctrlViewConn]));
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
         assert.deepEqual(Maybe.Some("my.ng.module.name"), modalModuleInfo.ngModuleName);
-        assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.controllerName);
+        assert.deepEqual(Maybe.Some({kind: "variable", varName: "ctrlName", varValue: "ControllerName"}), modalModuleInfo.controllerName);
         assert.deepEqual([
             {
-                controllerName: "CtrlState1",
+                controllerName: {kind: "literal", varValue: "CtrlState1"},
                 viewPath: "app/view/url1.html"
             },
             {
-                controllerName: "CtrlState2",
+                controllerName: {kind: "literal", varValue: "CtrlState2"},
                 viewPath: "app/view/url2.html"
             },
             {
-                controllerName: "ControllerName",
+                controllerName: {kind: "literal", varValue: "ControllerName"},
                 viewPath: "test-view.html"
             },
             {
-                controllerName: "AnotherControllerName",
+                controllerName: {kind: "literal", varValue: "AnotherControllerName"},
                 viewPath: "path/to/another/view.html"
             },
             {
-                controllerName: "YupYetAnotherCtrl",
+                controllerName: {kind: "literal", varValue: "YupYetAnotherCtrl"},
                 viewPath: "and/yet/another/view.html"
             }], modalModuleInfo.controllerViewInfos);
     });

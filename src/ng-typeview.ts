@@ -11,7 +11,7 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
-        ControllerScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
+        ControllerScopeInfo, defaultCtrlViewConnectors, StringValue} from "./controller-parser"
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
@@ -179,7 +179,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .concat(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Map<string,string>(
+        Map<StringValue,string>(
             viewInfos
                 .filter(vi => vi.controllerName.isSome())
 			          // JS files are not going to have a scope interface

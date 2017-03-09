@@ -1,6 +1,7 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe, List} from "monet";
+import {Map} from "immutable";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
@@ -26,7 +27,7 @@ export interface ControllerViewInfo {
     /**
      * Name of an angular controller
      */
-    readonly controllerName : string;
+    readonly controllerName : StringValue;
     /**
      * Path to an angular view (file name within the project,
      * NOT absolute path on disk).
@@ -39,19 +40,18 @@ function objectLiteralGetProperty(
     return elts.find(elt => maybeIdentifier(elt.name).filter(i => i.text === propName).isSome());
 }
 
-function getFieldStringLiteralValue(field: ts.Node): Maybe<string> {
+function getFieldStringLiteralValue(field: ts.Node, variableDeclarations: Map<string,string>): Maybe<StringValue> {
     return maybePropertyAssignment(field)
-        .flatMap(pa => maybeStringLiteral(pa.initializer))
-        .map(ini => ini.text);
+        .flatMap(pa => maybeStringValue(pa.initializer, variableDeclarations));
 }
 
 function objectLiteralGetStringLiteralField(
-    propName: string, elts: List<ts.ObjectLiteralElementLike>): Maybe<string> {
+    propName: string, elts: List<ts.ObjectLiteralElementLike>, variableDeclarations: Map<string,string>): Maybe<StringValue> {
     return objectLiteralGetProperty(propName, elts)
-        .flatMap(p => getFieldStringLiteralValue(p));
+            .flatMap(p => getFieldStringLiteralValue(p, variableDeclarations));
 }
 
-function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo> {
+function parseModalOpen(callExpr : ts.CallExpression, variableDeclarations: Map<string, string>): Maybe<ControllerViewInfo> {
     const paramObjectElements = Maybe.of(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
                 .indexOf(c.expression.getText()) >= 0)
@@ -59,19 +59,19 @@ function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo>
         .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
         .map(o => List.fromArray(o.properties));
 
-    const getField = (name: string): Maybe<string> =>
-        paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
+    const getField = (name: string): Maybe<StringValue> =>
+        paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe, variableDeclarations));
 
     const controllerName = getField("controller");
     const rawViewPath = getField("templateUrl");
 
-    const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
-        ({controllerName: ctrlName, viewPath: rawViewPath});
+    const buildCtrlViewInfo = (rawViewPath:StringValue) => (ctrlName:StringValue):ControllerViewInfo =>
+        ({controllerName: ctrlName, viewPath: rawViewPath.varValue});
 
     return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
 }
 
-function parseModuleState(prop : ts.ObjectLiteralExpression): Maybe<ControllerViewInfo> {
+function parseModuleState(prop : ts.ObjectLiteralExpression, variableDeclarations: Map<string,string>): Maybe<ControllerViewInfo> {
     const objectLiteralFields = prop.properties
         .map(e => maybeIdentifier(e.name))
         .filter(i => i.isSome())
@@ -81,18 +81,44 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Maybe<ControllerVi
         (objectLiteralFields.indexOf("controller") >= 0)) {
         // seems like I got a state controller/view declaration
         const controllerName = objectLiteralGetStringLiteralField(
-            "controller", List.fromArray(prop.properties));
+            "controller", List.fromArray(prop.properties), variableDeclarations);
         const rawViewPath = objectLiteralGetStringLiteralField(
-            "templateUrl", List.fromArray(prop.properties));
+            "templateUrl", List.fromArray(prop.properties), variableDeclarations);
 
-        const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
-            ({controllerName: ctrlName, viewPath: rawViewPath});
+        const buildCtrlViewInfo = (rawViewPath:StringValue) => (ctrlName:StringValue):ControllerViewInfo =>
+            ({controllerName: ctrlName, viewPath: rawViewPath.varValue});
         return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
     }
     return Maybe.None<ControllerViewInfo>();
 }
 
-function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]> {
+/**
+ * A string value represented in source through a variable, like:
+ * const varName = "varValue";
+ */
+export interface StringVariable { kind: "variable", varName: string, varValue: string};
+/**
+ * A string value represented in source a string literal, like: "varValue"
+ */
+export interface StringLiteral { kind: "literal", varValue: string};
+/**
+ * A string value
+ */
+export type StringValue = StringVariable | StringLiteral;
+
+/**
+ * Parse a string value from a TS AST node. Will recognize either a
+ * string literal or an identifier containing a string which was declared
+ * earlier in the source.
+ */
+export function maybeStringValue(node: ts.Node, variableDeclarations: Map<string,string>): Maybe<StringValue> {
+    return maybeStringLiteral(node).map(a => (<StringValue>{kind: "literal", varValue: a.text}))
+        .orElse(maybeIdentifier(node)
+                .flatMap(i => Maybe.of(variableDeclarations.get(i.text))
+                         .map(t => (<StringValue>{kind: "variable", varName: i.text, varValue: t}))));
+}
+
+function parseAngularModule(variableDeclarations: Map<string,string>, expr: ts.ExpressionStatement): Maybe<{moduleName: string, ctrlName: StringValue}> {
     const callExpr = maybeCallExpression(expr.expression);
     const prop0 = callExpr
         .flatMap(callExpr => maybePropertyAccessExpression(callExpr.expression));
@@ -112,20 +138,20 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]
         .orElse(call1.filter(v => v === "module")).isSome()) {
         const moduleCall = prop0.map(p => p.name.text);
         if (moduleCall.filter(v => v === "controller").isSome()) {
-            const ctrlName = callExpr
+            const ctrlName: Maybe<StringValue> = callExpr
                 .filter(c => c.arguments.length > 0)
-                .flatMap(c => maybeStringLiteral(c.arguments[0]))
-                .map(a => a.text);
+                .flatMap(c => maybeStringValue(c.arguments[0], variableDeclarations));
             const moduleName = prop0
                 .flatMap(p => maybeCallExpression(p.expression))
                 .filter(c => c.arguments.length > 0)
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(s => s.text);
-            const buildModuleCtrl: ((x:string) => (y:string) => [string,string]) = mod => ctrl => [mod, ctrl];
+            const buildModuleCtrl: ((x:string) => (y:StringValue) => {moduleName:string,ctrlName:StringValue}) =
+                mod => ctrl => ({moduleName: mod, ctrlName: ctrl});
             return ctrlName.ap(moduleName.map(buildModuleCtrl));
         }
     }
-    return Maybe.None<[string,string]>();
+    return Maybe.None<{moduleName: string, ctrlName: StringValue}>();
 }
 
 /**
@@ -134,7 +160,7 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]
 export interface ViewInfo {
     readonly fileName: string;
     readonly ngModuleName: Maybe<string>;
-    readonly controllerName: Maybe<string>;
+    readonly controllerName: Maybe<StringValue>;
     readonly controllerViewInfos: ControllerViewInfo[]
 }
 
@@ -159,19 +185,19 @@ export interface ControllerViewConnector {
      * @returns the controller-view connections that you detected for this node,
      *     if any (the empty array if you didn't detect any).
      */
-    getControllerView: (node: ts.Node, projectPath: string) => ControllerViewInfo[];
+    getControllerView: (node: ts.Node, projectPath: string, variableDeclarations: Map<string,string>) => ControllerViewInfo[];
 }
 
 const modalOpenViewConnector : ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
-    getControllerView: (node, projectPath) =>
-        parseModalOpen(<ts.CallExpression>node).toList().toArray()
+    getControllerView: (node, projectPath, variableDeclarations) =>
+        parseModalOpen(<ts.CallExpression>node, variableDeclarations).toList().toArray()
 };
 
 const moduleStateViewConnector: ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.ObjectLiteralExpression,
-    getControllerView: (node, projectPath) =>
-        parseModuleState(<ts.ObjectLiteralExpression>node).toList().toArray()
+    getControllerView: (node, projectPath, variableDeclarations) =>
+        parseModuleState(<ts.ObjectLiteralExpression>node, variableDeclarations).toList().toArray()
 };
 
 /**
@@ -192,19 +218,32 @@ export function extractCtrlViewConnsAngularModule(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     let ngModuleName = Maybe.None<string>();
-    let controllerName = Maybe.None<string>();
+    let controllerName = Maybe.None<StringValue>();
     let controllerViewInfos:ControllerViewInfo[] = [];
+    let simpleVariablesDeclared = Map<string,string>();
     return new Promise<ViewInfo>((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
+            if (node.kind == ts.SyntaxKind.VariableDeclaration) {
+                const varDecl = <ts.VariableDeclaration>node;
+                if (varDecl.name.kind == ts.SyntaxKind.Identifier) {
+                    const varName = (<ts.Identifier>varDecl.name).text
+
+                    if (varDecl.initializer && varDecl.initializer.kind == ts.SyntaxKind.StringLiteral) {
+                        const varValue = (<ts.StringLiteral>varDecl.initializer).text
+                        simpleVariablesDeclared = simpleVariablesDeclared.set(varName, varValue)
+                    }
+
+                }
+            }
             if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
-                const mCtrlNgModule = parseAngularModule(<ts.ExpressionStatement>node);
-                ngModuleName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[0]);
-                controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
+                const mCtrlNgModule = parseAngularModule(simpleVariablesDeclared, <ts.ExpressionStatement>node);
+                ngModuleName = mCtrlNgModule.map(moduleCtrl => moduleCtrl.moduleName);
+                controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl.ctrlName);
             }
             controllerViewInfos = controllerViewInfos.concat(
                 List.fromArray(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => List.fromArray(conn.getControllerView(node, webappPath)))
+                    .flatMap(conn => List.fromArray(conn.getControllerView(node, webappPath, simpleVariablesDeclared)))
                     .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }

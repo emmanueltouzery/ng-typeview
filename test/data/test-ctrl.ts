@@ -91,6 +91,8 @@ module multipart.module.name {
         $modal, 'YupYetAnotherCtrl',
         'and/yet/another/view.html', { isEvent: () => true });
 
+    const ctrlName = 'ControllerName';
+
     angular.module('my.ng.module.name')
-        .controller('ControllerName', ['param1', 'param2', Ctor]);
+        .controller(ctrlName, ['param1', 'param2', Ctor]);
 }
