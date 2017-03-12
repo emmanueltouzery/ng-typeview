@@ -5,7 +5,8 @@
         "alwaysStrict": true,
         "outDir": "./dist",
         "declaration": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "lib": ["es2015", "dom"]
     },
     "include": [
         "src/**/*",

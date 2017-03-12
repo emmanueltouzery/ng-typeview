@@ -1,7 +1,7 @@
 import {Maybe} from "monet"
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import {Iterable, List, Stack} from "immutable";
+import {Collection, List, Stack} from "immutable";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
 
@@ -35,7 +35,7 @@ function requireDefined<T>(x:T|undefined): T {
     return x;
 }
 
-function listKeepDefined<T>(l:Iterable<number,T|undefined>): Iterable<number, T> {
+export function listKeepDefined<T>(l:Collection<number,T|undefined>): Collection<number, T> {
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
@@ -54,8 +54,8 @@ export function normalizeTagAttrName(name: string): string {
 
 function handleDirectiveResponses(xpath: Stack<string>,
                                   codegenHelpers: CodegenHelper,
-                                  resps: Iterable<number,DirectiveResponse>)
-                                  : Iterable<number,NgScope> {
+                                  resps: Collection<number,DirectiveResponse>)
+                                  : Collection<number,NgScope> {
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
@@ -120,9 +120,11 @@ function getHandler(
                 console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
             }
             xpath = xpath.shift();
-            while (activeScopes.first() && activeScopes.first().xpathDepth > xpath.size) {
-                expressions += activeScopes.first().closeSource();
+            var firstScope = activeScopes.first();
+            while (firstScope && firstScope.xpathDepth > xpath.size) {
+                expressions += firstScope.closeSource();
                 activeScopes = activeScopes.shift();
+                firstScope = activeScopes.first();
             }
         },
         ontext: (text: string) => {

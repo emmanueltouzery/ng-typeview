@@ -1,10 +1,10 @@
 import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
 import {sync} from "glob";
-import {Map, List, Seq, Iterable} from "immutable";
+import {Map, List, Seq, Collection} from "immutable";
 import {parse} from "path";
 import * as ts from "typescript";
 
-import {parseView} from "./view-parser"
+import {parseView, listKeepDefined} from "./view-parser"
 import {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 export {AttributeDirectiveHandler, TagDirectiveHandler,
@@ -15,18 +15,6 @@ import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
 import {addScopeAccessors} from "./view-ngexpression-parser"
 
 export {ControllerViewInfo} from "./controller-parser";
-
-declare global {
-    // tested working on node.
-    interface String {
-        repeat(c: number): string;
-        endsWith(t: string): boolean;
-        startsWith(t: string): boolean;
-    }
-    interface Array<T> {
-        find(p: (item:T) => boolean): T|undefined
-    }
-}
 
 // we only repeat the imports, type synonyms and custom interfaces
 // if there is a module, because otherwise those are dumped in the
@@ -173,13 +161,13 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
     const viewInfos = await Promise.all(
         files.map(f => extractCtrlViewConnsAngularModule(
             f, prjSettings.path, prjSettings.ctrlViewConnectors)));
-    const viewFilenameToControllerNames: Seq.Keyed<string,Iterable<number,ControllerViewInfo>> =
+    const viewFilenameToControllerNames: Seq.Keyed<string,Collection<number,ControllerViewInfo>> =
         List(viewInfos)
-        .flatMap<number,ControllerViewInfo>(vi => vi.controllerViewInfos)
+        .flatMap(vi => vi.controllerViewInfos)
         .concat(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Map<string,string>(
+        Map(
             viewInfos
                 .filter(vi => vi.controllerName.isSome())
 			          // JS files are not going to have a scope interface
@@ -190,11 +178,10 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                 .map(vi => [vi.controllerName.some(), vi.fileName]));
     const viewFilenameToCtrlFilenames =
         viewFilenameToControllerNames
-        .mapEntries<string,Iterable<number,string>>(
+        .mapEntries<string,Collection<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
-                [viewFname, ctrlViewInfos
-                 .map((cvi: ControllerViewInfo) => controllerNameToFilename.get(cvi.controllerName))
-                 .filter((name:string) => name)]);
+                [viewFname, listKeepDefined(ctrlViewInfos
+                 .map(cvi => controllerNameToFilename.get(cvi.controllerName)))]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(prjSettings,
