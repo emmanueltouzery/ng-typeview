@@ -309,7 +309,8 @@ const nodeKindPassthroughList = Set(
      ts.SyntaxKind.NullKeyword,
      ts.SyntaxKind.StringLiteral,
      ts.SyntaxKind.TrueKeyword,
-     ts.SyntaxKind.FalseKeyword]);
+     ts.SyntaxKind.FalseKeyword,
+     ts.SyntaxKind.UndefinedKeyword]);
 
 function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => string {
     return node => {
@@ -319,7 +320,7 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
             const prop = <ts.PropertyAccessExpression>node;
             return stmtAddScopeAccessors(scopes)(prop.expression) + "." + prop.name.getText();
         } else if (node.kind === ts.SyntaxKind.Identifier) {
-            return addScopePrefixIfNeeded(scopes, node.getText());
+            return node.getText() === "undefined" ? "undefined" : addScopePrefixIfNeeded(scopes, node.getText());
         } else if (node.kind === ts.SyntaxKind.PrefixUnaryExpression) {
             const op = <ts.PrefixUnaryExpression>node;
             return ts.tokenToString(op.operator) + stmtAddScopeAccessors(scopes)(op.operand);

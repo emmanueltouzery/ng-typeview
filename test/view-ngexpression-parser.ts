@@ -20,6 +20,7 @@ describe("addScopeAccessors", () => {
         const assertScopeAcc = (expected:string,input:string) => assert.equal(
             expected, addScopeAccessors(fakeScopeInfo, input));
         assertScopeAcc("$scope.data.value", "data.value");
+        assertScopeAcc("$scope.data.value !== undefined", "data.value !== undefined");
         assertScopeAcc("!$scope.wasProvidedWorkbook()", "!wasProvidedWorkbook()");
         assertScopeAcc("$scope.info.subscribedEmails.length > 0", "info.subscribedEmails.length > 0");
         assertScopeAcc("$scope.movieInfo.legendEnabled && $scope.movieInfo.legend.length > 0",
