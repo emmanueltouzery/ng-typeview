@@ -4,7 +4,7 @@ import {Map, List, Seq, Collection} from "immutable";
 import {parse} from "path";
 import * as ts from "typescript";
 
-import {parseView, listKeepDefined} from "./view-parser"
+import {parseView, listKeepDefined, collectionKeepDefined} from "./view-parser"
 import {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 export {AttributeDirectiveHandler, TagDirectiveHandler,
@@ -180,7 +180,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         viewFilenameToControllerNames
         .mapEntries<string,Collection<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
-                [viewFname, listKeepDefined(ctrlViewInfos
+                [viewFname, collectionKeepDefined(ctrlViewInfos
                  .map(cvi => controllerNameToFilename.get(cvi.controllerName)))]);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(

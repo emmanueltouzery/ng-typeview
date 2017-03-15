@@ -35,7 +35,11 @@ function requireDefined<T>(x:T|undefined): T {
     return x;
 }
 
-export function listKeepDefined<T>(l:Collection<number,T|undefined>): Collection<number, T> {
+export function collectionKeepDefined<T>(l:Collection<number,T|undefined>): Collection<number, T> {
+    return l.filter(x => x!==undefined).map(requireDefined);
+}
+
+export function listKeepDefined<T>(l:List<T|undefined>): List<T> {
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
@@ -54,8 +58,8 @@ export function normalizeTagAttrName(name: string): string {
 
 function handleDirectiveResponses(xpath: Stack<string>,
                                   codegenHelpers: CodegenHelper,
-                                  resps: Collection<number,DirectiveResponse>)
-                                  : Collection<number,NgScope> {
+                                  resps: List<DirectiveResponse>)
+                                  : List<NgScope> {
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)

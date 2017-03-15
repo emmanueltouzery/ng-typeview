@@ -27,7 +27,7 @@
         "@types/node": "0.0.2",
         "glob": "7.1.1",
         "htmlparser2": "3.9.2",
-        "immutable": "4.0.0-rc.1",
+        "immutable": "https://github.com/facebook/immutable-js/tarball/d66e3fe13830df8ab5ecc867a3ff0a2384e2621d",
         "monet": "https://github.com/cwmyers/monet.js/tarball/94869efab16e8469ebd92e2a4f5d91b14f041d81",
         "typescript": "2.1.4",
         "parsimmon": "1.2.0",
