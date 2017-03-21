@@ -97,7 +97,7 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
 
 const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
-                    "ng-submit", "ng-class", "ng-style"],
+                    "ng-submit", "ng-class", "ng-style", "ng-init"],
     handleAttribute: (attrName, val, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("any", val) })
 };
