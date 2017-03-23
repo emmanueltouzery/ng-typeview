@@ -297,19 +297,27 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
 
 interface NgUiSelectChoicesData {
     readonly variable: string;
+    readonly variableExpr: Maybe<string>;
     readonly expression: NgFilterExpression;
 }
 
 function parseNgUiSelectChoicesSelect(): P.Parser<NgUiSelectChoicesData> {
     return parseAtom()
-        .chain(variable => keyword("in")
-               .then(parseNgFilterExpression())
-               .map(expression => {
-                   const r: NgUiSelectChoicesData = {
-                       variable, expression
-                   };
-                   return r;
-               }))
+        .chain(first => parseNgUiSelectChoicesAs(first)
+               .or(parseNgUiSelectChoicesIn(first, Maybe.None<string>())));
+}
+
+function parseNgUiSelectChoicesAs(varExpr: string): P.Parser<NgUiSelectChoicesData> {
+    return keyword("as")
+        .then(P.regexp(/[a-zA-Z0-9]+/)) // identifier
+        .chain(identifier => parseNgUiSelectChoicesIn(identifier, Maybe.Some(varExpr)));
+}
+
+function parseNgUiSelectChoicesIn(
+    variable: string, variableExpr: Maybe<string>): P.Parser<NgUiSelectChoicesData> {
+    return keyword("in")
+            .then(parseNgFilterExpression())
+            .map(expression => ({variable, variableExpr, expression}));
 }
 
 const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
@@ -327,9 +335,13 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 }
                 const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                     selectData.value.expression, codegenHelpers);
+                const variableExprSrc = selectData.value.variableExpr
+                    .map(v => codegenHelpers.declareVariable('any' ,v))
+                    .orSome("");
                 return {
                     source: `${enumerable}.forEach(${
-                        codegenHelpers.registerVariable(selectData.value.variable)} => {`,
+                        codegenHelpers.registerVariable(selectData.value.variable)} => {${
+                            variableExprSrc}`,
                     closeSource: () => "});"
                 };
             }

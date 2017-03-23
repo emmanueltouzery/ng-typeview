@@ -54,5 +54,11 @@
                <div ng-switch-when="user">Home Span</div>
                <div ng-switch-default>default</div>
            </div>
+           <ui-select multiple ng-model="editObject.assignedUserTypes" style="width: 100%;" name="userTypes">
+               <ui-select-match placeholder="Select User Type">{{item.desc}}</ui-select-match>
+               <ui-select-choices repeat="user.typeId as user in itemsData.activeUserTypes | filter: {desc: $select.search, combinedUser:false}">
+                   {{user.desc}}
+               </ui-select-choices>
+           </ui-select>
     </body>
 </html>
