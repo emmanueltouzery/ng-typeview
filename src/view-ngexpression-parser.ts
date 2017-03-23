@@ -1,9 +1,10 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Set, Stack} from "immutable";
+import {Set, Stack, List} from "immutable";
 import * as P from "parsimmon"
 
-import {NgScope} from "./view-parser"
+import {NgScope, requireDefined} from "./view-parser"
+import {NgFilter} from "./filters"
 
 /**
  * Scope info used by ng-typeview. Directive authors can
@@ -26,8 +27,10 @@ export type NgScopeInfo = {
 export class CodegenHelper {
     public readonly ngScopeInfo: NgScopeInfo;
     private getNewVarName: ()=>string;
+    public readonly ngFilters: List<NgFilter>;
 
-    constructor(scope: Stack<NgScope>, getNewVarName: ()=>string) {
+    constructor(ngFilters: List<NgFilter>, scope: Stack<NgScope>, getNewVarName: ()=>string) {
+        this.ngFilters = ngFilters;
         this.ngScopeInfo = {soFar: scope, curScopeVars: []};
         this.getNewVarName = getNewVarName;
     }
@@ -213,11 +216,14 @@ function parseNgFilterParam() : P.Parser<string> {
     return P.regex(/\s*:\s*/).then(objectLiteralParam.or(simpleParam));
 }
 
-function wrapFilterCall(addScAccessors: (x:string)=>string):
+function wrapFilterCall(ngFilters: List<NgFilter>, addScAccessors: (x:string)=>string):
     (soFar: string, ngFilterCall: NgFilterCall) => string {
     return (soFar, ngFilterCall) => {
+        const addAccessorsForParam =
+            requireDefined(ngFilters.find(f => f.name === ngFilterCall.functionName))
+            .addScopeToParam;
         const params = ngFilterCall.functionParameters
-            .map(addScAccessors).join(', ');
+            .map((val, idx) => addAccessorsForParam(idx+1, val, addScAccessors)).join(', ');
         const fnParams = params.length > 0 ? (', ' + params) : '';
         return `f__${ngFilterCall.functionName}(${soFar}${fnParams})`
     }
@@ -243,8 +249,7 @@ export function filterExpressionToTypescript(
         console.warn(ngFilterExpr);
         return "";
     }
-    return ngFilterExpressionToTypeScriptStandalone(
-        ngFilterExpr.value, codegenHelpers);
+    return ngFilterExpressionToTypeScriptStandalone(ngFilterExpr.value, codegenHelpers);
 }
 
 /**
@@ -264,7 +269,7 @@ export function ngFilterExpressionToTypeScriptStandalone(
     }
 
     return ngFilterExpr.filterCalls.reduce(
-        wrapFilterCall(codegenHelpers.addScopeAccessors),
+        wrapFilterCall(codegenHelpers.ngFilters, codegenHelpers.addScopeAccessors),
         codegenHelpers.addScopeAccessors(ngFilterExpr.expression)) + ";";
 }
 
@@ -291,7 +296,7 @@ export function ngFilterExpressionToTypeScriptEmbedded(
     }
 
     return ngFilterExpr.filterCalls.reduce(
-        wrapFilterCall(codegenHelpers.addScopeAccessors),
+        wrapFilterCall(codegenHelpers.ngFilters, codegenHelpers.addScopeAccessors),
         codegenHelpers.addScopeAccessors(ngFilterExpr.expression));
 }
 
@@ -299,7 +304,7 @@ export function ngFilterExpressionToTypeScriptEmbedded(
  * @hidden
  */
 export function addScopeAccessors(scopes: Stack<NgScope>, input: string): string {
-    let sourceFile = ts.createSourceFile(
+    const sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join(";\n");
 }

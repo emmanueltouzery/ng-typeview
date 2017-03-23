@@ -2,9 +2,8 @@ import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
 import {sync} from "glob";
 import {Map, List, Seq, Collection} from "immutable";
 import {parse} from "path";
-import * as ts from "typescript";
 
-import {parseView, listKeepDefined, collectionKeepDefined} from "./view-parser"
+import {parseView, listKeepDefined, collectionKeepDefined, requireDefined} from "./view-parser"
 import {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 export {AttributeDirectiveHandler, TagDirectiveHandler,
@@ -12,7 +11,8 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewConnector, ControllerViewInfo,
         ControllerScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
-import {addScopeAccessors} from "./view-ngexpression-parser"
+import {addScopeAccessors, CodegenHelper} from "./view-ngexpression-parser"
+import {NgFilter, defaultNgFilters} from "./filters"
 
 export {ControllerViewInfo} from "./controller-parser";
 
@@ -42,8 +42,10 @@ async function processControllerView(prjSettings: ProjectSettings,
         // no point of writing anything if there is no scope block
         return;
     }
-    const viewExprs = await parseView(prjSettings.resolveImportsAsNonScope || false,
-        viewPath, scopeContents.importNames, List(tagDirectives), List(attributeDirectives));
+    const viewExprs = await parseView(
+        prjSettings.resolveImportsAsNonScope || false,
+        viewPath, scopeContents.importNames,
+        List(tagDirectives), List(attributeDirectives), List(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -59,20 +61,6 @@ async function processControllerView(prjSettings: ProjectSettings,
             `\n\nfunction ___f($scope: Scope, ${filterParams}) {\n` +
             viewExprs +
             "\n}\n") + "\n");
-}
-
-/**
- * An angular filter. They can be registered through the [[ProjectSettings]] setup.
- * You must give a name, and the type for the filter.
- * Example:
- * ```new NgFilter("translate", "(key: string) => string")```
- */
-export class NgFilter {
-    /**
-     * @param name The name of the angular filter
-     * @param type The type that'll be used to type-check uses of the filter.
-     */
-    constructor(public readonly name: string, public readonly type: string) {}
 }
 
 /**
@@ -189,19 +177,6 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                 prjSettings.tagDirectives,
                 prjSettings.attributeDirectives)).toArray())).toArray());
 }
-
-/**
- * Set of angular filters supported out of the box. You can give this list in
- * [[ProjectSettings.ngFilters]], or you can add your own or provide your own
- * list entirely.
- */
-export const defaultNgFilters = [
-    new NgFilter("translate", "(key: string) => string"),
-    new NgFilter("linky", "(text:string | null, target: '_blank'|'_self'|'_parent'|'_top') => string"),
-    new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
-    new NgFilter("filter", "<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[]"),
-    new NgFilter("limitTo", "<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string")
-];
 
 try {
     processProject({

@@ -10,12 +10,34 @@ const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): 
     return (input && input.kind === sKind) ? Maybe.Some(<T><any>input) : Maybe.None<T>();
 }
 
-const maybeCallExpression = maybeNodeType<ts.CallExpression>(ts.SyntaxKind.CallExpression);
-const maybePropertyAccessExpression = maybeNodeType<ts.PropertyAccessExpression>(ts.SyntaxKind.PropertyAccessExpression);
-const maybePropertyAssignment = maybeNodeType<ts.PropertyAssignment>(ts.SyntaxKind.PropertyAssignment);
-const maybeIdentifier = maybeNodeType<ts.Identifier>(ts.SyntaxKind.Identifier);
-const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringLiteral);
-const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
+/**
+ * @hidden
+ */
+export const maybeCallExpression = maybeNodeType<ts.CallExpression>(ts.SyntaxKind.CallExpression);
+/**
+ * @hidden
+ */
+export const maybePropertyAccessExpression = maybeNodeType<ts.PropertyAccessExpression>(ts.SyntaxKind.PropertyAccessExpression);
+/**
+ * @hidden
+ */
+export const maybePropertyAssignment = maybeNodeType<ts.PropertyAssignment>(ts.SyntaxKind.PropertyAssignment);
+/**
+ * @hidden
+ */
+export const maybeIdentifier = maybeNodeType<ts.Identifier>(ts.SyntaxKind.Identifier);
+/**
+ * @hidden
+ */
+export const maybeStringLiteral = maybeNodeType<ts.StringLiteral>(ts.SyntaxKind.StringLiteral);
+/**
+ * @hidden
+ */
+export const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpression>(ts.SyntaxKind.ObjectLiteralExpression);
+/**
+ * @hidden
+ */
+export const maybeVariableStatement = maybeNodeType<ts.VariableStatement>(ts.SyntaxKind.VariableStatement);
 
 /**
  * Returned by [[ControllerViewConnector.getControllerView]]

@@ -4,6 +4,7 @@ import {readFileSync} from "fs";
 import {Collection, List, Stack} from "immutable";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
+import {NgFilter} from "./filters"
 
 /**
  * @hidden
@@ -16,7 +17,7 @@ export interface NgScope {
 
 var v: number = 0;
 
-function extractInlineExpressions(
+function extractInlineExpressions(ngFilters: List<NgFilter>,
     text: string, codegenHelpers: CodegenHelper): string {
     const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
@@ -28,7 +29,10 @@ function extractInlineExpressions(
     return result;
 }
 
-function requireDefined<T>(x:T|undefined): T {
+/**
+ * @hidden
+ */
+export function requireDefined<T>(x:T|undefined): T {
     if (typeof x === "undefined") {
         throw "unexpected undefined!";
     }
@@ -75,6 +79,7 @@ function getHandler(
     fileName: string, defaultScope: string[],
     tagDirectiveHandlers: List<TagDirectiveHandler>,
     attrDirectiveHandlers: List<AttributeDirectiveHandler>,
+    ngFilters: List<NgFilter>,
     f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Stack<string>();
@@ -94,7 +99,7 @@ function getHandler(
             xpath = xpath.unshift(name);
 
             // work on tag handlers
-            const codegenHelpersTag = new CodegenHelper(activeScopes, getNewVariableName);
+            const codegenHelpersTag = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
@@ -105,7 +110,7 @@ function getHandler(
 
             // work on attribute handlers
             for (let attrName in attribs) {
-                const codegenHelpersAttr = new CodegenHelper(activeScopes, getNewVariableName);
+                const codegenHelpersAttr = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
                 const attrValue = attribs[attrName];
 
                 const attrDirectiveResps = listKeepDefined(
@@ -116,7 +121,7 @@ function getHandler(
 
                 activeScopes = activeScopes.unshiftAll(
                     handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
-                expressions += extractInlineExpressions(attrValue, codegenHelpersAttr);
+                expressions += extractInlineExpressions(ngFilters, attrValue, codegenHelpersAttr);
             }
         },
         onclosetag: (name: string) => {
@@ -132,9 +137,9 @@ function getHandler(
             }
         },
         ontext: (text: string) => {
-            const codegenHelpers = new CodegenHelper(activeScopes, getNewVariableName);
+            const codegenHelpers = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
             expressions = expressions.concat(
-                extractInlineExpressions(text, codegenHelpers));
+                extractInlineExpressions(ngFilters, text, codegenHelpers));
         },
         onend: () => {
             f(indentSource(expressions));
@@ -193,15 +198,16 @@ function indentSource(src: string): string {
 /**
  * @hidden
  */
-export function parseView(resolveImportsAsNonScope: boolean,
-    fileName: string, importNames: string[],
+export function parseView(
+    resolveImportsAsNonScope: boolean, fileName: string, importNames: string[],
     tagDirectiveHandlers: List<TagDirectiveHandler>,
-    attrDirectiveHandlers: List<AttributeDirectiveHandler>) : Promise<string> {
+    attrDirectiveHandlers: List<AttributeDirectiveHandler>,
+    ngFilters: List<NgFilter>) : Promise<string> {
     const defaultScope = resolveImportsAsNonScope ? importNames : [];
     return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(
             fileName, defaultScope,
-            tagDirectiveHandlers, attrDirectiveHandlers, resolve));
+            tagDirectiveHandlers, attrDirectiveHandlers, ngFilters, resolve));
         parser.write(readFileSync(fileName).toString());
         parser.done();
     });

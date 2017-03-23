@@ -1,7 +1,8 @@
 import * as assert from 'assert'
 import {execSync} from 'child_process';
 import {readFileSync} from "fs";
-import {processProject, NgFilter, defaultNgFilters} from "../src/ng-typeview"
+import {processProject} from "../src/ng-typeview"
+import {NgFilter, defaultNgFilters} from "../src/filters"
 import {defaultCtrlViewConnectors} from "../src/controller-parser"
 import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
 

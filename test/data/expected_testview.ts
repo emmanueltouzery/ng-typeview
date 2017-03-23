@@ -126,6 +126,21 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         case $scope.user: break;
         
     }
+    while (1) {
+        let $select = {
+            search:'', selected: $scope.editObject.assignedUserTypes
+        };
+        const ___x31: any = $scope.editObject.assignedUserTypes;
+        const ___x32: any = $scope.item.desc;
+        f__filter($scope.itemsData.activeUserTypes, {
+            desc: $select.search, combinedUser: false
+        }).forEach(user => {
+            const ___x33: any = $scope.user.typeId;
+            const ___x34: any = user.desc;
+            
+        });
+        
+    }
 }
 }
 
