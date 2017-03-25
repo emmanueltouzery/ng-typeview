@@ -1,7 +1,8 @@
 import {Maybe} from "monet"
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import {Collection, List, Stack} from "immutable";
+import {Collection, Stack} from "immutable";
+import * as imm from "immutable";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
 import {NgFilter} from "./filters"
@@ -17,7 +18,7 @@ export interface NgScope {
 
 var v: number = 0;
 
-function extractInlineExpressions(ngFilters: List<NgFilter>,
+function extractInlineExpressions(ngFilters: imm.List<NgFilter>,
     text: string, codegenHelpers: CodegenHelper): string {
     const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
@@ -43,7 +44,7 @@ export function collectionKeepDefined<T>(l:Collection<number,T|undefined>): Coll
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
-export function listKeepDefined<T>(l:List<T|undefined>): List<T> {
+export function listKeepDefined<T>(l:imm.List<T|undefined>): imm.List<T> {
     return l.filter(x => x!==undefined).map(requireDefined);
 }
 
@@ -62,8 +63,8 @@ export function normalizeTagAttrName(name: string): string {
 
 function handleDirectiveResponses(xpath: Stack<string>,
                                   codegenHelpers: CodegenHelper,
-                                  resps: List<DirectiveResponse>)
-                                  : List<NgScope> {
+                                  resps: imm.List<DirectiveResponse>)
+                                  : imm.List<NgScope> {
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
@@ -77,9 +78,9 @@ function handleDirectiveResponses(xpath: Stack<string>,
 
 function getHandler(
     fileName: string, defaultScope: string[],
-    tagDirectiveHandlers: List<TagDirectiveHandler>,
-    attrDirectiveHandlers: List<AttributeDirectiveHandler>,
-    ngFilters: List<NgFilter>,
+    tagDirectiveHandlers: imm.List<TagDirectiveHandler>,
+    attrDirectiveHandlers: imm.List<AttributeDirectiveHandler>,
+    ngFilters: imm.List<NgFilter>,
     f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Stack<string>();
@@ -200,9 +201,9 @@ function indentSource(src: string): string {
  */
 export function parseView(
     resolveImportsAsNonScope: boolean, fileName: string, importNames: string[],
-    tagDirectiveHandlers: List<TagDirectiveHandler>,
-    attrDirectiveHandlers: List<AttributeDirectiveHandler>,
-    ngFilters: List<NgFilter>) : Promise<string> {
+    tagDirectiveHandlers: imm.List<TagDirectiveHandler>,
+    attrDirectiveHandlers: imm.List<AttributeDirectiveHandler>,
+    ngFilters: imm.List<NgFilter>) : Promise<string> {
     const defaultScope = resolveImportsAsNonScope ? importNames : [];
     return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(

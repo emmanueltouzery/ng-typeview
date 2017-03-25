@@ -1,6 +1,7 @@
 import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
 import {sync} from "glob";
-import {Map, List, Seq, Collection} from "immutable";
+import {Map, Seq, Collection} from "immutable";
+import * as imm from "immutable";
 import {parse} from "path";
 
 import {parseView, listKeepDefined, collectionKeepDefined, requireDefined} from "./view-parser"
@@ -45,7 +46,7 @@ async function processControllerView(prjSettings: ProjectSettings,
     const viewExprs = await parseView(
         prjSettings.resolveImportsAsNonScope || false,
         viewPath, scopeContents.importNames,
-        List(tagDirectives), List(attributeDirectives), List(ngFilters));
+        imm.List(tagDirectives), imm.List(attributeDirectives), imm.List(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -150,7 +151,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         files.map(f => extractCtrlViewConnsAngularModule(
             f, prjSettings.path, prjSettings.ctrlViewConnectors)));
     const viewFilenameToControllerNames: Seq.Keyed<string,Collection<number,ControllerViewInfo>> =
-        List(viewInfos)
+        imm.List(viewInfos)
         .flatMap(vi => vi.controllerViewInfos)
         .concat(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);

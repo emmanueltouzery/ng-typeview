@@ -1,6 +1,7 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Maybe, List} from "monet";
+import {Maybe} from "monet";
+import * as monet from "monet";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
@@ -57,7 +58,7 @@ export interface ControllerViewInfo {
 }
 
 function objectLiteralGetProperty(
-    propName: string, elts: List<ts.ObjectLiteralElementLike>): Maybe<ts.Node> {
+    propName: string, elts: monet.List<ts.ObjectLiteralElementLike>): Maybe<ts.Node> {
     return elts.find(elt => maybeIdentifier(elt.name).filter(i => i.text === propName).isSome());
 }
 
@@ -68,7 +69,7 @@ function getFieldStringLiteralValue(field: ts.Node): Maybe<string> {
 }
 
 function objectLiteralGetStringLiteralField(
-    propName: string, elts: List<ts.ObjectLiteralElementLike>): Maybe<string> {
+    propName: string, elts: monet.List<ts.ObjectLiteralElementLike>): Maybe<string> {
     return objectLiteralGetProperty(propName, elts)
         .flatMap(p => getFieldStringLiteralValue(p));
 }
@@ -79,7 +80,7 @@ function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo>
                 .indexOf(c.expression.getText()) >= 0)
         .filter(c => c.arguments.length === 1)
         .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
-        .map(o => List.fromArray(o.properties));
+        .map(o => monet.List.fromArray(o.properties));
 
     const getField = (name: string): Maybe<string> =>
         paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
@@ -103,9 +104,9 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Maybe<ControllerVi
         (objectLiteralFields.indexOf("controller") >= 0)) {
         // seems like I got a state controller/view declaration
         const controllerName = objectLiteralGetStringLiteralField(
-            "controller", List.fromArray(prop.properties));
+            "controller", monet.List.fromArray(prop.properties));
         const rawViewPath = objectLiteralGetStringLiteralField(
-            "templateUrl", List.fromArray(prop.properties));
+            "templateUrl", monet.List.fromArray(prop.properties));
 
         const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
             ({controllerName: ctrlName, viewPath: rawViewPath});
@@ -224,9 +225,9 @@ export function extractCtrlViewConnsAngularModule(
                 controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
             }
             controllerViewInfos = controllerViewInfos.concat(
-                List.fromArray(ctrlViewConnectors)
+                monet.List.fromArray(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => List.fromArray(conn.getControllerView(node, webappPath)))
+                    .flatMap(conn => monet.List.fromArray(conn.getControllerView(node, webappPath)))
                     .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }

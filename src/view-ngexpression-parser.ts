@@ -1,6 +1,7 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Set, Stack, List} from "immutable";
+import {Set, Stack} from "immutable";
+import * as imm from "immutable";
 import * as P from "parsimmon"
 
 import {NgScope, requireDefined} from "./view-parser"
@@ -27,9 +28,9 @@ export type NgScopeInfo = {
 export class CodegenHelper {
     public readonly ngScopeInfo: NgScopeInfo;
     private getNewVarName: ()=>string;
-    public readonly ngFilters: List<NgFilter>;
+    public readonly ngFilters: imm.List<NgFilter>;
 
-    constructor(ngFilters: List<NgFilter>, scope: Stack<NgScope>, getNewVarName: ()=>string) {
+    constructor(ngFilters: imm.List<NgFilter>, scope: Stack<NgScope>, getNewVarName: ()=>string) {
         this.ngFilters = ngFilters;
         this.ngScopeInfo = {soFar: scope, curScopeVars: []};
         this.getNewVarName = getNewVarName;
@@ -216,7 +217,7 @@ function parseNgFilterParam() : P.Parser<string> {
     return P.regex(/\s*:\s*/).then(objectLiteralParam.or(simpleParam));
 }
 
-function wrapFilterCall(ngFilters: List<NgFilter>, addScAccessors: (x:string)=>string):
+function wrapFilterCall(ngFilters: imm.List<NgFilter>, addScAccessors: (x:string)=>string):
     (soFar: string, ngFilterCall: NgFilterCall) => string {
     return (soFar, ngFilterCall) => {
         const addAccessorsForParam =

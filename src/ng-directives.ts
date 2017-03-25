@@ -1,4 +1,3 @@
-import {List} from "immutable";
 import {Maybe} from "monet";
 import * as P from "parsimmon"
 

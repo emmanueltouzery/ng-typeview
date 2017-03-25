@@ -1,6 +1,8 @@
 import * as ts from "typescript";
-import {Maybe, List} from "monet";
-import {maybeVariableStatement, maybeObjectLiteralExpression, maybePropertyAssignment} from "./controller-parser"
+import {Maybe} from "monet";
+import * as monet from "monet";
+import {maybeVariableStatement,
+        maybeObjectLiteralExpression, maybePropertyAssignment} from "./controller-parser"
 
 /**
  * An angular filter. They can be registered through the [[ProjectSettings]] setup.
@@ -62,7 +64,7 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
         .filter(vs => vs.declarationList.declarations.length === 1)
         .filter(vs => vs.declarationList.declarations[0].initializer !== undefined)
         .flatMap(vs => maybeObjectLiteralExpression(vs.declarationList.declarations[0].initializer))
-        .flatMap(objLit => List.fromArray(objLit.properties.map(maybePropertyAssignment)).sequenceMaybe<ts.PropertyAssignment>())
+        .flatMap(objLit => monet.List.fromArray(objLit.properties.map(maybePropertyAssignment)).sequenceMaybe<ts.PropertyAssignment>())
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))
         .map(props => "{" + props.toArray().join(", ") + "}")
