@@ -1,7 +1,7 @@
 import * as ts from "typescript";
 import {Maybe} from "monet";
 import * as monet from "monet";
-import {maybeVariableStatement,
+import {maybeVariableStatement, maybeSingleNode,
         maybeObjectLiteralExpression, maybePropertyAssignment} from "./controller-parser"
 
 /**
@@ -59,11 +59,11 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
         "", "const ___ = " + input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
 
     return Maybe.Some(sourceFile)
-        .filter(f => f.statements.length === 1)
-        .flatMap(f => maybeVariableStatement(f.statements[0]))
-        .filter(vs => vs.declarationList.declarations.length === 1)
-        .filter(vs => vs.declarationList.declarations[0].initializer !== undefined)
-        .flatMap(vs => maybeObjectLiteralExpression(vs.declarationList.declarations[0].initializer))
+        .flatMap(f => maybeSingleNode(f.statements))
+        .flatMap(st => maybeVariableStatement(st))
+        .flatMap(vs => maybeSingleNode(vs.declarationList.declarations))
+        .filter(decl => decl.initializer !== undefined)
+        .flatMap(decl => maybeObjectLiteralExpression(decl.initializer))
         .flatMap(objLit => monet.List.fromArray(objLit.properties.map(maybePropertyAssignment)).sequenceMaybe<ts.PropertyAssignment>())
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))

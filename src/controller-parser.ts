@@ -14,6 +14,16 @@ const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): 
 /**
  * @hidden
  */
+export function maybeSingleNode<T extends ts.Node>(nodes: ts.NodeArray<T>|undefined): Maybe<T> {
+    if (nodes && nodes.length === 1) {
+        return Maybe.Some(nodes[0]);
+    }
+    return Maybe.None<T>();
+}
+
+/**
+ * @hidden
+ */
 export const maybeCallExpression = maybeNodeType<ts.CallExpression>(ts.SyntaxKind.CallExpression);
 /**
  * @hidden
@@ -78,8 +88,8 @@ function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo>
     const paramObjectElements = Maybe.of(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
                 .indexOf(c.expression.getText()) >= 0)
-        .filter(c => c.arguments.length === 1)
-        .flatMap(c => maybeObjectLiteralExpression(c.arguments[0]))
+        .flatMap(c => maybeSingleNode(c.arguments))
+        .flatMap(a => maybeObjectLiteralExpression(a))
         .map(o => monet.List.fromArray(o.properties));
 
     const getField = (name: string): Maybe<string> =>
