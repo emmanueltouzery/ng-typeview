@@ -138,7 +138,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         }).forEach(user => {
-            const ___x34: any = $scope.user.typeId;
+            const ___x34: any = user.typeId;
             const ___x35: any = user.desc;
             
         });

@@ -344,12 +344,12 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 }
                 const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                     selectData.value.expression, codegenHelpers);
+                const declVar = codegenHelpers.registerVariable(selectData.value.variable);
                 const variableExprSrc = selectData.value.variableExpr
                     .map(v => codegenHelpers.declareVariable('any', v))
                     .orSome("");
                 return {
-                    source: `${enumerable}.forEach(${
-                        codegenHelpers.registerVariable(selectData.value.variable)} => {${
+                    source: `${enumerable}.forEach(${declVar} => {${
                             variableExprSrc}`,
                     closeSource: () => "});"
                 };
