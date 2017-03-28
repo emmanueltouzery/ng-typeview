@@ -269,6 +269,14 @@ const ngPattern: AttributeDirectiveHandler = {
         }
 };
 
+const ngGrid: AttributeDirectiveHandler = {
+    forAttributes: ["ng-grid"],
+    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+        {
+            return { source: codegenHelpers.declareVariable("any", attrValue) };
+        }
+};
+
 // ng-switch should work on the attribute level, but the spec requires to read
 // multiple attributes at once... Eg "on"
 const ngSwitch: TagDirectiveHandler = {
@@ -406,7 +414,7 @@ export const defaultAttrDirectiveHandlers =
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
      ngBindAttrDirectiveHandler,
      ngRepeatAttrDirectiveHandler, ngOptions, ngBlur,
-     ngModelOptions, ngPattern];
+     ngModelOptions, ngPattern, ngGrid];
 
 /**
  * Set of angular tag directives supported out of the box. You can give this
