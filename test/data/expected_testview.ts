@@ -97,29 +97,31 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         
     }
     while (1) {
-        let $select = {
+        const $select = {
             search:'', selected: $scope.data
         };
+        const $item = $select.selected;
         const ___x23: any = $scope.data;
         const ___x24: any = $select.selected.firstname;
+        const ___x25: any = $item.firstname;
         f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-            const ___x25: any = subtype.name;
+            const ___x26: any = subtype.name;
             
         });
         
     }
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
-        const ___x26: any = item.subItem;
-        const ___x27: any = item.label;
+        const ___x27: any = item.subItem;
+        const ___x28: any = item.label;
         
     });
-    const ___x28: any = $scope.user;
+    const ___x29: any = $scope.user;
     angular.forEach($scope.data.groups, item => {
         f__translate(item.subItem);
-        const ___x29: any = item.id;
+        const ___x30: any = item.id;
         
     });
-    const ___x30: any = $scope.user;
+    const ___x31: any = $scope.user;
     switch ($scope.showDiv) {
         case $scope.data.firstname: break;
         case $scope.maxlength: break;
@@ -127,16 +129,17 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         
     }
     while (1) {
-        let $select = {
+        const $select = {
             search:'', selected: $scope.editObject.assignedUserTypes
         };
-        const ___x31: any = $scope.editObject.assignedUserTypes;
-        const ___x32: any = $scope.item.desc;
+        const $item = $select.selected;
+        const ___x32: any = $scope.editObject.assignedUserTypes;
+        const ___x33: any = $scope.item.desc;
         f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         }).forEach(user => {
-            const ___x33: any = $scope.user.typeId;
-            const ___x34: any = user.desc;
+            const ___x34: any = $scope.user.typeId;
+            const ___x35: any = user.desc;
             
         });
         

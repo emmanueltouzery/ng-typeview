@@ -40,7 +40,7 @@
             <ui-select close-on-select="true" style="width: 200px"
                        class="control-label" ng-model="data" style="width: 300px;">
                 <ui-select-match placeholder="- NONE -">
-                    {{$select.selected.firstname}}
+                    {{$select.selected.firstname}} {{$item.firstname}}
                 </ui-select-match>
                 <ui-select-choices
                     repeat="subtype in data.groups| orderBy: 'nameAndCountry'">

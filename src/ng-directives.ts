@@ -287,8 +287,9 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
             const attrValue = attribs[attrName];
             switch (attrName) {
             case "ng-model":
-                source += `let ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
+                source += `const ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
                     codegenHelpers.addScopeAccessors(attrValue)}};`;
+                source += `const ${codegenHelpers.registerVariable("$item")} = $select.selected;`;
                 break;
             case "allow-clear":
                 source += codegenHelpers.declareVariable("boolean", attrValue);
