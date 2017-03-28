@@ -288,7 +288,7 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
             switch (attrName) {
             case "ng-model":
                 source += `const ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
-                    codegenHelpers.addScopeAccessors(attrValue)}};`;
+                    codegenHelpers.addScopeAccessors(attrValue + '[0]')}};`;
                 source += `const ${codegenHelpers.registerVariable("$item")} = $select.selected;`;
                 break;
             case "allow-clear":
@@ -345,7 +345,7 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 const enumerable = ngFilterExpressionToTypeScriptEmbedded(
                     selectData.value.expression, codegenHelpers);
                 const variableExprSrc = selectData.value.variableExpr
-                    .map(v => codegenHelpers.declareVariable('any' ,v))
+                    .map(v => codegenHelpers.declareVariable('any', v))
                     .orSome("");
                 return {
                     source: `${enumerable}.forEach(${
