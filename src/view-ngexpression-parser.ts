@@ -72,7 +72,7 @@ export class CodegenHelper {
      * @param val value for the variable
      * @returns typescript expression that registers the variable, as string.
      */
-    public declareVariable(type:string,val:string): string {
+    public declareVariable(type:string, val:string): string {
         // if there are embedded {{}} blocks, ignore this and we'll grab them
         // in the html source in general through other means.
         if (val.length > 0 && val.indexOf("{{") < 0) {
@@ -316,7 +316,8 @@ const nodeKindPassthroughList = Set(
      ts.SyntaxKind.StringLiteral,
      ts.SyntaxKind.TrueKeyword,
      ts.SyntaxKind.FalseKeyword,
-     ts.SyntaxKind.UndefinedKeyword]);
+     ts.SyntaxKind.UndefinedKeyword,
+     ts.SyntaxKind.RegularExpressionLiteral]);
 
 function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => string {
     return node => {

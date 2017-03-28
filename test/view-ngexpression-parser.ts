@@ -38,5 +38,6 @@ describe("addScopeAccessors", () => {
         assertScopeAcc('{"internal-tab":true , "internal-active":$scope.idx === 0}',
                        '{"internal-tab": true, "internal-active": idx === 0}');
         assertScopeAcc("{name: $scope.wasProvidedWorkbook}", "{name: wasProvidedWorkbook}");
+        assertScopeAcc("/^[a-z]+$/", "/^[a-z]+$/");
     });
 });
