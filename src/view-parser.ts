@@ -101,6 +101,11 @@ function getHandler(
 
             // work on tag handlers
             const codegenHelpersTag = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
+
+            if (tagDirectiveHandlers
+                .filter(d => d.forTags.indexOf(name) >= 0).isEmpty() && name.startsWith("ng-")) {
+                console.warn("Warning: unhandled tag: " + name);
+            }
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
@@ -114,14 +119,21 @@ function getHandler(
                 const codegenHelpersAttr = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
                 const attrValue = attribs[attrName];
 
-                const attrDirectiveResps = listKeepDefined(
-                    attrDirectiveHandlers
-                        .filter(d => d.forAttributes.indexOf(attrName) >= 0)
-                        .map(handler => handler.handleAttribute(attrName, attrValue, codegenHelpersAttr)));
-                expressions += attrDirectiveResps.map(x => x.source).join("");
+                const handlers = attrDirectiveHandlers
+                    .filter(d => d.forAttributes.indexOf(attrName) >= 0);
 
-                activeScopes = activeScopes.unshiftAll(
-                    handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
+                if (!handlers.isEmpty()) {
+                    const attrDirectiveResps = listKeepDefined(
+                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, codegenHelpersAttr)));
+                    expressions += attrDirectiveResps.map(x => x.source).join("");
+
+                    activeScopes = activeScopes.unshiftAll(
+                        handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
+                } else {
+                    if (attrName.startsWith("ng-")) {
+                        console.warn("Warning: unhandled attribute: " + attrName);
+                    }
+                }
                 expressions += extractInlineExpressions(ngFilters, attrValue, codegenHelpersAttr);
             }
         },
