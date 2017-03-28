@@ -98,7 +98,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     }
     while (1) {
         const $select = {
-            search:'', selected: $scope.data
+            search:'', selected: $scope.data[0]
         };
         const $item = $select.selected;
         const ___x23: any = $scope.data;
@@ -130,7 +130,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     }
     while (1) {
         const $select = {
-            search:'', selected: $scope.editObject.assignedUserTypes
+            search:'', selected: $scope.editObject.assignedUserTypes[0]
         };
         const $item = $select.selected;
         const ___x32: any = $scope.editObject.assignedUserTypes;
