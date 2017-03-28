@@ -100,14 +100,15 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const $select = {
             search:'', selected: $scope.data[0]
         };
-        const $item = $select.selected;
+        let $item = null;
         const ___x23: any = $scope.data;
-        const ___x24: any = $select.selected.firstname;
-        const ___x25: any = $item.firstname;
+        $item = f__orderBy($scope.data.groups, 'nameAndCountry')[0];
         f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-            const ___x26: any = subtype.name;
+            const ___x24: any = subtype.name;
             
         });
+        const ___x25: any = $select.selected.firstname;
+        const ___x26: any = $item.firstname;
         
     }
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
@@ -132,16 +133,19 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const $select = {
             search:'', selected: $scope.editObject.assignedUserTypes[0]
         };
-        const $item = $select.selected;
+        let $item = null;
         const ___x32: any = $scope.editObject.assignedUserTypes;
-        const ___x33: any = $scope.item.desc;
+        $item = f__filter($scope.itemsData.activeUserTypes, {
+            desc: $select.search, combinedUser: false
+        })[0];
         f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         }).forEach(user => {
-            const ___x34: any = user.typeId;
-            const ___x35: any = user.desc;
+            const ___x33: any = user.typeId;
+            const ___x34: any = user.desc;
             
         });
+        const ___x35: any = $scope.item.desc;
         
     }
 }

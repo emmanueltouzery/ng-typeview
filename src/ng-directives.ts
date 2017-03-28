@@ -289,7 +289,15 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
             case "ng-model":
                 source += `const ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
                     codegenHelpers.addScopeAccessors(attrValue + '[0]')}};`;
-                source += `const ${codegenHelpers.registerVariable("$item")} = $select.selected;`;
+                // alright, here comes the crazy part. it seems that $item is NOT
+                // defined by ui-select.ng-model as I first thought...
+                // but actually by the subtag ui-select.ui-select-choices.repeat.
+                // which is completely nuts imho.
+                // a sub-tag is creating stuff in the scope of the parent node...
+                // anyway. creating it here in the parent scope, as null by default,
+                // overwriting it from ui-select-choices. Means it'll be T|null instead
+                // of T, but there's only so much I can do here.
+                source += `let ${codegenHelpers.registerVariable("$item")} = null;`;
                 break;
             case "allow-clear":
                 source += codegenHelpers.declareVariable("boolean", attrValue);
@@ -349,7 +357,10 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                     .map(v => codegenHelpers.declareVariable('any', v))
                     .orSome("");
                 return {
-                    source: `${enumerable}.forEach(${declVar} => {${
+                    // setting $item. See the comment in the ui-select handling.
+                    // That also means that you should first have the ui-select-choices
+                    // subtag to ui-select and then the ui-select-match otherwise it won't work.
+                    source: `$item = ${enumerable}[0];${enumerable}.forEach(${declVar} => {${
                             variableExprSrc}`,
                     closeSource: () => "});"
                 };
