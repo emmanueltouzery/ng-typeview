@@ -129,10 +129,9 @@ function getHandler(
 
                     activeScopes = activeScopes.unshiftAll(
                         handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
-                } else {
-                    if (attrName.startsWith("ng-")) {
-                        console.warn("Warning: unhandled attribute: " + attrName);
-                    }
+                } else if (attrName.startsWith("ng-") &&
+                           !relevantTagHandlers.find(th => th.canHandleAttributes.indexOf(attrName) >= 0)) {
+                    console.warn("Warning: unhandled attribute: " + attrName);
                 }
                 expressions += extractInlineExpressions(ngFilters, attrValue, codegenHelpersAttr);
             }

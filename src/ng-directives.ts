@@ -55,6 +55,11 @@ export interface AttributeDirectiveHandler {
  */
 export interface TagDirectiveHandler {
     /**
+     * List of attributes this tag directive may handle. Used for the
+     * 'unhandled attribute' warning.
+     */
+    canHandleAttributes: string[];
+    /**
      * List of tag names which will trigger this handler. You must use the
      * ng-xxx syntax here (other forms present in your application's source
      * will get normalized to this syntax, so it'll match).
@@ -240,6 +245,7 @@ const ngOptions: AttributeDirectiveHandler = {
 // ng-switch should work on the attribute level, but the spec requires to read
 // multiple attributes at once... Eg "on"
 const ngSwitch: TagDirectiveHandler = {
+    canHandleAttributes: ['ng-switch'],
     forTags: [],
     handleTag: (tag, attribs, codegenHelpers) =>
         {
@@ -256,6 +262,7 @@ const ngSwitch: TagDirectiveHandler = {
 // ng-switch-when should work on the attribute level, but the spec requires to read
 // multiple attributes at once... Eg "ng-switch-when-separator"
 const ngSwitchWhen: TagDirectiveHandler = {
+    canHandleAttributes: ['ng-switch-when', 'ng-switch-when-separator', 'ng-switch-default'],
     forTags: [],
     handleTag: (tag, attribs, codegenHelpers) =>
         {
@@ -271,6 +278,7 @@ const ngSwitchWhen: TagDirectiveHandler = {
 };
 
 const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
+    canHandleAttributes: ['ng-model', 'allow-clear', 'ui-lock-choice'],
     forTags: ["ui-select"],
     handleTag: (tag, attribs, codegenHelpers) => {
         // a while just to introduce a new scope.
@@ -320,6 +328,7 @@ function parseNgUiSelectChoicesIn(
 }
 
 const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
+    canHandleAttributes: ['repeat'],
     forTags: ["ui-select-choices"],
     handleTag: (tag, attribs, codegenHelpers) => {
         for (let attrName in attribs) {
@@ -356,8 +365,8 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
 export const defaultAttrDirectiveHandlers =
     [boolAttrHandler, boolWithScopeAttrHandler,
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
-    ngBindAttrDirectiveHandler,
-    ngRepeatAttrDirectiveHandler, ngOptions];
+     ngBindAttrDirectiveHandler,
+     ngRepeatAttrDirectiveHandler, ngOptions];
 
 /**
  * Set of angular tag directives supported out of the box. You can give this
