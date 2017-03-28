@@ -251,6 +251,16 @@ const ngBlur: AttributeDirectiveHandler = {
         }
 };
 
+const ngModelOptions: AttributeDirectiveHandler = {
+    forAttributes: ["ng-model-options"],
+    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+        {
+            const typeDef = "{updateOn?: string, debounce?: number,"+
+                "allowInvalid?: boolean, getterSetter?: boolean, timezone?: string}";
+            return { source: codegenHelpers.declareVariable(typeDef, attrValue) };
+        }
+};
+
 // ng-switch should work on the attribute level, but the spec requires to read
 // multiple attributes at once... Eg "on"
 const ngSwitch: TagDirectiveHandler = {
@@ -387,7 +397,8 @@ export const defaultAttrDirectiveHandlers =
     [boolAttrHandler, boolWithScopeAttrHandler,
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
      ngBindAttrDirectiveHandler,
-     ngRepeatAttrDirectiveHandler, ngOptions, ngBlur];
+     ngRepeatAttrDirectiveHandler, ngOptions, ngBlur,
+     ngModelOptions];
 
 /**
  * Set of angular tag directives supported out of the box. You can give this
