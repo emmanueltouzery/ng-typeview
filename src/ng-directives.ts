@@ -101,7 +101,7 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
 
 const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
-                    "ng-submit", "ng-class", "ng-style", "ng-init"],
+                    "ng-submit", "ng-class", "ng-style", "ng-init", "ng-grid"],
     handleAttribute: (attrName, val, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("any", val) })
 };
@@ -242,8 +242,8 @@ const ngOptions: AttributeDirectiveHandler = {
         }
 };
 
-const ngBlur: AttributeDirectiveHandler = {
-    forAttributes: ["ng-blur"],
+const ngWithEvent: AttributeDirectiveHandler = {
+    forAttributes: ["ng-blur", "ng-mouseenter", "ng-mouseleave"],
     handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
             return { source: `const ${codegenHelpers.getNewVariableName()} = (${codegenHelpers.registerVariable('$event')}: any) => ` +
@@ -266,14 +266,6 @@ const ngPattern: AttributeDirectiveHandler = {
     handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
             return { source: codegenHelpers.declareVariable("RegExp|string", attrValue) };
-        }
-};
-
-const ngGrid: AttributeDirectiveHandler = {
-    forAttributes: ["ng-grid"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
-        {
-            return { source: codegenHelpers.declareVariable("any", attrValue) };
         }
 };
 
@@ -414,8 +406,8 @@ export const defaultAttrDirectiveHandlers =
     [boolAttrHandler, boolWithScopeAttrHandler,
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
      ngBindAttrDirectiveHandler,
-     ngRepeatAttrDirectiveHandler, ngOptions, ngBlur,
-     ngModelOptions, ngPattern, ngGrid];
+     ngRepeatAttrDirectiveHandler, ngOptions, ngWithEvent,
+     ngModelOptions, ngPattern];
 
 /**
  * Set of angular tag directives supported out of the box. You can give this
