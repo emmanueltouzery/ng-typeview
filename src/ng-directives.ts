@@ -401,6 +401,7 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 };
             }
         }
+        return undefined;
     }
 };
 

@@ -2,6 +2,8 @@
     "compilerOptions": {
         "noImplicitAny": true,
         "strictNullChecks": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
         "alwaysStrict": true,
         "outDir": "./dist",
         "declaration": true,
