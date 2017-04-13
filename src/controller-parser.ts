@@ -7,7 +7,7 @@ function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
 }
 
-const maybeNodeType = <T> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
+const maybeNodeType = <T extends ts.Node> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
     return (input && input.kind === sKind) ? Maybe.Some(<T><any>input) : Maybe.None<T>();
 }
 
