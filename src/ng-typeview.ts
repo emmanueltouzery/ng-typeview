@@ -10,8 +10,9 @@ import {AttributeDirectiveHandler, TagDirectiveHandler,
 export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
-        ViewInfo, ControllerViewConnector, ControllerViewInfo,
-        ControllerScopeInfo, defaultCtrlViewConnectors} from "./controller-parser"
+        ViewInfo, ControllerViewInfo, ControllerScopeInfo,
+        ControllerViewConnector, defaultCtrlViewConnectors,
+        ModelViewConnector, defaultModelViewConnectors} from "./controller-parser"
 import {addScopeAccessors, CodegenHelper} from "./view-ngexpression-parser"
 import {NgFilter, defaultNgFilters} from "./filters"
 
@@ -97,6 +98,15 @@ export interface ProjectSettings {
      */
     extraCtrlViewConnections: ControllerViewInfo[];
     /**
+     * List of model-view connectors to use.
+     * These tie model files to views.
+     * This allows to express non-controller models, such
+     * as directive models for instance.
+     * [[defaultModelViewConnectors]] contains a default list; you can use
+     * that, add to that list, or specify your own.
+     */
+    modelViewConnectors: ModelViewConnector[];
+    /**
      * List of tag-bound angular directives to handle during the analysis.
      * [[defaultTagDirectiveHandlers]] contains a default list; you can use
      * that, add to that list, or specify your own.
@@ -149,7 +159,8 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                        {nodir:true, ignore: prjSettings.blacklistedPaths});
     const viewInfos = await Promise.all(
         files.map(f => extractCtrlViewConnsAngularModule(
-            f, prjSettings.path, prjSettings.ctrlViewConnectors)));
+            f, prjSettings.path,
+            prjSettings.ctrlViewConnectors, prjSettings.modelViewConnectors)));
     const viewFilenameToControllerNames: Seq.Keyed<string,Collection<number,ControllerViewInfo>> =
         imm.List(viewInfos)
         .flatMap(vi => vi.controllerViewInfos)
@@ -165,12 +176,22 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
 			          // => keep only the original TS in that case.
 			          .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
                 .map(vi => [vi.controllerName.some(), vi.fileName]));
-    const viewFilenameToCtrlFilenames =
+    const viewFilenameToCtrlFilenamesViewConns =
         viewFilenameToControllerNames
         .mapEntries<string,Collection<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
-                [viewFname, collectionKeepDefined(ctrlViewInfos
-                 .map(cvi => controllerNameToFilename.get(cvi.controllerName)))]);
+                [viewFname, collectionKeepDefined(
+                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName)))])
+        .map(v => v.toList())
+        .toMap();
+    const viewFilenameToCtrlFilenamesModelConns =
+        imm.List(viewInfos)
+        .flatMap(vi => vi.modelViewInfos)
+        .groupBy(mvi => mvi.viewPath)
+        .toMap()
+        .map(mvis => mvis.toList().map(mvi => mvi.modelPath));
+    const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(
+        (views1, views2) => views1.concat(views2), viewFilenameToCtrlFilenamesModelConns);
     return Promise.all(viewFilenameToCtrlFilenames.map(
         (ctrlNames, viewName) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(prjSettings,
@@ -185,6 +206,7 @@ try {
         blacklistedPaths: process.argv.slice(3),
         ngFilters: defaultNgFilters,
         ctrlViewConnectors: defaultCtrlViewConnectors,
+        modelViewConnectors: defaultModelViewConnectors,
         extraCtrlViewConnections: [],
         tagDirectives: defaultTagDirectiveHandlers,
         attributeDirectives: defaultAttrDirectiveHandlers

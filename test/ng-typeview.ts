@@ -3,7 +3,7 @@ import {execSync} from 'child_process';
 import {readFileSync} from "fs";
 import {processProject} from "../src/ng-typeview"
 import {NgFilter, defaultNgFilters} from "../src/filters"
-import {defaultCtrlViewConnectors} from "../src/controller-parser"
+import {defaultCtrlViewConnectors, defaultModelViewConnectors} from "../src/controller-parser"
 import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
 
 const filters = defaultNgFilters.concat([
@@ -15,13 +15,22 @@ describe("processProject", () => {
         await processProject({
             path: "test/data",
             blacklistedPaths: [],
-            ngFilters :filters,
+            ngFilters: filters,
             ctrlViewConnectors: defaultCtrlViewConnectors,
+            modelViewConnectors: defaultModelViewConnectors,
             extraCtrlViewConnections: [],
             tagDirectives: defaultTagDirectiveHandlers,
             attributeDirectives: defaultAttrDirectiveHandlers});
         const actualContents = readFileSync("test/data/test-ctrl_test-view_viewtest.ts").toString();
         const expectedContents = readFileSync("test/data/expected_testview.ts").toString();
         assert.equal(expectedContents, actualContents);
+
+        const actualContentsDirective = readFileSync("test/data/test-directive_directive-template_viewtest.ts").toString();
+        const expectedContentsDirective = readFileSync("test/data/expected_directive_testview.ts").toString();
+        assert.equal(expectedContentsDirective, actualContentsDirective);
+
+        const actualContentsDirective2 = readFileSync("test/data/test-directive2_directive-template_viewtest.ts").toString();
+        const expectedContentsDirective2 = readFileSync("test/data/expected_directive2_testview.ts").toString();
+        assert.equal(expectedContentsDirective2, actualContentsDirective2);
     });
 });

@@ -49,6 +49,18 @@ export const maybeObjectLiteralExpression = maybeNodeType<ts.ObjectLiteralExpres
  * @hidden
  */
 export const maybeVariableStatement = maybeNodeType<ts.VariableStatement>(ts.SyntaxKind.VariableStatement);
+/**
+ * @hidden
+ */
+export const maybeArrowFunction = maybeNodeType<ts.ArrowFunction>(ts.SyntaxKind.ArrowFunction);
+/**
+ * @hidden
+ */
+export const maybeBlock = maybeNodeType<ts.Block>(ts.SyntaxKind.Block);
+/**
+ * @hidden
+ */
+export const maybeReturnStatement = maybeNodeType<ts.ReturnStatement>(ts.SyntaxKind.ReturnStatement);
 
 /**
  * Returned by [[ControllerViewConnector.getControllerView]]
@@ -59,7 +71,26 @@ export interface ControllerViewInfo {
     /**
      * Name of an angular controller
      */
-    readonly controllerName : string;
+    readonly controllerName: string;
+    /**
+     * Path to an angular view (file name within the project,
+     * NOT absolute path on disk).
+     */
+    readonly viewPath: string;
+}
+
+/**
+ * Returned by [[ModelViewConnector.getControllerView]]
+ * Describes a connection between a controller or directive (TS file
+ * containing a scope), and a view (HTML file).
+ */
+export interface ModelViewInfo {
+    /**
+     * Path to a file containing an angular controller scope
+     * (can be a controller or a directive, the important thing
+     * is that it contains the scope to use for the view)
+     */
+    readonly modelPath: string;
     /**
      * Path to an angular view (file name within the project,
      * NOT absolute path on disk).
@@ -161,6 +192,55 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]
     return Maybe.None<[string,string]>();
 }
 
+function getPropertyByName(objLit: ts.ObjectLiteralExpression,
+                           propName: string): Maybe<ts.ObjectLiteralElementLike> {
+    return Maybe.fromNull(
+        objLit.properties
+            .find(p => maybeIdentifier(p.name).filter(i => i.getText() === propName).isSome()));
+}
+
+function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpression): Maybe<ModelViewInfo> {
+    const prop0 =  maybePropertyAccessExpression(callExpr.expression);
+
+    const prop = prop0
+        .flatMap(callProp => maybeCallExpression(callProp.expression))
+        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+
+    const receiver1 = prop
+        .flatMap(p => maybeIdentifier(p.expression))
+        .map(r => r.text);
+    const call1 = prop
+        .flatMap(p => maybeIdentifier(p.name))
+        .map(r => r.text);
+
+    if (receiver1.filter(v => v === "angular")
+        .orElse(call1.filter(v => v === "module")).isSome()) {
+        const moduleCall = prop0.map(p => p.name.text);
+        if (moduleCall.filter(v => v === "directive").isSome()) {
+            const resultExpr = Maybe.Some(callExpr)
+                .filter(c => c.arguments.length > 1)
+                .flatMap(c => maybeArrowFunction(c.arguments[1]))
+                .flatMap(a => maybeBlock(a.body))
+                .flatMap(b => maybeReturnStatement(b.statements[0]))
+                .flatMap(s => Maybe.fromNull(s.expression));
+
+            if (resultExpr.isSome()) {
+                const scopeObject = resultExpr.some().kind === ts.SyntaxKind.AsExpression
+                    ? (<ts.AsExpression>resultExpr.some()).expression
+                    : resultExpr.some();
+
+                const templateUrl = maybeObjectLiteralExpression(scopeObject)
+                    .flatMap(e => getPropertyByName(e ,"templateUrl"))
+                    .flatMap(maybePropertyAssignment)
+                    .flatMap(a => maybeStringLiteral(a.initializer))
+                    .map(s => s.text);
+                return templateUrl.map(viewPath => ({modelPath, viewPath}));
+            }
+        }
+    }
+    return Maybe.None<ModelViewInfo>();
+}
+
 /**
  * @hidden
  */
@@ -168,7 +248,8 @@ export interface ViewInfo {
     readonly fileName: string;
     readonly ngModuleName: Maybe<string>;
     readonly controllerName: Maybe<string>;
-    readonly controllerViewInfos: ControllerViewInfo[]
+    readonly controllerViewInfos: ControllerViewInfo[];
+    readonly modelViewInfos: ModelViewInfo[];
 }
 
 /**
@@ -195,6 +276,30 @@ export interface ControllerViewConnector {
     getControllerView: (node: ts.Node, projectPath: string) => ControllerViewInfo[];
 }
 
+/**
+ * You can register such a connector using [[ProjectSettings.modelViewConnectors]].
+ * Will be called when parsing typescript files, allows you to tell ng-typeview
+ * about connections between scopes and views made in your code (whether the scope
+ * is defined in a controller or a directive for instance).
+ */
+export interface ModelViewConnector {
+    /**
+     * Which AST node you want to be listening for
+     */
+    interceptAstNode: ts.SyntaxKind;
+    /**
+     * When your view connector is registered and we parse a TS file and
+     * ecounter an AST node with the type you specified through [[interceptAstNode]],
+     * this function will be called.
+     * @param filename the typescript file name
+     * @param node the AST node which matched your specification
+     * @param projectPath the path of the project on disk
+     * @returns the controller-view connections that you detected for this node,
+     *     if any (the empty array if you didn't detect any).
+     */
+    getModelView: (filename: string, node: ts.Node, projectPath: string) => ModelViewInfo[];
+}
+
 const modalOpenViewConnector : ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
     getControllerView: (node, projectPath) =>
@@ -207,6 +312,12 @@ const moduleStateViewConnector: ControllerViewConnector = {
         parseModuleState(<ts.ObjectLiteralExpression>node).toList().toArray()
 };
 
+const directiveViewConnector: ModelViewConnector = {
+    interceptAstNode: ts.SyntaxKind.CallExpression,
+    getModelView: (filename, node, projectPath) =>
+        parseAngularDirectiveTemplate(filename, <ts.CallExpression>node).toList().toArray()
+};
+
 /**
  * Default set of [[ControllerViewConnector]] which can recognize connections between
  * angular controllers and views from the typescript source.
@@ -216,17 +327,27 @@ const moduleStateViewConnector: ControllerViewConnector = {
 export const defaultCtrlViewConnectors = [modalOpenViewConnector, moduleStateViewConnector];
 
 /**
+ * Default set of [[ModelViewConnector]] which can recognize connections between
+ * angular models (contained in controller or directives) and views from the typescript source.
+ * You can give this list in [[ProjectSettings.modelViewConnectors]], or you can add
+ * your own or provide your own list entirely.
+ */
+export const defaultModelViewConnectors = [directiveViewConnector];
+
+/**
  * @hidden
  */
 export function extractCtrlViewConnsAngularModule(
     fileName: string, webappPath: string,
-    ctrlViewConnectors: ControllerViewConnector[]): Promise<ViewInfo> {
+    ctrlViewConnectors: ControllerViewConnector[],
+    modelViewConnectors: ModelViewConnector[]): Promise<ViewInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     let ngModuleName = Maybe.None<string>();
     let controllerName = Maybe.None<string>();
-    let controllerViewInfos:ControllerViewInfo[] = [];
+    let controllerViewInfos: ControllerViewInfo[] = [];
+    let modelViewInfos: ModelViewInfo[] = [];
     return new Promise<ViewInfo>((resolve, reject) => {
         function nodeExtractModuleOpenAngularModule(node: ts.Node) {
             if (controllerName.isNone() && node.kind == ts.SyntaxKind.ExpressionStatement) {
@@ -239,10 +360,15 @@ export function extractCtrlViewConnsAngularModule(
                     .filter(conn => conn.interceptAstNode === node.kind)
                     .flatMap(conn => monet.List.fromArray(conn.getControllerView(node, webappPath)))
                     .toArray());
+            modelViewInfos = modelViewInfos.concat(
+                monet.List.fromArray(modelViewConnectors)
+                    .filter(conn => conn.interceptAstNode === node.kind)
+                    .flatMap(conn => monet.List.fromArray(conn.getModelView(fileName, node, webappPath)))
+                    .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
         nodeExtractModuleOpenAngularModule(sourceFile);
-        resolve({fileName, ngModuleName, controllerName, controllerViewInfos});
+        resolve({fileName, ngModuleName, controllerName, controllerViewInfos, modelViewInfos});
     });
 }
 
