@@ -307,7 +307,7 @@ export function ngFilterExpressionToTypeScriptEmbedded(
 export function addScopeAccessors(scopes: Stack<NgScope>, input: string): string {
     const sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join(";\n");
+    return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join("");
 }
 
 const nodeKindPassthroughList = Set(
@@ -368,6 +368,8 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
         } else if (node.kind === ts.SyntaxKind.ParenthesizedExpression) {
             return "(" + stmtAddScopeAccessors(scopes)(
                 (<ts.ParenthesizedExpression>node).expression) + ")";
+        } else if (node.kind === ts.SyntaxKind.ArrayLiteralExpression) {
+            return "[" + (<ts.ArrayLiteralExpression>node).elements.map(stmtAddScopeAccessors(scopes)).join(", ") + "]";
         }
         console.log("Add scope accessors: unhandled node: " + node.kind + " -- "+ node.getText());
         return node.getText();
