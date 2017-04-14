@@ -106,6 +106,12 @@ const anyAttrHandler: AttributeDirectiveHandler = {
         ({ source: codegenHelpers.declareVariable("any", val) })
 };
 
+// attributes for which we do nothing at all.
+const passThroughAttrHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-form"],
+    handleAttribute: (attrName, val, codegenHelpers) => ({ source: ""})
+};
+
 const stringAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-include", "ng-src"],
     handleAttribute: (attrName, val, codegenHelpers) =>
@@ -407,7 +413,7 @@ export const defaultAttrDirectiveHandlers =
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
      ngBindAttrDirectiveHandler,
      ngRepeatAttrDirectiveHandler, ngOptions, ngWithEvent,
-     ngModelOptions, ngPattern];
+     ngModelOptions, ngPattern, passThroughAttrHandler];
 
 /**
  * Set of angular tag directives supported out of the box. You can give this
