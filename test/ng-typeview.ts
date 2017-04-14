@@ -32,5 +32,9 @@ describe("processProject", () => {
         const actualContentsDirective2 = readFileSync("test/data/test-directive2_directive-template_viewtest.ts").toString();
         const expectedContentsDirective2 = readFileSync("test/data/expected_directive2_testview.ts").toString();
         assert.equal(expectedContentsDirective2, actualContentsDirective2);
+
+        const actualContentsDirective3 = readFileSync("test/data/test-directive3_directive-template_viewtest.ts").toString();
+        const expectedContentsDirective3 = readFileSync("test/data/expected_directive3_testview.ts").toString();
+        assert.equal(expectedContentsDirective3, actualContentsDirective3);
     });
 });

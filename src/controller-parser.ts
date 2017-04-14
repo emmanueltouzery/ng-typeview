@@ -61,6 +61,14 @@ export const maybeBlock = maybeNodeType<ts.Block>(ts.SyntaxKind.Block);
  * @hidden
  */
 export const maybeReturnStatement = maybeNodeType<ts.ReturnStatement>(ts.SyntaxKind.ReturnStatement);
+/**
+ * @hidden
+ */
+export const maybeAsExpression = maybeNodeType<ts.AsExpression>(ts.SyntaxKind.AsExpression);
+/**
+ * @hidden
+ */
+export const maybeArrayLiteralExpression = maybeNodeType<ts.ArrayLiteralExpression>(ts.SyntaxKind.ArrayLiteralExpression);
 
 /**
  * Returned by [[ControllerViewConnector.getControllerView]]
@@ -217,25 +225,34 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
         .orElse(call1.filter(v => v === "module")).isSome()) {
         const moduleCall = prop0.map(p => p.name.text);
         if (moduleCall.filter(v => v === "directive").isSome()) {
-            const resultExpr = Maybe.Some(callExpr)
+            const directiveParam = Maybe.Some(callExpr)
                 .filter(c => c.arguments.length > 1)
-                .flatMap(c => maybeArrowFunction(c.arguments[1]))
+                .map(c => c.arguments[1]);
+
+            const returnExpr = directiveParam
+                .flatMap(maybeArrayLiteralExpression)
+                .filter(l => l.elements.length > 0)
+                .map(l => l.elements[l.elements.length-1])
+                .orElse(directiveParam);
+
+            const resultExpr = returnExpr
+                .flatMap(maybeArrowFunction)
                 .flatMap(a => maybeBlock(a.body))
                 .flatMap(b => maybeReturnStatement(b.statements[0]))
                 .flatMap(s => Maybe.fromNull(s.expression));
 
-            if (resultExpr.isSome()) {
-                const scopeObject = resultExpr.some().kind === ts.SyntaxKind.AsExpression
-                    ? (<ts.AsExpression>resultExpr.some()).expression
-                    : resultExpr.some();
+            const scopeObject = resultExpr
+                .flatMap(maybeAsExpression)
+                .map(a => a.expression)
+                .orElse(resultExpr);
 
-                const templateUrl = maybeObjectLiteralExpression(scopeObject)
-                    .flatMap(e => getPropertyByName(e ,"templateUrl"))
-                    .flatMap(maybePropertyAssignment)
-                    .flatMap(a => maybeStringLiteral(a.initializer))
-                    .map(s => s.text);
-                return templateUrl.map(viewPath => ({modelPath, viewPath}));
-            }
+            const templateUrl = scopeObject
+                .flatMap(maybeObjectLiteralExpression)
+                .flatMap(e => getPropertyByName(e ,"templateUrl"))
+                .flatMap(maybePropertyAssignment)
+                .flatMap(a => maybeStringLiteral(a.initializer))
+                .map(s => s.text);
+            return templateUrl.map(viewPath => ({modelPath, viewPath}));
         }
     }
     return Maybe.None<ModelViewInfo>();
