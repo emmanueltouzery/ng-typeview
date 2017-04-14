@@ -4,6 +4,7 @@ test/data/test-ctrl_test-view_viewtest.ts
 test/data/test-directive_directive-template_viewtest.ts
 test/data/test-directive2_directive-template_viewtest.ts
 test/data/test-directive3_directive-template_viewtest.ts
+test/data/test-directive4_directive-template_viewtest.ts
 .#*
 apidoc/
 dist/
