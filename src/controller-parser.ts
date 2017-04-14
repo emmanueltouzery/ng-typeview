@@ -56,6 +56,10 @@ export const maybeArrowFunction = maybeNodeType<ts.ArrowFunction>(ts.SyntaxKind.
 /**
  * @hidden
  */
+export const maybeFunctionExpression = maybeNodeType<ts.FunctionExpression>(ts.SyntaxKind.FunctionExpression);
+/**
+ * @hidden
+ */
 export const maybeBlock = maybeNodeType<ts.Block>(ts.SyntaxKind.Block);
 /**
  * @hidden
@@ -235,9 +239,15 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
                 .map(l => l.elements[l.elements.length-1])
                 .orElse(directiveParam);
 
-            const resultExpr = returnExpr
+            const arrowBodyExpr = returnExpr
                 .flatMap(maybeArrowFunction)
-                .flatMap(a => maybeBlock(a.body))
+                .flatMap(a => maybeBlock(a.body));
+            const fnBodyExpr = returnExpr
+                .flatMap(maybeFunctionExpression)
+                .map(fn => fn.body);
+            const bodyExpr = arrowBodyExpr.orElse(fnBodyExpr);
+
+            const resultExpr = bodyExpr
                 .flatMap(b => maybeReturnStatement(b.statements[0]))
                 .flatMap(s => Maybe.fromNull(s.expression));
 
