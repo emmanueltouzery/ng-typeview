@@ -36,7 +36,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const ___x1: boolean = !$scope.user.wantsData();
         const ___x2: boolean = $scope.showDiv;
         if ($scope.showDiv) {
-            const ___x3: any = $scope.triggerAction('six');
+            const ___x3: any = ($event: any) => $scope.triggerAction('six');
             f__translate('CLICK_ME');
             f__translate('CLICK_ME');
             

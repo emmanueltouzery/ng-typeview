@@ -100,7 +100,7 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
 };
 
 const anyAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-click", "ng-model", "ng-change", "ng-value",
+    forAttributes: ["ng-model", "ng-change", "ng-value",
                     "ng-submit", "ng-class", "ng-style", "ng-init", "ng-grid"],
     handleAttribute: (attrName, val, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("any", val) })
@@ -249,10 +249,10 @@ const ngOptions: AttributeDirectiveHandler = {
 };
 
 const ngWithEvent: AttributeDirectiveHandler = {
-    forAttributes: ["ng-blur", "ng-mouseenter", "ng-mouseleave"],
+    forAttributes: ["ng-blur", "ng-mouseenter", "ng-mouseleave", "ng-click"],
     handleAttribute: (attrName, attrValue, codegenHelpers) =>
         {
-            return { source: `const ${codegenHelpers.getNewVariableName()} = (${codegenHelpers.registerVariable('$event')}: any) => ` +
+            return { source: `const ${codegenHelpers.getNewVariableName()}: any = (${codegenHelpers.registerVariable('$event')}: any) => ` +
                      codegenHelpers.addScopeAccessors(attrValue) + ";" };
         }
 };
