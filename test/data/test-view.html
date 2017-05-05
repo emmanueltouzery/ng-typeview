@@ -60,5 +60,6 @@
                </ui-select-choices>
                <ui-select-match placeholder="Select User Type">{{item.desc}}</ui-select-match>
            </ui-select>
+           <select ng-options="status.name as (status.name | translate) for status in adminStatusList"></select>
     </body>
 </html>

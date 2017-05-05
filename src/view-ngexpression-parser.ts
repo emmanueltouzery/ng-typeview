@@ -205,7 +205,7 @@ export function parseNgFilterExpression(): P.Parser<NgFilterExpression> {
 }
 
 function parseNgFilterCall(): P.Parser<NgFilterCall> {
-    return P.takeWhile(c => [' ', ':'].indexOf(c) < 0).chain(
+    return P.takeWhile(c => [' ', ':', ')'].indexOf(c) < 0).chain(
         functionName => parseNgFilterParam().many()
             .map(functionParameters => ({functionName, functionParameters})));
 }

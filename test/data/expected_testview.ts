@@ -148,6 +148,12 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         const ___x35: any = $scope.item.desc;
         
     }
+    angular.forEach($scope.adminStatusList, status => {
+        const ___x36: any = status.name;
+        f__translate(status.name);
+        
+    });
+    
 }
 }
 

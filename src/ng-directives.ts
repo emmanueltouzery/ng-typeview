@@ -196,9 +196,14 @@ function parseNgOptions(): P.Parser<NgOptionsData> {
         .chain(first => parseNgOptionsAs(first).or(parseNgOptionsFor({ label: first})));
 }
 
+function maybeBracketed<T>(next: P.Parser<T>): P.Parser<T> {
+    return P.regexp(/\s*\(\s*/).then(next).skip(P.regexp(/\s*\)/))
+        .or(next);
+}
+
 function parseNgOptionsAs(select: NgFilterExpression): P.Parser<NgOptionsData> {
     return keyword("as")
-        .then(parseNgFilterExpression())
+        .then(maybeBracketed(parseNgFilterExpression()))
         .chain(label => parseNgOptionsFor({select, label}));
 }
 
