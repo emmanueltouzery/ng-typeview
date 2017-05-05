@@ -28,7 +28,7 @@
         "glob": "7.1.1",
         "htmlparser2": "3.9.2",
         "immutable": "https://github.com/facebook/immutable-js/tarball/d66e3fe13830df8ab5ecc867a3ff0a2384e2621d",
-        "monet": "https://github.com/cwmyers/monet.js/tarball/94869efab16e8469ebd92e2a4f5d91b14f041d81",
+        "monet": "https://github.com/cwmyers/monet.js/tarball/41b8ede0aeb6d4de73bed1163608ead4a900ea7b",
         "typescript": "2.3.2",
         "parsimmon": "1.2.0",
         "@types/parsimmon": "1.0.1"
