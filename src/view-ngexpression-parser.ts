@@ -220,9 +220,11 @@ function parseNgFilterParam() : P.Parser<string> {
 function wrapFilterCall(ngFilters: imm.List<NgFilter>, addScAccessors: (x:string)=>string):
     (soFar: string, ngFilterCall: NgFilterCall) => string {
     return (soFar, ngFilterCall) => {
-        const addAccessorsForParam =
-            requireDefined(ngFilters.find(f => f.name === ngFilterCall.functionName))
-            .addScopeToParam;
+        const filterInfo = ngFilters.find(f => f.name === ngFilterCall.functionName);
+        if (!filterInfo) {
+            throw "Unknown filter: " + ngFilterCall.functionName + " -- context: " + soFar;
+        }
+        const addAccessorsForParam = filterInfo.addScopeToParam;
         const params = ngFilterCall.functionParameters
             .map((val, idx) => addAccessorsForParam(idx+1, val, addScAccessors)).join(', ');
         const fnParams = params.length > 0 ? (', ' + params) : '';
