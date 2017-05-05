@@ -153,6 +153,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         f__translate(status.name);
         
     });
+    const ___x37: any = $scope.actualConfigs[$scope.cfg.type] === "1" ? $scope.cfg.configs.test : $scope.actualConfigs[$scope.cfg.type] === "0" ? $scope.cfg.configs.fleet : '';
     
 }
 }

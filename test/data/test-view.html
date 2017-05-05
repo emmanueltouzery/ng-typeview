@@ -61,5 +61,6 @@
                <ui-select-match placeholder="Select User Type">{{item.desc}}</ui-select-match>
            </ui-select>
            <select ng-options="status.name as (status.name | translate) for status in adminStatusList"></select>
+           {{actualConfigs[cfg.type] === "1" ? cfg.configs.test : (actualConfigs[cfg.type] === "0" ? cfg.configs.fleet : '')}}
     </body>
 </html>

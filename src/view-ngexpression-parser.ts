@@ -184,8 +184,13 @@ function parseString(): P.Parser<string> {
     return str("'").or(str('"'));
 }
 
+function parseBracketed<T>(next: P.Parser<T>): P.Parser<T> {
+    return P.regexp(/\s*\(\s*/).then(next).skip(P.regexp(/\s*\)/));
+}
+
 function parseExpr() : P.Parser<string> {
     return parseNgExpr()
+        .or(parseBracketed(P.lazy(parseExpr)))
         .or(parseTernary())
         .or(parseBinaryOperations())
         .or(parseString())
