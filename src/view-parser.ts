@@ -35,7 +35,7 @@ function extractInlineExpressions(ngFilters: imm.List<NgFilter>,
  */
 export function requireDefined<T>(x:T|undefined): T {
     if (typeof x === "undefined") {
-        throw "unexpected undefined!";
+        throw "requireDefined(): got undefined!";
     }
     return x;
 }
