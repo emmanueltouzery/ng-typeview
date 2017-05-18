@@ -317,19 +317,35 @@ export function addScopeAccessors(scopes: Stack<NgScope>, input: string): string
     return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join("");
 }
 
+function handleRegexpNode(node: ts.RegularExpressionLiteral) {
+    // {} and other characters in regex literals confuse the indenting
+    // pass that I have during codegen. generate a more uniform syntax.
+    if (node.text.startsWith('/') && node.text.endsWith('/')) {
+        const regexText = node.text.substring(1, node.text.length-1);
+        let separator = '"';
+        if (node.text.indexOf('"') >= 0) {
+            separator = "'";
+        }
+        return "new RegExp(" + separator + regexText + separator + ")";
+    } else {
+        return node.getText();
+    }
+}
+
 const nodeKindPassthroughList = Set(
     [ts.SyntaxKind.NumericLiteral,
      ts.SyntaxKind.NullKeyword,
      ts.SyntaxKind.StringLiteral,
      ts.SyntaxKind.TrueKeyword,
      ts.SyntaxKind.FalseKeyword,
-     ts.SyntaxKind.UndefinedKeyword,
-     ts.SyntaxKind.RegularExpressionLiteral]);
+     ts.SyntaxKind.UndefinedKeyword]);
 
 function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => string {
     return node => {
         if (node.kind === ts.SyntaxKind.ExpressionStatement) {
             return stmtAddScopeAccessors(scopes)((<ts.ExpressionStatement>node).expression);
+        } else if (node.kind === ts.SyntaxKind.RegularExpressionLiteral) {
+            return handleRegexpNode(<ts.RegularExpressionLiteral>node);
         } else if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
             const prop = <ts.PropertyAccessExpression>node;
             return stmtAddScopeAccessors(scopes)(prop.expression) + "." + prop.name.getText();

@@ -38,7 +38,7 @@ describe("addScopeAccessors", () => {
         assertScopeAcc('{"internal-tab":true , "internal-active":$scope.idx === 0}',
                        '{"internal-tab": true, "internal-active": idx === 0}');
         assertScopeAcc("{name: $scope.wasProvidedWorkbook}", "{name: wasProvidedWorkbook}");
-        assertScopeAcc("/^[a-z]+$/", "/^[a-z]+$/");
+        assertScopeAcc("new RegExp(\"^[a-z]+$\")", "/^[a-z]+$/");
         // yes, that next one is pretty horrific. actually spotted that in the wild.
         assertScopeAcc("{true:'glyphicon-chevron-up' , false:'glyphicon-chevron-down'}[$scope.showList]",
                        "{true:'glyphicon-chevron-up', false:'glyphicon-chevron-down'}[showList]");
