@@ -82,7 +82,7 @@ export interface TagDirectiveHandler {
 }
 
 const boolAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-required", "ng-disabled"],
+    forAttributes: ["ng-required", "ng-disabled", "ng-trim"],
     handleAttribute: (attrName, val, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("boolean", val) })
 };
