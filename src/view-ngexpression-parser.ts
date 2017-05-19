@@ -331,6 +331,15 @@ function handleRegexpNode(node: ts.RegularExpressionLiteral) {
                 // which could confuse the layout pass, maybe this
                 // can be worked around (put the regex in the controller,
                 // not the view). or I can try yet another way but...
+                if (node.text.indexOf('{') >= 0 ||
+                    node.text.indexOf('}') >= 0 ||
+                    node.text.indexOf(';') >= 0) {
+                    console.warn(
+                        "Warning: it's likely that the rendering of the regular expression" +
+                            regexText + " causes problems." +
+                            " Consider moving its value to the view instead of the controller" +
+                            " or changing it to the 'new Regexp()' form.");
+                }
                 return node.getText();
             }
         }
