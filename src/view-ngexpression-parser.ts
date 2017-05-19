@@ -325,6 +325,14 @@ function handleRegexpNode(node: ts.RegularExpressionLiteral) {
         let separator = '"';
         if (node.text.indexOf('"') >= 0) {
             separator = "'";
+            if (node.text.indexOf("'") >= 0) {
+                // ok that's probably too much now.
+                // return in the // form. if there are characters
+                // which could confuse the layout pass, maybe this
+                // can be worked around (put the regex in the controller,
+                // not the view). or I can try yet another way but...
+                return node.getText();
+            }
         }
         return "new RegExp(" + separator + regexText + separator + ")";
     } else {
