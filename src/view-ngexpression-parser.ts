@@ -317,12 +317,12 @@ export function addScopeAccessors(scopes: Stack<NgScope>, _input: string): strin
     // as a Block. In reality it's an object literal. I found out that if
     // if it starts with !{ instead, then the typescript parser correctly
     // treats it as an object literal.
-    const input = _input.startsWith("{") ? "!" + _input : _input;
+    const input = _input.trim().startsWith("{") ? "!" + _input.trim() : _input;
     const sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     const result = sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join("");
     // remove the leading ! if we added one.
-    return _input.startsWith("{") ? result.substring(1) : result;
+    return _input.trim().startsWith("{") ? result.substring(1) : result;
 }
 
 function handleRegexpNode(node: ts.RegularExpressionLiteral) {
