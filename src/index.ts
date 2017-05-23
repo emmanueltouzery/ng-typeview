@@ -1,7 +1,8 @@
 export {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 export {ControllerViewInfo, ControllerViewConnector, ModelViewConnector,
-        defaultCtrlViewConnectors, defaultModelViewConnectors} from "./controller-parser";
+        defaultCtrlViewConnectors, defaultModelViewConnectors,
+        CtrlViewFragmentExtractor, defaultCtrlViewFragmentExtractors} from "./controller-parser";
 export {ProjectSettings, processProject} from "./ng-typeview"
 export {NgFilterExpression, NgFilterCall, filterExpressionToTypescript,
         ngFilterExpressionToTypeScriptEmbedded,

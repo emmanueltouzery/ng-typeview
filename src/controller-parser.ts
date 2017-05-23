@@ -2,6 +2,7 @@ import {readFileSync} from "fs";
 import * as ts from "typescript";
 import {Maybe} from "monet";
 import * as monet from "monet";
+import * as imm from "immutable";
 
 function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
     return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
@@ -409,6 +410,7 @@ export interface ControllerScopeInfo {
     readonly imports: string[];
     readonly importNames: string[];
     readonly nonExportedDeclarations: string[];
+    readonly viewFragments: string[];
 }
 
 function nodeIsExported(node: ts.Node): boolean {
@@ -419,9 +421,38 @@ function nodeIsExported(node: ts.Node): boolean {
 }
 
 /**
+ * You can register such an extractor using [[ProjectSettings.ctrlViewFragmentExtractors]].
+ * Will be called when parsing typescript files, allows you to tell ng-typeview
+ * about view fragments present in your controllers, for instance ng-grid has
+ * 'cell templates' which typeview can also type-check through this mechanism.
+ */
+export interface CtrlViewFragmentExtractor {
+    /**
+     * Which AST node you want to be listening for
+     */
+    interceptAstNode: ts.SyntaxKind;
+    /**
+     * When your view connector is registered and we parse a TS file and
+     * ecounter an AST node with the type you specified through [[interceptAstNode]],
+     * this function will be called.
+     * @param node the AST node which matched your specification
+     * @returns the view fragments that you detected for this node,
+     *     if any (the empty array if you didn't detect any).
+     */
+    getViewFragments: (node: ts.Node) => string[];
+}
+
+/**
+ * Default set of controller view fragment extractors (currently empty)
+ */
+export const defaultCtrlViewFragmentExtractors: CtrlViewFragmentExtractor[] = [];
+
+/**
  * @hidden
  */
-export function extractControllerScopeInfo(fileName: string): Promise<ControllerScopeInfo> {
+export function extractControllerScopeInfo(
+      fileName: string,
+      ctrlViewFragmentExtractors: CtrlViewFragmentExtractor[]): Promise<ControllerScopeInfo> {
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
@@ -432,6 +463,7 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
         let imports:string[] = [];
         let importNames:string[] = [];
         let nonExportedDeclarations:string[] = [];
+        let viewFragments:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
@@ -459,12 +491,17 @@ export function extractControllerScopeInfo(fileName: string): Promise<Controller
                 imports.push(node.getText());
                 importNames.push((<ts.ImportEqualsDeclaration>node).name.getText());
             }
+            const ctrlViewFragments = imm.List(ctrlViewFragmentExtractors)
+                .filter(extractor => extractor.interceptAstNode === node.kind)
+                .flatMap(extractor => extractor.getViewFragments(node));
+            viewFragments = viewFragments.concat(ctrlViewFragments.toArray());
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeInfo, typeAliases, imports, importNames, nonExportedDeclarations
+            scopeInfo, typeAliases, imports, importNames,
+            nonExportedDeclarations, viewFragments
         });
     });
 }

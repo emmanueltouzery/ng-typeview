@@ -12,6 +12,7 @@ export {AttributeDirectiveHandler, TagDirectiveHandler,
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
         ViewInfo, ControllerViewInfo, ControllerScopeInfo,
         ControllerViewConnector, defaultCtrlViewConnectors,
+        CtrlViewFragmentExtractor, defaultCtrlViewFragmentExtractors,
         ModelViewConnector, defaultModelViewConnectors} from "./controller-parser"
 import {addScopeAccessors, CodegenHelper} from "./view-ngexpression-parser"
 import {NgFilter, defaultNgFilters} from "./filters"
@@ -39,14 +40,15 @@ async function processControllerView(prjSettings: ProjectSettings,
     controllerPath: string, viewPath: string, ngFilters: NgFilter[],
     tagDirectives: TagDirectiveHandler[],
     attributeDirectives: AttributeDirectiveHandler[]) {
-    const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(controllerPath);
+    const scopeContents: ControllerScopeInfo = await extractControllerScopeInfo(
+        controllerPath, prjSettings.ctrlViewFragmentExtractors);
     if (scopeContents.scopeInfo.isNone()) {
         // no point of writing anything if there is no scope block
         return;
     }
     const viewExprs = await parseView(
         prjSettings.resolveImportsAsNonScope || false,
-        viewPath, scopeContents.importNames,
+        viewPath, scopeContents.viewFragments, scopeContents.importNames,
         imm.List(tagDirectives), imm.List(attributeDirectives), imm.List(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
@@ -118,6 +120,13 @@ export interface ProjectSettings {
      * that, add to that list, or specify your own.
      */
     attributeDirectives: AttributeDirectiveHandler[];
+    /**
+     * Controller view fragment extractors. For instance, you may have
+     * view fragments present in your controllers, for instance ng-grid has
+     * 'cell templates' which typeview can also type-check through this mechanism.
+     * Extractors allows you to tell ng-typeview about those.
+     */
+    ctrlViewFragmentExtractors: CtrlViewFragmentExtractor[];
     /**
      * When resolving the scope for variables in the view, we prefix "$scope."
      * for all variables except those defined in the view. For instance, a
@@ -209,7 +218,8 @@ try {
         modelViewConnectors: defaultModelViewConnectors,
         extraCtrlViewConnections: [],
         tagDirectives: defaultTagDirectiveHandlers,
-        attributeDirectives: defaultAttrDirectiveHandlers
+        attributeDirectives: defaultAttrDirectiveHandlers,
+        ctrlViewFragmentExtractors: defaultCtrlViewFragmentExtractors
     });
 } catch (e) {
     console.log(e);

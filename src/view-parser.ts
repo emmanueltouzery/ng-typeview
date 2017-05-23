@@ -211,7 +211,8 @@ function indentSource(src: string): string {
  * @hidden
  */
 export function parseView(
-    resolveImportsAsNonScope: boolean, fileName: string, importNames: string[],
+    resolveImportsAsNonScope: boolean, fileName: string, viewFragments: string[],
+    importNames: string[],
     tagDirectiveHandlers: imm.List<TagDirectiveHandler>,
     attrDirectiveHandlers: imm.List<AttributeDirectiveHandler>,
     ngFilters: imm.List<NgFilter>) : Promise<string> {
@@ -221,6 +222,7 @@ export function parseView(
             fileName, defaultScope,
             tagDirectiveHandlers, attrDirectiveHandlers, ngFilters, resolve));
         parser.write(readFileSync(fileName).toString());
+        viewFragments.forEach(f => parser.write(f));
         parser.done();
     });
 }

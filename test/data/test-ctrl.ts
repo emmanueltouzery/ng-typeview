@@ -93,4 +93,8 @@ module multipart.module.name {
 
     angular.module('my.ng.module.name')
         .controller('ControllerName', ['param1', 'param2', Ctor]);
+
+    const severityCellTemplate = checkViewFragment(`<div class="ngCellText" ng-style="{'background-color': getColor(row.entity)}">
+{{ row.entity.severity }}
+</div>`);
 }

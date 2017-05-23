@@ -61,7 +61,7 @@ describe("extractModalOpenAngularModule", () => {
 
 describe("extractControllerScopeInfo", () => {
     it("should parse the scope info", async () => {
-        const scopeInfo = await extractControllerScopeInfo("test/data/test-ctrl.ts");
+        const scopeInfo = await extractControllerScopeInfo("test/data/test-ctrl.ts", []);
         assert.equal("multipart.module.name", scopeInfo.tsModuleName.some());
         assert.equal("interface Scope extends ng.IScope {\n" +
                      "        showDiv?: string;\n" +

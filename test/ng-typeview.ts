@@ -3,11 +3,30 @@ import {execSync} from 'child_process';
 import {readFileSync} from "fs";
 import {processProject} from "../src/ng-typeview"
 import {NgFilter, defaultNgFilters} from "../src/filters"
-import {defaultCtrlViewConnectors, defaultModelViewConnectors} from "../src/controller-parser"
+import {defaultCtrlViewConnectors, defaultModelViewConnectors,
+        CtrlViewFragmentExtractor} from "../src/controller-parser"
 import {defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "../src/ng-directives"
+import * as ts from "typescript";
 
 const filters = defaultNgFilters.concat([
     new NgFilter("formatNumber", "(input: string, formatType: 'hex'|'dec') => string")]);
+
+const checkViewFragmentExtractor: CtrlViewFragmentExtractor = {
+    interceptAstNode: ts.SyntaxKind.CallExpression,
+    getViewFragments: _node => {
+        const node = <ts.CallExpression>_node;
+        if (node.expression.getText().endsWith(".checkViewFragment")) {
+            if (node.arguments.length === 1 &&
+                [ts.SyntaxKind.NoSubstitutionTemplateLiteral, ts.SyntaxKind.StringLiteral]
+                .indexOf(node.arguments[0].kind) >= 0) {
+                return [(<ts.StringLiteral>node.arguments[0]).text];
+            } else {
+                console.warn("Warning: ignoring non-conformant checkViewFragment call." + node.getText());
+            }
+        }
+        return [];
+    }
+};
 
 describe("processProject", () => {
     it("should generate view test files", async () => {
@@ -20,7 +39,8 @@ describe("processProject", () => {
             modelViewConnectors: defaultModelViewConnectors,
             extraCtrlViewConnections: [],
             tagDirectives: defaultTagDirectiveHandlers,
-            attributeDirectives: defaultAttrDirectiveHandlers});
+            attributeDirectives: defaultAttrDirectiveHandlers,
+            ctrlViewFragmentExtractors: [checkViewFragmentExtractor]});
         const actualContents = readFileSync("test/data/test-ctrl_test-view_viewtest.ts").toString();
         const expectedContents = readFileSync("test/data/expected_testview.ts").toString();
         assert.equal(expectedContents, actualContents);
