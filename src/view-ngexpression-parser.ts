@@ -250,6 +250,9 @@ function wrapFilterCall(ngFilters: imm.List<NgFilter>, addScAccessors: (x:string
  */
 export function filterExpressionToTypescript(
     expr: string, codegenHelpers: CodegenHelper): string {
+    if (expr.indexOf("|") < 0) {
+        return ngFilterExpressionToTypeScriptStandalone({expression: expr, filterCalls: []}, codegenHelpers);
+    }
     const ngFilterExpr = parseNgFilterExpression().skip(P.optWhitespace).parse(expr);
     if (!ngFilterExpr.status) {
         console.warn("Failed parsing filter expression");

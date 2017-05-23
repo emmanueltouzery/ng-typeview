@@ -44,5 +44,6 @@ describe("addScopeAccessors", () => {
                        "{true:'glyphicon-chevron-up', false:'glyphicon-chevron-down'}[showList]");
         assertScopeAcc("!{entity: $scope.imported[0], selected: true}.entity.selectable", "!{entity: imported[0], selected: true}.entity.selectable");
         assertScopeAcc("{entity: $scope.imported[0], selected: true}.selected", "{entity: imported[0], selected: true}.selected");
+        assertScopeAcc("{entity: $scope.imported[0], selected: true}.entity[$scope.col.field]", "{entity: imported[0], selected: true}.entity[col.field]")
     });
 });
