@@ -311,10 +311,18 @@ export function ngFilterExpressionToTypeScriptEmbedded(
 /**
  * @hidden
  */
-export function addScopeAccessors(scopes: Stack<NgScope>, input: string): string {
+export function addScopeAccessors(scopes: Stack<NgScope>, _input: string): string {
+    // ugly trick of prepending "!" in case the first character is "{"
+    // the reason is that without that, the typescript parser interprets
+    // as a Block. In reality it's an object literal. I found out that if
+    // if it starts with !{ instead, then the typescript parser correctly
+    // treats it as an object literal.
+    const input = _input.startsWith("{") ? "!" + _input : _input;
     const sourceFile = ts.createSourceFile(
         "", input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    return sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join("");
+    const result = sourceFile.statements.map(stmtAddScopeAccessors(scopes)).join("");
+    // remove the leading ! if we added one.
+    return _input.startsWith("{") ? result.substring(1) : result;
 }
 
 function handleRegexpNode(node: ts.RegularExpressionLiteral) {
@@ -392,10 +400,6 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
             return stmtAddScopeAccessors(scopes)(cond.condition) + " ? " +
                 stmtAddScopeAccessors(scopes)(cond.whenTrue) + " : " +
                 stmtAddScopeAccessors(scopes)(cond.whenFalse);
-        } else if (node.kind === ts.SyntaxKind.Block) {
-            // it's most likely in fact not a block per se, but an object literal.
-            const block = <ts.Block>node;
-            return block.getChildren().map(stmtAddScopeAccessors(scopes)).join("");
         } else if (node.kind === ts.SyntaxKind.LabeledStatement) {
             const lStat = <ts.LabeledStatement>node;
             return lStat.label.text + ": " + stmtAddScopeAccessors(scopes)(lStat.statement);
@@ -410,6 +414,14 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
                 (<ts.ParenthesizedExpression>node).expression) + ")";
         } else if (node.kind === ts.SyntaxKind.ArrayLiteralExpression) {
             return "[" + (<ts.ArrayLiteralExpression>node).elements.map(stmtAddScopeAccessors(scopes)).join(", ") + "]";
+        } else if (node.kind === ts.SyntaxKind.ObjectLiteralExpression) {
+            return "{" +
+                (<ts.ObjectLiteralExpression>node).properties
+                .map(stmtAddScopeAccessors(scopes)).join(", ") +
+                "}";
+        } else if (node.kind === ts.SyntaxKind.PropertyAssignment) {
+            const paNode = <ts.PropertyAssignment>node;
+            return paNode.name.getText() + ": " + stmtAddScopeAccessors(scopes)(paNode.initializer);
         }
         console.log("Add scope accessors: unhandled node: " + node.kind + " -- "+ node.getText());
         return node.getText();
