@@ -20,7 +20,7 @@ var v: number = 0;
 
 function extractInlineExpressions(ngFilters: imm.List<NgFilter>,
     text: string, codegenHelpers: CodegenHelper): string {
-    const re = /{{([^}]+)}}/g; // anything inside {{}}, multiple times
+    const re = /{{(.+?)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
     let result: string = "";
     while (m = re.exec(text)) {
