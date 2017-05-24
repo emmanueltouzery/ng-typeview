@@ -249,7 +249,7 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
             const bodyExpr = arrowBodyExpr.orElse(fnBodyExpr);
 
             const resultExpr = bodyExpr
-                .flatMap(b => maybeReturnStatement(b.statements[0]))
+                .flatMap(b => maybeReturnStatement(b.statements[b.statements.length-1]))
                 .flatMap(s => Maybe.fromNull(s.expression));
 
             const scopeObject = resultExpr
