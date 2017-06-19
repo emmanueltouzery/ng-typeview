@@ -60,9 +60,11 @@ async function processControllerView(prjSettings: ProjectSettings,
         .map(n => wrapInModule(n, scopeContents, x))
         .orSome(x);
     const filterParams = ngFilters.map(f => `f__${f.name}:${f.type}`).join(",\n    ")
+    const typeParams = scopeContents.scopeTypeParams.orSome("");
     writeFileSync(outputFname, moduleWrap(
             scopeContents.scopeInfo.some() +
-            `\n\nfunction ___f($scope: Scope, ${filterParams}) {\n` +
+            `\n\nfunction ___f${typeParams}($scope: Scope${
+                typeParams}, ${filterParams}) {\n` +
             viewExprs +
             "\n}\n") + "\n");
 }

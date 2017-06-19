@@ -4,8 +4,25 @@ import {Maybe} from "monet";
 import * as monet from "monet";
 import * as imm from "immutable";
 
-function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<string> {
-    return Maybe.Some(iface.getText()).filter(_ => iface.name.getText() === "Scope");
+/**
+ * return a pair:
+ * fst => the body of the interface (source code of the implementation)
+ * snd => generic type parameters for the interface, or "". (For instance "<T0, T1>")
+ *
+ * The thinking for the generic type parameters is that you may have a
+ * generic scope which doesn't care which is the T. In that case we can type-check
+ * against any T. If you do care about the T, you can subclass the scope type to
+ * a concrete type.
+ */
+function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<[string,string]> {
+    const typeParamsInfo = () =>
+        Maybe.fromNull(iface.typeParameters)
+        .filter(p => p.length > 0)
+        .map(p => "<" + p.map((_,idx)=> "T" + idx).join(", ") + ">")
+        .orJust("") ;
+    return Maybe.Some(iface.getText())
+        .filter(_ => iface.name.getText() === "Scope")
+        .map<[string,string]>(cts => [cts, typeParamsInfo()]);
 }
 
 const maybeNodeType = <T extends ts.Node> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
@@ -405,7 +422,14 @@ export function extractCtrlViewConnsAngularModule(
  */
 export interface ControllerScopeInfo {
     readonly tsModuleName: Maybe<string>;
+    /**
+     * body of the interface for the scope
+     */
     readonly scopeInfo: Maybe<string>;
+    /**
+     * type parameters for the scope, like "<T0,T1>" or ""
+     */
+    readonly scopeTypeParams: Maybe<string>;
     readonly typeAliases: string[];
     readonly imports: string[];
     readonly importNames: string[];
@@ -457,7 +481,8 @@ export function extractControllerScopeInfo(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise<ControllerScopeInfo>((resolve, reject) => {
-        let scopeInfo: Maybe<string> = Maybe.None<string>();
+        let scopeInfo = Maybe.None<string>();
+        let scopeTypeParams = Maybe.None<string>();
         let tsModuleName:string|null = null;
         let typeAliases:string[] = [];
         let imports:string[] = [];
@@ -468,7 +493,8 @@ export function extractControllerScopeInfo(
             if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
                 const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
                 if (curIntfInfo.isSome()) {
-                    scopeInfo = curIntfInfo;
+                    scopeInfo = curIntfInfo.map(x => x[0]);
+                    scopeTypeParams = curIntfInfo.map(x => x[1]);
                 } else {
                     nonExportedDeclarations.push(node.getText());
                 }
@@ -500,7 +526,7 @@ export function extractControllerScopeInfo(
         nodeExtractScopeInterface(sourceFile);
         resolve({
             tsModuleName: Maybe.fromNull<string>(tsModuleName),
-            scopeInfo, typeAliases, imports, importNames,
+            scopeInfo, scopeTypeParams, typeAliases, imports, importNames,
             nonExportedDeclarations, viewFragments
         });
     });
