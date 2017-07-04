@@ -490,17 +490,28 @@ export function extractControllerScopeInfo(
         let nonExportedDeclarations:string[] = [];
         let viewFragments:string[] = [];
         function nodeExtractScopeInterface(node: ts.Node) {
-            if (node.kind === ts.SyntaxKind.InterfaceDeclaration && !nodeIsExported(node)) {
-                const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
-                if (curIntfInfo.isSome()) {
-                    scopeInfo = curIntfInfo.map(x => x[0]);
-                    scopeTypeParams = curIntfInfo.map(x => x[1]);
-                } else {
+            // so that the viewtest file may compile, we must copy
+            // in it classes & interfaces that may have been declared
+            // privately in the controller. We do limit ourselves to
+            // top-level declarations on which the Scope type declaration
+            // may depend, that's why we check whether they're under the
+            // module block. if there is no TS module and declarations are
+            // toplevel then no need to copy them as they were global anyway.
+            if (node.parent &&
+                node.parent.kind === ts.SyntaxKind.ModuleBlock &&
+                !nodeIsExported(node)) {
+                if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+                    const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
+                    if (curIntfInfo.isSome()) {
+                        scopeInfo = curIntfInfo.map(x => x[0]);
+                        scopeTypeParams = curIntfInfo.map(x => x[1]);
+                    } else {
+                        nonExportedDeclarations.push(node.getText());
+                    }
+                }
+                if (node.kind === ts.SyntaxKind.ClassDeclaration) {
                     nonExportedDeclarations.push(node.getText());
                 }
-            }
-            if (node.kind === ts.SyntaxKind.ClassDeclaration && !nodeIsExported(node)) {
-                nonExportedDeclarations.push(node.getText());
             }
             if (node.kind === ts.SyntaxKind.ModuleDeclaration) {
                 const moduleLevel = (<ts.StringLiteral>(<ts.ModuleDeclaration>node).name).text;
