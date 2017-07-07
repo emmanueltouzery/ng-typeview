@@ -1,6 +1,6 @@
 {
     "name": "ng-typeview",
-    "version": "0.0.25",
+    "version": "0.0.26",
     "description": "library to enable type-checking of angular views when using typescript",
     "keywords": [
         "angularjs",
