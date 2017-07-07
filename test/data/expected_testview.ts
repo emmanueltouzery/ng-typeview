@@ -129,31 +129,41 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         case $scope.user: break;
         
     }
+    angular.forEach($scope.data.groups, curGrp => {
+        let $index = 0;
+        let $first = true;
+        let $middle = true;
+        let $last = true;
+        let $even = true;
+        let $odd = false;
+        const ___x32: any = curGrp.name;
+        
+    });
     while (1) {
         const $select = {
             search:'', selected: $scope.editObject.assignedUserTypes[0]
         };
         let $item = null;
-        const ___x32: any = $scope.editObject.assignedUserTypes;
+        const ___x33: any = $scope.editObject.assignedUserTypes;
         $item = f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         })[0];
         f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         }).forEach(user => {
-            const ___x33: any = user.typeId;
-            const ___x34: any = user.desc;
+            const ___x34: any = user.typeId;
+            const ___x35: any = user.desc;
             
         });
-        const ___x35: any = $scope.item.desc;
+        const ___x36: any = $scope.item.desc;
         
     }
     angular.forEach($scope.adminStatusList, status => {
-        const ___x36: any = status.name;
+        const ___x37: any = status.name;
         f__translate(status.name);
         
     });
-    const ___x37: any = $scope.actualConfigs[$scope.cfg.type] === "1" ? $scope.cfg.configs.test : ($scope.actualConfigs[$scope.cfg.type] === "0" ? $scope.cfg.configs.fleet : '');
+    const ___x38: any = $scope.actualConfigs[$scope.cfg.type] === "1" ? $scope.cfg.configs.test : ($scope.actualConfigs[$scope.cfg.type] === "0" ? $scope.cfg.configs.fleet : '');
     
 }
 }

@@ -124,7 +124,7 @@ function getHandler(
 
                 if (!handlers.isEmpty()) {
                     const attrDirectiveResps = listKeepDefined(
-                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, codegenHelpersAttr)));
+                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
                     expressions += attrDirectiveResps.map(x => x.source).join("");
 
                     activeScopes = activeScopes.unshiftAll(

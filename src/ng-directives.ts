@@ -39,13 +39,14 @@ export interface AttributeDirectiveHandler {
      * handle a certain attribute appearing in the view.
      * @param attrName The normalized name of the attribute (always in the form ng-xxx)
      * @param attrValue The value for the attribute
+     * @param allAttribs The value of all the attributes on that node
      * @param codegenHelpers Object containing helper functions
      *     to assist with typescript code generation
      * @returns The TS source to generate for that attribute, and the closing source if needed.
      *     You can also return `undefined` in case you don't want to handle the attribute.
      */
     handleAttribute(
-        attrName: string, attrValue: string,
+        attrName: string, attrValue: string, allAttribs: {[type:string]: string},
         codegenHelpers: CodegenHelper): DirectiveResponse|undefined;
 }
 
@@ -83,7 +84,7 @@ export interface TagDirectiveHandler {
 
 const boolAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-required", "ng-disabled", "ng-trim", "ng-checked"],
-    handleAttribute: (attrName, val, codegenHelpers) =>
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("boolean", val) })
 };
 
@@ -91,7 +92,7 @@ const boolAttrHandler: AttributeDirectiveHandler = {
 // if (variable.kind === ...) { /* typescript now knows the kind is X */ }
 const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-show", "ng-if"],
-    handleAttribute: (attrName, val, codegenHelpers) =>
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({
             source: codegenHelpers.declareVariable("boolean", val) +
                 `if (${codegenHelpers.addScopeAccessors(val)}) {`,
@@ -102,31 +103,31 @@ const boolWithScopeAttrHandler: AttributeDirectiveHandler = {
 const anyAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-model", "ng-change", "ng-value",
                     "ng-submit", "ng-class", "ng-style", "ng-init", "ng-grid"],
-    handleAttribute: (attrName, val, codegenHelpers) =>
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("any", val) })
 };
 
 // attributes for which we do nothing at all.
 const passThroughAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-form"],
-    handleAttribute: (attrName, val, codegenHelpers) => ({ source: ""})
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) => ({ source: ""})
 };
 
 const stringAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-include", "ng-src"],
-    handleAttribute: (attrName, val, codegenHelpers) =>
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("string", val) })
 };
 
 const numberAttrHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-maxlength"],
-    handleAttribute: (attrName, val, codegenHelpers) =>
+    handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("number", val) })
 };
 
 const ngBindAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-bind", "ng-bind-html"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
             return {source: filterExpressionToTypescript(attrValue, codegenHelpers)};
         }
@@ -152,32 +153,73 @@ function parseNgRepeat(): P.Parser<NgRepeatData> {
                       })))
 }
 
+function handleNgRepeat(attrValue: string, codegenHelpers: CodegenHelper): string|null {
+    const ngRepeatData = parseNgRepeat().parse(attrValue);
+    if (!ngRepeatData.status) {
+        console.warn("failed parsing a ng-repeat clause!");
+        console.warn(attrValue);
+        console.warn(ngRepeatData);
+        return null;
+    }
+    const enumerable = ngFilterExpressionToTypeScriptEmbedded(
+        ngRepeatData.value.expression, codegenHelpers);
+    const source =`angular.forEach(${enumerable}, ${
+codegenHelpers.registerVariable(ngRepeatData.value.variable)} => {` +
+        `let ${codegenHelpers.registerVariable('$index')} = 0;` +
+        `let ${codegenHelpers.registerVariable('$first')} = true;` +
+        `let ${codegenHelpers.registerVariable('$middle')} = true;` +
+        `let ${codegenHelpers.registerVariable('$last')} = true;` +
+        `let ${codegenHelpers.registerVariable('$even')} = true;` +
+        `let ${codegenHelpers.registerVariable('$odd')} = false;` +
+        (ngRepeatData.value.trackingExpression ?
+         `${codegenHelpers.declareVariable('any', ngRepeatData.value.trackingExpression)}` : "");
+    return source;
+}
+
 const ngRepeatAttrDirectiveHandler: AttributeDirectiveHandler = {
     forAttributes: ["ng-repeat"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
-            const ngRepeatData = parseNgRepeat().parse(attrValue);
-            if (!ngRepeatData.status) {
-                console.warn("failed parsing a ng-repeat clause!");
-                console.warn(attrValue);
-                console.warn(ngRepeatData);
+            const source = handleNgRepeat(attrValue, codegenHelpers);
+            if (source === null) {
                 return {source: ""};
             }
-            const enumerable = ngFilterExpressionToTypeScriptEmbedded(
-                ngRepeatData.value.expression, codegenHelpers);
-            const source =`angular.forEach(${enumerable}, ${
-                codegenHelpers.registerVariable(ngRepeatData.value.variable)} => {` +
-                `let ${codegenHelpers.registerVariable('$index')} = 0;` +
-                `let ${codegenHelpers.registerVariable('$first')} = true;` +
-                `let ${codegenHelpers.registerVariable('$middle')} = true;` +
-                `let ${codegenHelpers.registerVariable('$last')} = true;` +
-                `let ${codegenHelpers.registerVariable('$even')} = true;` +
-                `let ${codegenHelpers.registerVariable('$odd')} = false;` +
-                (ngRepeatData.value.trackingExpression ?
-                 `${codegenHelpers.declareVariable('any', ngRepeatData.value.trackingExpression)}` : "");
             return {
                 source,
                 closeSource: () => "});"
+            };
+        }
+};
+
+const ngRepeatStartAttrDirectiveHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-repeat-start"],
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
+        {
+            const source = handleNgRepeat(attrValue, codegenHelpers);
+            if (source === null) {
+                return {source: ""};
+            }
+            if (allAttribs["ng-repeat-end"] !== undefined) {
+                return {
+                    source,
+                    closeSource: () => "});"
+                };
+            }
+            return {
+                source
+            };
+        }
+};
+
+const ngRepeatEndAttrDirectiveHandler: AttributeDirectiveHandler = {
+    forAttributes: ["ng-repeat-end"],
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
+        {
+            if (allAttribs["ng-repeat-start"] !== undefined) {
+                return { source: "" };
+            }
+            return {
+                source: "});"
             };
         }
 };
@@ -230,7 +272,7 @@ function parseNgOptionsTrackBy(): P.Parser<string> {
 
 const ngOptions: AttributeDirectiveHandler = {
     forAttributes: ["ng-options"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
             const ngOptionsData = parseNgOptions().parse(attrValue);
             if (!ngOptionsData.status) {
@@ -255,7 +297,7 @@ const ngOptions: AttributeDirectiveHandler = {
 
 const ngWithEvent: AttributeDirectiveHandler = {
     forAttributes: ["ng-blur", "ng-mouseenter", "ng-mouseleave", "ng-click"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
             return { source: `const ${codegenHelpers.getNewVariableName()}: any = (${codegenHelpers.registerVariable('$event')}: any) => ` +
                      codegenHelpers.addScopeAccessors(attrValue) + ";" };
@@ -264,7 +306,7 @@ const ngWithEvent: AttributeDirectiveHandler = {
 
 const ngModelOptions: AttributeDirectiveHandler = {
     forAttributes: ["ng-model-options"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
             const typeDef = "{updateOn?: string, debounce?: number,"+
                 "allowInvalid?: boolean, getterSetter?: boolean, timezone?: string}";
@@ -274,7 +316,7 @@ const ngModelOptions: AttributeDirectiveHandler = {
 
 const ngPattern: AttributeDirectiveHandler = {
     forAttributes: ["ng-pattern"],
-    handleAttribute: (attrName, attrValue, codegenHelpers) =>
+    handleAttribute: (attrName, attrValue, allAttribs, codegenHelpers) =>
         {
             return { source: codegenHelpers.declareVariable("RegExp|string", attrValue) };
         }
@@ -417,7 +459,9 @@ export const defaultAttrDirectiveHandlers =
     [boolAttrHandler, boolWithScopeAttrHandler,
      anyAttrHandler, stringAttrHandler, numberAttrHandler,
      ngBindAttrDirectiveHandler,
-     ngRepeatAttrDirectiveHandler, ngOptions, ngWithEvent,
+     ngRepeatAttrDirectiveHandler, ngRepeatStartAttrDirectiveHandler,
+     ngRepeatEndAttrDirectiveHandler,
+     ngOptions, ngWithEvent,
      ngModelOptions, ngPattern, passThroughAttrHandler];
 
 /**
