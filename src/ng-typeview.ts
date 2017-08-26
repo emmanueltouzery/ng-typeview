@@ -192,7 +192,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .mapEntries<string,Collection<number,string>>(
             ([viewFname,ctrlViewInfos]) =>
                 [viewFname, collectionKeepDefined(
-                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName)))])
+                    ctrlViewInfos.map(cvi => <string|undefined>controllerNameToFilename.get(cvi.controllerName)))])
         .map(v => v.toList())
         .toMap();
     const viewFilenameToCtrlFilenamesModelConns =
