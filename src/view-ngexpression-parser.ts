@@ -224,7 +224,7 @@ function parseNgFilterParam() : P.Parser<string> {
 function wrapFilterCall(ngFilters: Vector<NgFilter>, addScAccessors: (x:string)=>string):
     (soFar: string, ngFilterCall: NgFilterCall) => string {
     return (soFar, ngFilterCall) => {
-        const filterInfo = ngFilters.find(f => f.name === ngFilterCall.functionName);
+        const filterInfo = ngFilters.find(f => f.name === ngFilterCall.functionName).getOrUndefined();
         if (!filterInfo) {
             throw "Unknown filter: " + ngFilterCall.functionName + " -- context: " + soFar;
         }
