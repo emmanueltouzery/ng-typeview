@@ -419,7 +419,7 @@ export function extractCtrlViewConnsAngularModule(
  * @hidden
  */
 export interface ControllerScopeInfo {
-    readonly tsModuleName: Option<string|null>;
+    readonly tsModuleName: Option<string>;
     /**
      * body of the interface for the scope
      */
@@ -481,7 +481,7 @@ export function extractControllerScopeInfo(
     return new Promise<ControllerScopeInfo>((resolve, reject) => {
         let scopeInfo = Option.none<string>();
         let scopeTypeParams = Option.none<string>();
-        let tsModuleName:string|null = null;
+        let tsModuleName:string|undefined = undefined;
         let typeAliases:string[] = [];
         let imports:string[] = [];
         let importNames:string[] = [];
@@ -534,7 +534,7 @@ export function extractControllerScopeInfo(
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
-            tsModuleName: Option.of(tsModuleName),
+            tsModuleName: Option.of<string>(tsModuleName),
             scopeInfo, scopeTypeParams, typeAliases, imports, importNames,
             nonExportedDeclarations, viewFragments
         });
