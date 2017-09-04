@@ -68,7 +68,7 @@ function handleDirectiveResponses(xpath: Vector<string>,
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
         .map(r => (
             {
-                xpathDepth: xpath.size,
+                xpathDepth: xpath.size(),
                 closeSource: r.closeSource || (() => ""),
                 variables: codegenHelpers.ngScopeInfo.curScopeVars
             }));
