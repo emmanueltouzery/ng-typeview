@@ -1,7 +1,6 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Set, Stack} from "immutable";
-import * as imm from "immutable";
+import {HashSet, Vector} from "prelude.ts";
 import * as P from "parsimmon"
 
 import {NgScope, requireDefined} from "./view-parser"
@@ -13,7 +12,7 @@ import {NgFilter} from "./filters"
  * so typedoc doesn't document it).
  */
 export type NgScopeInfo = {
-    readonly soFar: Stack<NgScope>,
+    readonly soFar: Vector<NgScope>,
     curScopeVars: string[]
 };
 
@@ -28,9 +27,9 @@ export type NgScopeInfo = {
 export class CodegenHelper {
     public readonly ngScopeInfo: NgScopeInfo;
     private getNewVarName: ()=>string;
-    public readonly ngFilters: imm.List<NgFilter>;
+    public readonly ngFilters: Vector<NgFilter>;
 
-    constructor(ngFilters: imm.List<NgFilter>, scope: Stack<NgScope>, getNewVarName: ()=>string) {
+    constructor(ngFilters: Vector<NgFilter>, scope: Vector<NgScope>, getNewVarName: ()=>string) {
         this.ngFilters = ngFilters;
         this.ngScopeInfo = {soFar: scope, curScopeVars: []};
         this.getNewVarName = getNewVarName;
@@ -47,7 +46,7 @@ export class CodegenHelper {
      * @returns new source with the scope accessors added
      */
     public addScopeAccessors = (js:string): string => {
-        return addScopeAccessors(this.ngScopeInfo.soFar.unshift({
+        return addScopeAccessors(this.ngScopeInfo.soFar.prepend({
             // hardcoding 1...I just need to let addScopeAccessors
             // know about these local variables. a bit of a hack.
             xpathDepth:1,
@@ -222,7 +221,7 @@ function parseNgFilterParam() : P.Parser<string> {
     return P.regex(/\s*:\s*/).then(objectLiteralParam.or(simpleParam));
 }
 
-function wrapFilterCall(ngFilters: imm.List<NgFilter>, addScAccessors: (x:string)=>string):
+function wrapFilterCall(ngFilters: Vector<NgFilter>, addScAccessors: (x:string)=>string):
     (soFar: string, ngFilterCall: NgFilterCall) => string {
     return (soFar, ngFilterCall) => {
         const filterInfo = ngFilters.find(f => f.name === ngFilterCall.functionName);
@@ -314,7 +313,7 @@ export function ngFilterExpressionToTypeScriptEmbedded(
 /**
  * @hidden
  */
-export function addScopeAccessors(scopes: Stack<NgScope>, _input: string): string {
+export function addScopeAccessors(scopes: Vector<NgScope>, _input: string): string {
     // ugly trick of prepending "!" in case the first character is "{"
     // the reason is that without that, the typescript parser interprets
     // as a Block. In reality it's an object literal. I found out that if
@@ -360,15 +359,15 @@ function handleRegexpNode(node: ts.RegularExpressionLiteral) {
     }
 }
 
-const nodeKindPassthroughList = Set(
-    [ts.SyntaxKind.NumericLiteral,
-     ts.SyntaxKind.NullKeyword,
-     ts.SyntaxKind.StringLiteral,
-     ts.SyntaxKind.TrueKeyword,
-     ts.SyntaxKind.FalseKeyword,
-     ts.SyntaxKind.UndefinedKeyword]);
+const nodeKindPassthroughList = HashSet.of(
+    ts.SyntaxKind.NumericLiteral,
+    ts.SyntaxKind.NullKeyword,
+    ts.SyntaxKind.StringLiteral,
+    ts.SyntaxKind.TrueKeyword,
+    ts.SyntaxKind.FalseKeyword,
+    ts.SyntaxKind.UndefinedKeyword);
 
-function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => string {
+function stmtAddScopeAccessors(scopes: Vector<NgScope>): (node: ts.Node) => string {
     return node => {
         if (node.kind === ts.SyntaxKind.ExpressionStatement) {
             return stmtAddScopeAccessors(scopes)((<ts.ExpressionStatement>node).expression);
@@ -431,7 +430,7 @@ function stmtAddScopeAccessors(scopes: Stack<NgScope>): (node: ts.Node) => strin
     }
 }
 
-function addScopePrefixIfNeeded(scopes: Stack<NgScope>, expression: string): string {
+function addScopePrefixIfNeeded(scopes: Vector<NgScope>, expression: string): string {
     // extract the field name from the expression, which can be...
     // data.user.getName(), or getName() or things like that.
     // so we stop at the first "." or "(" to get respectively

@@ -1,4 +1,4 @@
-import {Maybe} from "monet";
+import {Option} from "prelude.ts";
 import * as P from "parsimmon"
 
 import {filterExpressionToTypescript, parseNgFilterExpression,
@@ -393,24 +393,24 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
 
 interface NgUiSelectChoicesData {
     readonly variable: string;
-    readonly variableExpr: Maybe<string>;
+    readonly variableExpr: Option<string>;
     readonly expression: NgFilterExpression;
 }
 
 function parseNgUiSelectChoicesSelect(): P.Parser<NgUiSelectChoicesData> {
     return parseAtom()
         .chain(first => parseNgUiSelectChoicesAs(first)
-               .or(parseNgUiSelectChoicesIn(first, Maybe.None<string>())));
+               .or(parseNgUiSelectChoicesIn(first, Option.none<string>())));
 }
 
 function parseNgUiSelectChoicesAs(varExpr: string): P.Parser<NgUiSelectChoicesData> {
     return keyword("as")
         .then(P.regexp(/[a-zA-Z0-9]+/)) // identifier
-        .chain(identifier => parseNgUiSelectChoicesIn(identifier, Maybe.Some(varExpr)));
+        .chain(identifier => parseNgUiSelectChoicesIn(identifier, Option.of(varExpr)));
 }
 
 function parseNgUiSelectChoicesIn(
-    variable: string, variableExpr: Maybe<string>): P.Parser<NgUiSelectChoicesData> {
+    variable: string, variableExpr: Option<string>): P.Parser<NgUiSelectChoicesData> {
     return keyword("in")
             .then(parseNgFilterExpression())
             .map(expression => ({variable, variableExpr, expression}));
@@ -435,7 +435,7 @@ const ngUiSelectChoicesTagHandler: TagDirectiveHandler = {
                 const declVar = codegenHelpers.registerVariable(selectData.value.variable);
                 const variableExprSrc = selectData.value.variableExpr
                     .map(v => codegenHelpers.declareVariable('any', v))
-                    .orSome("");
+                    .getOrElse("");
                 return {
                     // setting $item. See the comment in the ui-select handling.
                     // That also means that you should first have the ui-select-choices
