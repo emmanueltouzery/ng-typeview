@@ -438,7 +438,7 @@ function addScopePrefixIfNeeded(scopes: Vector<NgScope>, expression: string): st
     const fieldName = expression.replace(/[\(\.].*$/, "");
 
     // is the field name present in any of the parent scopes?
-    if (scopes.find(s => s.variables.indexOf(expression) >= 0)) {
+    if (scopes.find(s => s.variables.indexOf(expression) >= 0).isSome()) {
         // YES => read it from there.
         return expression;
     } else {
