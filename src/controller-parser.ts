@@ -157,10 +157,10 @@ function parseModalOpen(callExpr : ts.CallExpression): Option<ControllerViewInfo
     const controllerName = getField("controller");
     const rawViewPath = getField("templateUrl");
 
-    const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+    const buildCtrlViewInfo = (rawViewPath:string,ctrlName:string):ControllerViewInfo =>
         ({controllerName: ctrlName, viewPath: rawViewPath});
 
-    return controllerName.ap(rawViewPath.mapStruct(buildCtrlViewInfo));
+    return Option.liftA2Struct(buildCtrlViewInfo)(rawViewPath, controllerName);
 }
 
 function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerViewInfo> {
@@ -177,9 +177,9 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerV
         const rawViewPath = objectLiteralGetStringLiteralField(
             "templateUrl", Vector.ofArrayStruct(prop.properties));
 
-        const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+        const buildCtrlViewInfo = (rawViewPath:string, ctrlName:string):ControllerViewInfo =>
             ({controllerName: ctrlName, viewPath: rawViewPath});
-        return controllerName.ap(rawViewPath.mapStruct(buildCtrlViewInfo));
+        return Option.liftA2Struct(buildCtrlViewInfo)(controllerName, rawViewPath);
     }
     return Option.none<ControllerViewInfo>();
 }
@@ -213,8 +213,8 @@ function parseAngularModule(expr: ts.ExpressionStatement): Option<[string,string
                 .filter(c => c.arguments.length > 0)
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(s => s.text);
-            const buildModuleCtrl: ((x:string) => (y:string) => [string,string]) = mod => ctrl => [mod, ctrl];
-            return ctrlName.ap(moduleName.mapStruct(buildModuleCtrl));
+            const buildModuleCtrl: ((x:string, y:string) => [string,string]) = (mod, ctrl) => [mod, ctrl];
+            return Option.liftA2Struct(buildModuleCtrl)(ctrlName, moduleName);
         }
     }
     return Option.none<[string,string]>();
