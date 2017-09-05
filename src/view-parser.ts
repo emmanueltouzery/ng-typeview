@@ -108,7 +108,7 @@ function getHandler(
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
-            expressions += tagDirectiveResps.map(x => x.source).append("");
+            expressions += tagDirectiveResps.map(x => x.source).mkString("");
             activeScopes = activeScopes.appendAll(
                 handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
