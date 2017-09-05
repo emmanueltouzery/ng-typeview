@@ -12,7 +12,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     f__filter:<T>(input:T[], v: string | { [P in keyof T]?: T[P]; }) => T[],
     f__limitTo:<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string,
     f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
-    const ___x42: any = {
+    const ___x3: any = {
         active: $scope.showDiv
     };
     
