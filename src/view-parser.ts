@@ -95,7 +95,7 @@ function getHandler(
             for (let k in _attribs) {
                 attribs[normalizeTagAttrName(k)] = _attribs[k];
             }
-            xpath = xpath.prepend(name);
+            xpath = xpath.append(name);
 
             // work on tag handlers
             const codegenHelpersTag = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
@@ -108,8 +108,8 @@ function getHandler(
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
-            expressions += tagDirectiveResps.map(x => x.source).prepend("");
-            activeScopes = activeScopes.prependAll(
+            expressions += tagDirectiveResps.map(x => x.source).append("");
+            activeScopes = activeScopes.appendAll(
                 handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
             // work on attribute handlers
@@ -125,7 +125,7 @@ function getHandler(
                         handlers.mapStruct(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
                     expressions += attrDirectiveResps.map(x => x.source).mkString("");
 
-                    activeScopes = activeScopes.prependAll(
+                    activeScopes = activeScopes.appendAll(
                         handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
                 } else if (attrName.startsWith("ng-") &&
                            !relevantTagHandlers.find(th => th.canHandleAttributes.indexOf(attrName) >= 0)) {
@@ -135,15 +135,15 @@ function getHandler(
             }
         },
         onclosetag: (name: string) => {
-            if (xpath.head().getOrUndefined() !== name) {
-                console.error(`${fileName}: expected </${xpath.head().getOrUndefined()}> but found </${name}>`);
+            if (xpath.last().getOrUndefined() !== name) {
+                console.error(`${fileName}: expected </${xpath.last().getOrUndefined()}> but found </${name}>`);
             }
-            xpath = xpath.drop(1);
-            var firstScope = activeScopes.head().getOrUndefined();
+            xpath = xpath.dropRight(1);
+            var firstScope = activeScopes.last().getOrUndefined();
             while (firstScope && firstScope.xpathDepth > xpath.size()) {
                 expressions += firstScope.closeSource();
-                activeScopes = activeScopes.drop(1);
-                firstScope = activeScopes.head().getOrUndefined();
+                activeScopes = activeScopes.dropRight(1);
+                firstScope = activeScopes.last().getOrUndefined();
             }
         },
         ontext: (text: string) => {
