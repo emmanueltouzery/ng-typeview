@@ -179,7 +179,7 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerV
 
         const buildCtrlViewInfo = (rawViewPath:string, ctrlName:string):ControllerViewInfo =>
             ({controllerName: ctrlName, viewPath: rawViewPath});
-        return Option.liftA2Struct(buildCtrlViewInfo)(controllerName, rawViewPath);
+        return Option.liftA2Struct(buildCtrlViewInfo)(rawViewPath, controllerName);
     }
     return Option.none<ControllerViewInfo>();
 }
@@ -214,7 +214,7 @@ function parseAngularModule(expr: ts.ExpressionStatement): Option<[string,string
                 .flatMap(c => maybeStringLiteral(c.arguments[0]))
                 .map(s => s.text);
             const buildModuleCtrl: ((x:string, y:string) => [string,string]) = (mod, ctrl) => [mod, ctrl];
-            return Option.liftA2Struct(buildModuleCtrl)(ctrlName, moduleName);
+            return Option.liftA2Struct(buildModuleCtrl)(moduleName, ctrlName);
         }
     }
     return Option.none<[string,string]>();
