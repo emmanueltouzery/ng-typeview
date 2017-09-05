@@ -39,11 +39,11 @@ export function requireDefined<T>(x:T|undefined): T {
 }
 
 export function collectionKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
-    return l.filter(x => x!==undefined).map(requireDefined);
+    return l.filter(x => x!==undefined).mapStruct(requireDefined);
 }
 
 export function listKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
-    return l.filter(x => x!==undefined).map(requireDefined);
+    return l.filter(x => x!==undefined).mapStruct(requireDefined);
 }
 
 /**
@@ -66,7 +66,7 @@ function handleDirectiveResponses(xpath: Vector<string>,
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
-        .map(r => (
+        .mapStruct(r => (
             {
                 xpathDepth: xpath.size(),
                 closeSource: r.closeSource || (() => ""),
@@ -106,7 +106,7 @@ function getHandler(
             }
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
-            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
+            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
             expressions += tagDirectiveResps.map(x => x.source).prepend("");
             activeScopes = activeScopes.prependAll(
@@ -122,7 +122,7 @@ function getHandler(
 
                 if (!handlers.isEmpty()) {
                     const attrDirectiveResps = listKeepDefined(
-                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
+                        handlers.mapStruct(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
                     expressions += attrDirectiveResps.map(x => x.source).mkString("");
 
                     activeScopes = activeScopes.prependAll(
