@@ -192,7 +192,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .map<string,Vector<string>>(
             (viewFname,ctrlViewInfos) =>
                 [viewFname, collectionKeepDefined(
-                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName).getOrThrow()))]);
+                    ctrlViewInfos.mapStruct(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
     const viewFilenameToCtrlFilenamesModelConns =
         Vector.ofArrayStruct(viewInfos)
         .flatMap(vi => Vector.ofArrayStruct(vi.modelViewInfos))
