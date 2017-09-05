@@ -197,11 +197,11 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         Vector.ofArrayStruct(viewInfos)
         .flatMap(vi => Vector.ofArrayStruct(vi.modelViewInfos))
         .groupBy(mvi => mvi.viewPath)
-        .map(mvis => mvis.toList().map(mvi => mvi.modelPath));
+        .mapValues(mvis => mvis.map(mvi => mvi.modelPath));
     const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(
-        (views1, views2) => views1.concat(views2), viewFilenameToCtrlFilenamesModelConns);
+        viewFilenameToCtrlFilenamesModelConns, (views1, views2) => views1.appendAll(views2));
     return Promise.all(viewFilenameToCtrlFilenames.map(
-        (ctrlNames, viewName) => Promise.all(ctrlNames.map(
+        (viewName, ctrlNames) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(prjSettings,
                 ctrlName, prjSettings.path + "/" + viewName, prjSettings.ngFilters,
                 prjSettings.tagDirectives,
