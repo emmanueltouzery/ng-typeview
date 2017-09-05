@@ -189,12 +189,10 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .toMap(vi => [vi.controllerName.getOrThrow(), vi.fileName]);
     const viewFilenameToCtrlFilenamesViewConns =
         viewFilenameToControllerNames
-        .mapEntries<string,Vector<string>>(
-            ([viewFname,ctrlViewInfos]) =>
+        .map<string,Vector<string>>(
+            (viewFname,ctrlViewInfos) =>
                 [viewFname, collectionKeepDefined(
-                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName)))])
-        .map(v => v.toList())
-        .toMap();
+                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName).getOrThrow()))]);
     const viewFilenameToCtrlFilenamesModelConns =
         Vector.ofArrayStruct(viewInfos)
         .flatMap(vi => Vector.ofArrayStruct(vi.modelViewInfos))
