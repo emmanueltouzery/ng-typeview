@@ -176,7 +176,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
     const viewFilenameToControllerNames: HashMap<string,Vector<ControllerViewInfo>> =
         Vector.ofIterableStruct(viewInfos)
         .flatMap(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
-        .appendAll(prjSettings.extraCtrlViewConnections)
+        .appendAllStruct(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
         Vector.ofIterableStruct(viewInfos)

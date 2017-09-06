@@ -109,7 +109,7 @@ function getHandler(
             const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
             expressions += tagDirectiveResps.map(x => x.source).mkString("");
-            activeScopes = activeScopes.appendAll(
+            activeScopes = activeScopes.appendAllStruct(
                 handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
             // work on attribute handlers
@@ -125,7 +125,7 @@ function getHandler(
                         handlers.mapStruct(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
                     expressions += attrDirectiveResps.map(x => x.source).mkString("");
 
-                    activeScopes = activeScopes.appendAll(
+                    activeScopes = activeScopes.appendAllStruct(
                         handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
                 } else if (attrName.startsWith("ng-") &&
                            !relevantTagHandlers.find(th => th.canHandleAttributes.indexOf(attrName) >= 0)) {
