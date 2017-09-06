@@ -63,7 +63,7 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
         .flatMap(vs => maybeSingleNode(vs.declarationList.declarations))
         .filter(decl => decl.initializer !== undefined)
         .flatMap(decl => maybeObjectLiteralExpression(decl.initializer))
-        .flatMap(objLit => Option.sequence(Vector.ofArrayStruct(objLit.properties.map(maybePropertyAssignment))))
+        .flatMap(objLit => Option.sequence(Vector.ofIterableStruct(objLit.properties.map(maybePropertyAssignment))))
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))
         .map(props => "{" + props.toArray().join(", ") + "}")

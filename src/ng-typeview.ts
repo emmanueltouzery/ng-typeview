@@ -48,9 +48,9 @@ async function processControllerView(prjSettings: ProjectSettings,
     const viewExprs = await parseView(
         prjSettings.resolveImportsAsNonScope || false,
         viewPath, scopeContents.viewFragments, scopeContents.importNames,
-        Vector.ofArrayStruct(tagDirectives),
-        Vector.ofArrayStruct(attributeDirectives),
-        Vector.ofArrayStruct(ngFilters));
+        Vector.ofIterableStruct(tagDirectives),
+        Vector.ofIterableStruct(attributeDirectives),
+        Vector.ofIterableStruct(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -174,12 +174,12 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
             f, prjSettings.path,
             prjSettings.ctrlViewConnectors, prjSettings.modelViewConnectors)));
     const viewFilenameToControllerNames: HashMap<string,Vector<ControllerViewInfo>> =
-        Vector.ofArrayStruct(viewInfos)
-        .flatMap(vi => Vector.ofArrayStruct(vi.controllerViewInfos))
+        Vector.ofIterableStruct(viewInfos)
+        .flatMap(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
         .appendAll(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Vector.ofArrayStruct(viewInfos)
+        Vector.ofIterableStruct(viewInfos)
         .filter(vi => vi.controllerName.isSome())
      		// JS files are not going to have a scope interface
      		// definition so they're not helpful. Also, we can
@@ -194,8 +194,8 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                 [viewFname, collectionKeepDefined(
                     ctrlViewInfos.mapStruct(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
     const viewFilenameToCtrlFilenamesModelConns =
-        Vector.ofArrayStruct(viewInfos)
-        .flatMap(vi => Vector.ofArrayStruct(vi.modelViewInfos))
+        Vector.ofIterableStruct(viewInfos)
+        .flatMap(vi => Vector.ofIterableStruct(vi.modelViewInfos))
         .groupBy(mvi => mvi.viewPath)
         .mapValues(mvis => mvis.map(mvi => mvi.modelPath));
     const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(

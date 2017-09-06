@@ -82,7 +82,7 @@ function getHandler(
     f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Vector.of<string>();
-    let activeScopes = Vector.ofArrayStruct<NgScope>([{
+    let activeScopes = Vector.ofIterableStruct<NgScope>([{
         xpathDepth: 0,
         closeSource: ()=>"",
         variables: defaultScope

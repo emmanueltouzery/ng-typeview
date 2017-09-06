@@ -149,7 +149,7 @@ function parseModalOpen(callExpr : ts.CallExpression): Option<ControllerViewInfo
                 .indexOf(c.expression.getText()) >= 0)
         .flatMap(c => maybeSingleNode(c.arguments))
         .flatMap(a => maybeObjectLiteralExpression(a))
-        .map(o => Vector.ofArrayStruct(o.properties));
+        .map(o => Vector.ofIterableStruct(o.properties));
 
     const getField = (name: string): Option<string> =>
         paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
@@ -173,9 +173,9 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerV
         (objectLiteralFields.indexOf("controller") >= 0)) {
         // seems like I got a state controller/view declaration
         const controllerName = objectLiteralGetStringLiteralField(
-            "controller", Vector.ofArrayStruct(prop.properties));
+            "controller", Vector.ofIterableStruct(prop.properties));
         const rawViewPath = objectLiteralGetStringLiteralField(
-            "templateUrl", Vector.ofArrayStruct(prop.properties));
+            "templateUrl", Vector.ofIterableStruct(prop.properties));
 
         const buildCtrlViewInfo = (rawViewPath:string, ctrlName:string):ControllerViewInfo =>
             ({controllerName: ctrlName, viewPath: rawViewPath});
@@ -399,14 +399,14 @@ export function extractCtrlViewConnsAngularModule(
                 controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
             }
             controllerViewInfos = controllerViewInfos.concat(
-                Vector.ofArrayStruct(ctrlViewConnectors)
+                Vector.ofIterableStruct(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => Vector.ofArrayStruct(conn.getControllerView(node, webappPath)))
+                    .flatMap(conn => Vector.ofIterableStruct(conn.getControllerView(node, webappPath)))
                     .toArray());
             modelViewInfos = modelViewInfos.concat(
-                Vector.ofArrayStruct(modelViewConnectors)
+                Vector.ofIterableStruct(modelViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => Vector.ofArrayStruct(conn.getModelView(fileName, node, webappPath)))
+                    .flatMap(conn => Vector.ofIterableStruct(conn.getModelView(fileName, node, webappPath)))
                     .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
@@ -526,9 +526,9 @@ export function extractControllerScopeInfo(
                 imports.push(node.getText());
                 importNames.push((<ts.ImportEqualsDeclaration>node).name.getText());
             }
-            const ctrlViewFragments = Vector.ofArrayStruct(ctrlViewFragmentExtractors)
+            const ctrlViewFragments = Vector.ofIterableStruct(ctrlViewFragmentExtractors)
                 .filter(extractor => extractor.interceptAstNode === node.kind)
-                .flatMap(extractor => Vector.ofArray(extractor.getViewFragments(node)));
+                .flatMap(extractor => Vector.ofIterable(extractor.getViewFragments(node)));
             viewFragments = viewFragments.concat(ctrlViewFragments.toArray());
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
