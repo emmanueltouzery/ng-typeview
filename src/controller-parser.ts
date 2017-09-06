@@ -401,12 +401,12 @@ export function extractCtrlViewConnsAngularModule(
             controllerViewInfos = controllerViewInfos.concat(
                 Vector.ofIterableStruct(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => Vector.ofIterableStruct(conn.getControllerView(node, webappPath)))
+                    .flatMapStruct(conn => Vector.ofIterableStruct(conn.getControllerView(node, webappPath)))
                     .toArray());
             modelViewInfos = modelViewInfos.concat(
                 Vector.ofIterableStruct(modelViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => Vector.ofIterableStruct(conn.getModelView(fileName, node, webappPath)))
+                    .flatMapStruct(conn => Vector.ofIterableStruct(conn.getModelView(fileName, node, webappPath)))
                     .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
@@ -528,7 +528,7 @@ export function extractControllerScopeInfo(
             }
             const ctrlViewFragments = Vector.ofIterableStruct(ctrlViewFragmentExtractors)
                 .filter(extractor => extractor.interceptAstNode === node.kind)
-                .flatMap(extractor => Vector.ofIterable(extractor.getViewFragments(node)));
+                .flatMapStruct(extractor => Vector.ofIterable(extractor.getViewFragments(node)));
             viewFragments = viewFragments.concat(ctrlViewFragments.toArray());
             ts.forEachChild(node, nodeExtractScopeInterface);
         }

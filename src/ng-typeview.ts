@@ -175,7 +175,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
             prjSettings.ctrlViewConnectors, prjSettings.modelViewConnectors)));
     const viewFilenameToControllerNames: HashMap<string,Vector<ControllerViewInfo>> =
         Vector.ofIterableStruct(viewInfos)
-        .flatMap(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
+        .flatMapStruct(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
         .appendAllStruct(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
@@ -195,7 +195,7 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
                     ctrlViewInfos.mapStruct(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
     const viewFilenameToCtrlFilenamesModelConns =
         Vector.ofIterableStruct(viewInfos)
-        .flatMap(vi => Vector.ofIterableStruct(vi.modelViewInfos))
+        .flatMapStruct(vi => Vector.ofIterableStruct(vi.modelViewInfos))
         .groupBy(mvi => mvi.viewPath)
         .mapValues(mvis => mvis.map(mvi => mvi.modelPath));
     const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(
