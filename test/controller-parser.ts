@@ -1,5 +1,5 @@
 import * as assert from 'assert'
-import {Maybe} from "monet";
+import {Option} from "prelude.ts";
 import {extractControllerScopeInfo, ControllerScopeInfo,
         extractCtrlViewConnsAngularModule,
         ControllerViewInfo,
@@ -33,8 +33,8 @@ describe("extractModalOpenAngularModule", () => {
             defaultCtrlViewConnectors.concat([ctrlViewConn]),
             defaultModelViewConnectors);
         assert.equal("test/data/test-ctrl.ts", modalModuleInfo.fileName);
-        assert.deepEqual(Maybe.Some("my.ng.module.name"), modalModuleInfo.ngModuleName);
-        assert.deepEqual(Maybe.Some("ControllerName"), modalModuleInfo.controllerName);
+        assert.deepEqual(Option.of("my.ng.module.name"), modalModuleInfo.ngModuleName);
+        assert.deepEqual(Option.of("ControllerName"), modalModuleInfo.controllerName);
         assert.deepEqual([
             {
                 controllerName: "CtrlState1",
@@ -62,7 +62,7 @@ describe("extractModalOpenAngularModule", () => {
 describe("extractControllerScopeInfo", () => {
     it("should parse the scope info", async () => {
         const scopeInfo = await extractControllerScopeInfo("test/data/test-ctrl.ts", []);
-        assert.equal("multipart.module.name", scopeInfo.tsModuleName.some());
+        assert.equal("multipart.module.name", scopeInfo.tsModuleName.getOrThrow());
         assert.equal("interface Scope extends ng.IScope {\n" +
                      "        showDiv?: string;\n" +
                      "        showText: (x:string)=>boolean;\n" +
@@ -73,7 +73,7 @@ describe("extractControllerScopeInfo", () => {
                      "        boolean1: boolean;\n" +
                      "        boolean2: boolean;\n" +
                      "        boolean3: boolean;\n" +
-                     "    }", scopeInfo.scopeInfo.some());
+                     "    }", scopeInfo.scopeInfo.getOrThrow());
         assert.deepEqual(["type STR = string;", "type INT = number;"], scopeInfo.typeAliases);
         assert.deepEqual(["import Aa = api.Aa;", "import Bb = api.Bb;"], scopeInfo.imports);
         assert.deepEqual(

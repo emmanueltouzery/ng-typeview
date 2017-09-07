@@ -13,7 +13,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
     f__limitTo:<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string,
     f__date:(date:Date|string|number, format?: string, timezone?: string)=>string,
     f__formatNumber:(input: string, formatType: 'hex'|'dec') => string) {
-    const ___x39: any = {
+    const ___x0: any = {
         active: $scope.showDiv
     };
     

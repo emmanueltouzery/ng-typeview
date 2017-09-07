@@ -1,11 +1,11 @@
 import * as assert from 'assert'
-import {Stack} from "immutable";
+import {Vector} from "prelude.ts";
 import {addScopeAccessors} from '../src/view-ngexpression-parser'
 import {NgScope} from "../src/view-parser"
 
 describe("addScopeAccessors", () => {
     it ("should add $scope properly", () => {
-        const fakeScopeInfo: Stack<NgScope> = Stack([
+        const fakeScopeInfo: Vector<NgScope> = Vector.ofStruct(
             {
                 xpathDepth: 1,
                 closeSource: ()=>"",
@@ -16,7 +16,7 @@ describe("addScopeAccessors", () => {
                 closeSource: ()=>"",
                 variables: []
             }
-        ]);
+        );
         const assertScopeAcc = (expected:string,input:string) => assert.equal(
             expected, addScopeAccessors(fakeScopeInfo, input));
         assertScopeAcc("$scope.data.value", "data.value");

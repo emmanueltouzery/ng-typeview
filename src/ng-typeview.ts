@@ -1,7 +1,6 @@
 import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
 import {sync} from "glob";
-import {Map, Seq, Collection} from "immutable";
-import * as imm from "immutable";
+import {HashMap, Vector} from "prelude.ts";
 import {parse} from "path";
 
 import {parseView, listKeepDefined, collectionKeepDefined, requireDefined} from "./view-parser"
@@ -49,7 +48,9 @@ async function processControllerView(prjSettings: ProjectSettings,
     const viewExprs = await parseView(
         prjSettings.resolveImportsAsNonScope || false,
         viewPath, scopeContents.viewFragments, scopeContents.importNames,
-        imm.List(tagDirectives), imm.List(attributeDirectives), imm.List(ngFilters));
+        Vector.ofIterableStruct(tagDirectives),
+        Vector.ofIterableStruct(attributeDirectives),
+        Vector.ofIterableStruct(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -58,11 +59,11 @@ async function processControllerView(prjSettings: ProjectSettings,
         getViewTestFilename(pathInfo.name, viewPathInfo.name);
     const moduleWrap = (x:string) => scopeContents.tsModuleName
         .map(n => wrapInModule(n, scopeContents, x))
-        .orSome(x);
+        .getOrElse(x);
     const filterParams = ngFilters.map(f => `f__${f.name}:${f.type}`).join(",\n    ")
-    const typeParams = scopeContents.scopeTypeParams.orSome("");
+    const typeParams = scopeContents.scopeTypeParams.getOrElse("");
     writeFileSync(outputFname, moduleWrap(
-            scopeContents.scopeInfo.some() +
+            scopeContents.scopeInfo.getOrThrow() +
             `\n\nfunction ___f${typeParams}($scope: Scope${
                 typeParams}, ${filterParams}) {\n` +
             viewExprs +
@@ -172,39 +173,35 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         files.map(f => extractCtrlViewConnsAngularModule(
             f, prjSettings.path,
             prjSettings.ctrlViewConnectors, prjSettings.modelViewConnectors)));
-    const viewFilenameToControllerNames: Seq.Keyed<string,Collection<number,ControllerViewInfo>> =
-        imm.List(viewInfos)
-        .flatMap(vi => vi.controllerViewInfos)
-        .concat(prjSettings.extraCtrlViewConnections)
+    const viewFilenameToControllerNames: HashMap<string,Vector<ControllerViewInfo>> =
+        Vector.ofIterableStruct(viewInfos)
+        .flatMapStruct(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
+        .appendAllStruct(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Map(
-            viewInfos
-                .filter(vi => vi.controllerName.isSome())
-			          // JS files are not going to have a scope interface
-			          // definition so they're not helpful. Also, we can
-			          // get twice the same file: original TS & compiled JS.
-			          // => keep only the original TS in that case.
-			          .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
-                .map(vi => [vi.controllerName.some(), vi.fileName]));
+        Vector.ofIterableStruct(viewInfos)
+        .filter(vi => vi.controllerName.isSome())
+     		// JS files are not going to have a scope interface
+     		// definition so they're not helpful. Also, we can
+     		// get twice the same file: original TS & compiled JS.
+     		// => keep only the original TS in that case.
+			  .filter(vi => vi.fileName.toLowerCase().endsWith(".ts"))
+        .toMap(vi => [vi.controllerName.getOrThrow(), vi.fileName]);
     const viewFilenameToCtrlFilenamesViewConns =
         viewFilenameToControllerNames
-        .mapEntries<string,Collection<number,string>>(
-            ([viewFname,ctrlViewInfos]) =>
+        .map<string,Vector<string>>(
+            (viewFname,ctrlViewInfos) =>
                 [viewFname, collectionKeepDefined(
-                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName)))])
-        .map(v => v.toList())
-        .toMap();
+                    ctrlViewInfos.mapStruct(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
     const viewFilenameToCtrlFilenamesModelConns =
-        imm.List(viewInfos)
-        .flatMap(vi => vi.modelViewInfos)
+        Vector.ofIterableStruct(viewInfos)
+        .flatMapStruct(vi => Vector.ofIterableStruct(vi.modelViewInfos))
         .groupBy(mvi => mvi.viewPath)
-        .toMap()
-        .map(mvis => mvis.toList().map(mvi => mvi.modelPath));
+        .mapValues(mvis => mvis.map(mvi => mvi.modelPath));
     const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(
-        (views1, views2) => views1.concat(views2), viewFilenameToCtrlFilenamesModelConns);
-    return Promise.all(viewFilenameToCtrlFilenames.map(
-        (ctrlNames, viewName) => Promise.all(ctrlNames.map(
+        viewFilenameToCtrlFilenamesModelConns, (views1, views2) => views1.appendAll(views2));
+    return Promise.all(viewFilenameToCtrlFilenames.toVector().mapStruct(
+        ([viewName, ctrlNames]) => Promise.all(ctrlNames.mapStruct(
             ctrlName => processControllerView(prjSettings,
                 ctrlName, prjSettings.path + "/" + viewName, prjSettings.ngFilters,
                 prjSettings.tagDirectives,

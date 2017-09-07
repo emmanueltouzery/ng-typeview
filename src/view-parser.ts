@@ -1,8 +1,6 @@
-import {Maybe} from "monet"
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import {Collection, Stack} from "immutable";
-import * as imm from "immutable";
+import { Option, Vector } from "prelude.ts";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
 import {NgFilter} from "./filters"
@@ -18,7 +16,7 @@ export interface NgScope {
 
 var v: number = 0;
 
-function extractInlineExpressions(ngFilters: imm.List<NgFilter>,
+function extractInlineExpressions(ngFilters: Vector<NgFilter>,
     text: string, codegenHelpers: CodegenHelper): string {
     const re = /{{(.+?)}}/g; // anything inside {{}}, multiple times
     let m: RegExpExecArray|null;
@@ -40,12 +38,12 @@ export function requireDefined<T>(x:T|undefined): T {
     return x;
 }
 
-export function collectionKeepDefined<T>(l:Collection<number,T|undefined>): Collection<number, T> {
-    return l.filter(x => x!==undefined).map(requireDefined);
+export function collectionKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
+    return l.filter(x => x!==undefined).mapStruct(requireDefined);
 }
 
-export function listKeepDefined<T>(l:imm.List<T|undefined>): imm.List<T> {
-    return l.filter(x => x!==undefined).map(requireDefined);
+export function listKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
+    return l.filter(x => x!==undefined).mapStruct(requireDefined);
 }
 
 /**
@@ -61,16 +59,16 @@ export function normalizeTagAttrName(name: string): string {
         .replace(/([A-Z])/g, l => "-" + l.toLowerCase());
 }
 
-function handleDirectiveResponses(xpath: Stack<string>,
+function handleDirectiveResponses(xpath: Vector<string>,
                                   codegenHelpers: CodegenHelper,
-                                  resps: imm.List<DirectiveResponse>)
-                                  : imm.List<NgScope> {
+                                  resps: Vector<DirectiveResponse>)
+                                  : Vector<NgScope> {
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
-        .map(r => (
+        .mapStruct(r => (
             {
-                xpathDepth: xpath.size,
+                xpathDepth: xpath.size(),
                 closeSource: r.closeSource || (() => ""),
                 variables: codegenHelpers.ngScopeInfo.curScopeVars
             }));
@@ -78,13 +76,13 @@ function handleDirectiveResponses(xpath: Stack<string>,
 
 function getHandler(
     fileName: string, defaultScope: string[],
-    tagDirectiveHandlers: imm.List<TagDirectiveHandler>,
-    attrDirectiveHandlers: imm.List<AttributeDirectiveHandler>,
-    ngFilters: imm.List<NgFilter>,
+    tagDirectiveHandlers: Vector<TagDirectiveHandler>,
+    attrDirectiveHandlers: Vector<AttributeDirectiveHandler>,
+    ngFilters: Vector<NgFilter>,
     f: (expr: string) => void): Handler {
     let expressions: string = "";
-    let xpath = Stack<string>();
-    let activeScopes = Stack<NgScope>([{
+    let xpath = Vector.of<string>();
+    let activeScopes = Vector.ofIterableStruct<NgScope>([{
         xpathDepth: 0,
         closeSource: ()=>"",
         variables: defaultScope
@@ -97,7 +95,7 @@ function getHandler(
             for (let k in _attribs) {
                 attribs[normalizeTagAttrName(k)] = _attribs[k];
             }
-            xpath = xpath.unshift(name);
+            xpath = xpath.append(name);
 
             // work on tag handlers
             const codegenHelpersTag = new CodegenHelper(ngFilters, activeScopes, getNewVariableName);
@@ -108,10 +106,10 @@ function getHandler(
             }
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
-            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
+            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
-            expressions += tagDirectiveResps.map(x => x.source).join("");
-            activeScopes = activeScopes.unshiftAll(
+            expressions += tagDirectiveResps.map(x => x.source).mkString("");
+            activeScopes = activeScopes.appendAllStruct(
                 handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
             // work on attribute handlers
@@ -124,10 +122,10 @@ function getHandler(
 
                 if (!handlers.isEmpty()) {
                     const attrDirectiveResps = listKeepDefined(
-                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
-                    expressions += attrDirectiveResps.map(x => x.source).join("");
+                        handlers.mapStruct(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
+                    expressions += attrDirectiveResps.map(x => x.source).mkString("");
 
-                    activeScopes = activeScopes.unshiftAll(
+                    activeScopes = activeScopes.appendAllStruct(
                         handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
                 } else if (attrName.startsWith("ng-") &&
                            !relevantTagHandlers.find(th => th.canHandleAttributes.indexOf(attrName) >= 0)) {
@@ -137,15 +135,15 @@ function getHandler(
             }
         },
         onclosetag: (name: string) => {
-            if (xpath.first() !== name) {
-                console.error(`${fileName}: expected </${xpath.first()}> but found </${name}>`);
+            if (xpath.last().getOrUndefined() !== name) {
+                console.error(`${fileName}: expected </${xpath.last().getOrUndefined()}> but found </${name}>`);
             }
-            xpath = xpath.shift();
-            var firstScope = activeScopes.first();
-            while (firstScope && firstScope.xpathDepth > xpath.size) {
+            xpath = xpath.dropRight(1);
+            var firstScope = activeScopes.last().getOrUndefined();
+            while (firstScope && firstScope.xpathDepth > xpath.size()) {
                 expressions += firstScope.closeSource();
-                activeScopes = activeScopes.shift();
-                firstScope = activeScopes.first();
+                activeScopes = activeScopes.dropRight(1);
+                firstScope = activeScopes.last().getOrUndefined();
             }
         },
         ontext: (text: string) => {
@@ -213,9 +211,9 @@ function indentSource(src: string): string {
 export function parseView(
     resolveImportsAsNonScope: boolean, fileName: string, viewFragments: string[],
     importNames: string[],
-    tagDirectiveHandlers: imm.List<TagDirectiveHandler>,
-    attrDirectiveHandlers: imm.List<AttributeDirectiveHandler>,
-    ngFilters: imm.List<NgFilter>) : Promise<string> {
+    tagDirectiveHandlers: Vector<TagDirectiveHandler>,
+    attrDirectiveHandlers: Vector<AttributeDirectiveHandler>,
+    ngFilters: Vector<NgFilter>) : Promise<string> {
     const defaultScope = resolveImportsAsNonScope ? importNames : [];
     return new Promise<string>((resolve, reject) => {
         const parser = new Parser(getHandler(

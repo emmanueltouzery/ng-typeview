@@ -1,8 +1,6 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Maybe} from "monet";
-import * as monet from "monet";
-import * as imm from "immutable";
+import {Option, Vector, Tuple2} from "prelude.ts";
 
 /**
  * return a pair:
@@ -14,29 +12,29 @@ import * as imm from "immutable";
  * against any T. If you do care about the T, you can subclass the scope type to
  * a concrete type.
  */
-function parseScopeInterface(iface: ts.InterfaceDeclaration): Maybe<[string,string]> {
+function parseScopeInterface(iface: ts.InterfaceDeclaration): Option<Tuple2<string,string>> {
     const typeParamsInfo = () =>
-        Maybe.fromNull(iface.typeParameters)
+        Option.ofStruct(iface.typeParameters)
         .filter(p => p.length > 0)
         .map(p => "<" + p.map((_,idx)=> "T" + idx).join(", ") + ">")
-        .orJust("") ;
-    return Maybe.Some(iface.getText())
+        .getOrElse("") ;
+    return Option.of(iface.getText())
         .filter(_ => iface.name.getText() === "Scope")
-        .map<[string,string]>(cts => [cts, typeParamsInfo()]);
+        .map(cts => Tuple2.of(cts, typeParamsInfo()));
 }
 
-const maybeNodeType = <T extends ts.Node> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Maybe<T> => {
-    return (input && input.kind === sKind) ? Maybe.Some(<T><any>input) : Maybe.None<T>();
+const maybeNodeType = <T extends ts.Node> (sKind: ts.SyntaxKind) => (input: ts.Node|undefined): Option<T> => {
+    return (input && input.kind === sKind) ? Option.ofStruct(<T><any>input) : Option.none<T>();
 }
 
 /**
  * @hidden
  */
-export function maybeSingleNode<T extends ts.Node>(nodes: ts.NodeArray<T>|undefined): Maybe<T> {
+export function maybeSingleNode<T extends ts.Node>(nodes: ts.NodeArray<T>|undefined): Option<T> {
     if (nodes && nodes.length === 1) {
-        return Maybe.Some(nodes[0]);
+        return Option.ofStruct(nodes[0]);
     }
-    return Maybe.None<T>();
+    return Option.none<T>();
 }
 
 /**
@@ -129,77 +127,77 @@ export interface ModelViewInfo {
 }
 
 function objectLiteralGetProperty(
-    propName: string, elts: monet.List<ts.ObjectLiteralElementLike>): Maybe<ts.Node> {
+    propName: string, elts: Vector<ts.ObjectLiteralElementLike>): Option<ts.Node> {
     return elts.find(elt => maybeIdentifier(elt.name).filter(i => i.text === propName).isSome());
 }
 
-function getFieldStringLiteralValue(field: ts.Node): Maybe<string> {
+function getFieldStringLiteralValue(field: ts.Node): Option<string> {
     return maybePropertyAssignment(field)
-        .flatMap(pa => maybeStringLiteral(pa.initializer))
+        .flatMapStruct(pa => maybeStringLiteral(pa.initializer))
         .map(ini => ini.text);
 }
 
 function objectLiteralGetStringLiteralField(
-    propName: string, elts: monet.List<ts.ObjectLiteralElementLike>): Maybe<string> {
+    propName: string, elts: Vector<ts.ObjectLiteralElementLike>): Option<string> {
     return objectLiteralGetProperty(propName, elts)
         .flatMap(p => getFieldStringLiteralValue(p));
 }
 
-function parseModalOpen(callExpr : ts.CallExpression): Maybe<ControllerViewInfo> {
-    const paramObjectElements = Maybe.of(callExpr)
+function parseModalOpen(callExpr : ts.CallExpression): Option<ControllerViewInfo> {
+    const paramObjectElements = Option.ofStruct(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
                 .indexOf(c.expression.getText()) >= 0)
-        .flatMap(c => maybeSingleNode(c.arguments))
-        .flatMap(a => maybeObjectLiteralExpression(a))
-        .map(o => monet.List.fromArray(o.properties));
+        .flatMapStruct(c => maybeSingleNode(c.arguments))
+        .flatMapStruct(a => maybeObjectLiteralExpression(a))
+        .map(o => Vector.ofIterableStruct(o.properties));
 
-    const getField = (name: string): Maybe<string> =>
-        paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
+    const getField = (name: string): Option<string> =>
+        paramObjectElements.flatMapStruct(oe => objectLiteralGetStringLiteralField(name, oe));
 
     const controllerName = getField("controller");
     const rawViewPath = getField("templateUrl");
 
-    const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+    const buildCtrlViewInfo = (rawViewPath:string,ctrlName:string):ControllerViewInfo =>
         ({controllerName: ctrlName, viewPath: rawViewPath});
 
-    return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+    return Option.liftA2Struct(buildCtrlViewInfo)(rawViewPath, controllerName);
 }
 
-function parseModuleState(prop : ts.ObjectLiteralExpression): Maybe<ControllerViewInfo> {
+function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerViewInfo> {
     const objectLiteralFields = prop.properties
         .map(e => maybeIdentifier(e.name))
         .filter(i => i.isSome())
-        .map(i => i.some().text);
+        .map(i => i.getOrThrow().text);
     if ((objectLiteralFields.indexOf("url") >= 0) &&
         (objectLiteralFields.indexOf("templateUrl") >= 0) &&
         (objectLiteralFields.indexOf("controller") >= 0)) {
         // seems like I got a state controller/view declaration
         const controllerName = objectLiteralGetStringLiteralField(
-            "controller", monet.List.fromArray(prop.properties));
+            "controller", Vector.ofIterableStruct(prop.properties));
         const rawViewPath = objectLiteralGetStringLiteralField(
-            "templateUrl", monet.List.fromArray(prop.properties));
+            "templateUrl", Vector.ofIterableStruct(prop.properties));
 
-        const buildCtrlViewInfo = (rawViewPath:string) => (ctrlName:string):ControllerViewInfo =>
+        const buildCtrlViewInfo = (rawViewPath:string, ctrlName:string):ControllerViewInfo =>
             ({controllerName: ctrlName, viewPath: rawViewPath});
-        return controllerName.ap(rawViewPath.map(buildCtrlViewInfo));
+        return Option.liftA2Struct(buildCtrlViewInfo)(rawViewPath, controllerName);
     }
-    return Maybe.None<ControllerViewInfo>();
+    return Option.none<ControllerViewInfo>();
 }
 
-function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]> {
+function parseAngularModule(expr: ts.ExpressionStatement): Option<[string,string]> {
     const callExpr = maybeCallExpression(expr.expression);
     const prop0 = callExpr
-        .flatMap(callExpr => maybePropertyAccessExpression(callExpr.expression));
+        .flatMapStruct(callExpr => maybePropertyAccessExpression(callExpr.expression));
 
     const prop = prop0
-        .flatMap(callProp => maybeCallExpression(callProp.expression))
-        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+        .flatMapStruct(callProp => maybeCallExpression(callProp.expression))
+        .flatMapStruct(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
 
     const receiver1 = prop
-        .flatMap(p => maybeIdentifier(p.expression))
+        .flatMapStruct(p => maybeIdentifier(p.expression))
         .map(r => r.text);
     const call1 = prop
-        .flatMap(p => maybeIdentifier(p.name))
+        .flatMapStruct(p => maybeIdentifier(p.name))
         .map(r => r.text);
 
     if (receiver1.filter(v => v === "angular")
@@ -208,82 +206,82 @@ function parseAngularModule(expr: ts.ExpressionStatement): Maybe<[string,string]
         if (moduleCall.filter(v => v === "controller").isSome()) {
             const ctrlName = callExpr
                 .filter(c => c.arguments.length > 0)
-                .flatMap(c => maybeStringLiteral(c.arguments[0]))
+                .flatMapStruct(c => maybeStringLiteral(c.arguments[0]))
                 .map(a => a.text);
             const moduleName = prop0
-                .flatMap(p => maybeCallExpression(p.expression))
+                .flatMapStruct(p => maybeCallExpression(p.expression))
                 .filter(c => c.arguments.length > 0)
-                .flatMap(c => maybeStringLiteral(c.arguments[0]))
+                .flatMapStruct(c => maybeStringLiteral(c.arguments[0]))
                 .map(s => s.text);
-            const buildModuleCtrl: ((x:string) => (y:string) => [string,string]) = mod => ctrl => [mod, ctrl];
-            return ctrlName.ap(moduleName.map(buildModuleCtrl));
+            const buildModuleCtrl: ((x:string, y:string) => [string,string]) = (mod, ctrl) => [mod, ctrl];
+            return Option.liftA2Struct(buildModuleCtrl)(moduleName, ctrlName);
         }
     }
-    return Maybe.None<[string,string]>();
+    return Option.none<[string,string]>();
 }
 
 function getPropertyByName(objLit: ts.ObjectLiteralExpression,
-                           propName: string): Maybe<ts.ObjectLiteralElementLike> {
-    return Maybe.fromNull(
+                           propName: string): Option<ts.ObjectLiteralElementLike> {
+    return Option.ofStruct(
         objLit.properties
             .find(p => maybeIdentifier(p.name).filter(i => i.getText() === propName).isSome()));
 }
 
-function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpression): Maybe<ModelViewInfo> {
+function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpression): Option<ModelViewInfo> {
     const prop0 =  maybePropertyAccessExpression(callExpr.expression);
 
     const prop = prop0
-        .flatMap(callProp => maybeCallExpression(callProp.expression))
-        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+        .flatMapStruct(callProp => maybeCallExpression(callProp.expression))
+        .flatMapStruct(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
 
     const receiver1 = prop
-        .flatMap(p => maybeIdentifier(p.expression))
+        .flatMapStruct(p => maybeIdentifier(p.expression))
         .map(r => r.text);
     const call1 = prop
-        .flatMap(p => maybeIdentifier(p.name))
+        .flatMapStruct(p => maybeIdentifier(p.name))
         .map(r => r.text);
 
     if (receiver1.filter(v => v === "angular")
         .orElse(call1.filter(v => v === "module")).isSome()) {
         const moduleCall = prop0.map(p => p.name.text);
         if (moduleCall.filter(v => v === "directive").isSome()) {
-            const directiveParam = Maybe.Some(callExpr)
+            const directiveParam = Option.ofStruct(callExpr)
                 .filter(c => c.arguments.length > 1)
-                .map(c => c.arguments[1]);
+                .mapStruct(c => c.arguments[1]);
 
             const returnExpr = directiveParam
-                .flatMap(maybeArrayLiteralExpression)
+                .flatMapStruct(maybeArrayLiteralExpression)
                 .filter(l => l.elements.length > 0)
-                .map(l => l.elements[l.elements.length-1])
+                .mapStruct(l => l.elements[l.elements.length-1])
                 .orElse(directiveParam);
 
             const arrowBodyExpr = returnExpr
-                .flatMap(maybeArrowFunction)
-                .flatMap(a => maybeBlock(a.body));
+                .flatMapStruct(maybeArrowFunction)
+                .flatMapStruct(a => maybeBlock(a.body));
             const fnBodyExpr = returnExpr
-                .flatMap(maybeFunctionExpression)
-                .map(fn => fn.body);
+                .flatMapStruct(maybeFunctionExpression)
+                .mapStruct(fn => fn.body);
             const bodyExpr = arrowBodyExpr.orElse(fnBodyExpr);
 
             const resultExpr = bodyExpr
-                .flatMap(b => maybeReturnStatement(b.statements[b.statements.length-1]))
-                .flatMap(s => Maybe.fromNull(s.expression));
+                .flatMapStruct(b => maybeReturnStatement(b.statements[b.statements.length-1]))
+                .flatMapStruct(s => Option.ofStruct(s.expression));
 
             const scopeObject = resultExpr
-                .flatMap(maybeAsExpression)
-                .map(a => a.expression)
+                .flatMapStruct(maybeAsExpression)
+                .mapStruct(a => a.expression)
                 .orElse(resultExpr);
 
             const templateUrl = scopeObject
-                .flatMap(maybeObjectLiteralExpression)
-                .flatMap(e => getPropertyByName(e ,"templateUrl"))
-                .flatMap(maybePropertyAssignment)
-                .flatMap(a => maybeStringLiteral(a.initializer))
+                .flatMapStruct(maybeObjectLiteralExpression)
+                .flatMapStruct(e => getPropertyByName(e ,"templateUrl"))
+                .flatMapStruct(maybePropertyAssignment)
+                .flatMapStruct(a => maybeStringLiteral(a.initializer))
                 .map(s => s.text);
-            return templateUrl.map(viewPath => ({modelPath, viewPath}));
+            return templateUrl.mapStruct(viewPath => ({modelPath, viewPath}));
         }
     }
-    return Maybe.None<ModelViewInfo>();
+    return Option.none<ModelViewInfo>();
 }
 
 /**
@@ -291,8 +289,8 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
  */
 export interface ViewInfo {
     readonly fileName: string;
-    readonly ngModuleName: Maybe<string>;
-    readonly controllerName: Maybe<string>;
+    readonly ngModuleName: Option<string>;
+    readonly controllerName: Option<string>;
     readonly controllerViewInfos: ControllerViewInfo[];
     readonly modelViewInfos: ModelViewInfo[];
 }
@@ -348,19 +346,19 @@ export interface ModelViewConnector {
 const modalOpenViewConnector : ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
     getControllerView: (node, projectPath) =>
-        parseModalOpen(<ts.CallExpression>node).toList().toArray()
+        parseModalOpen(<ts.CallExpression>node).toVector().toArray()
 };
 
 const moduleStateViewConnector: ControllerViewConnector = {
     interceptAstNode: ts.SyntaxKind.ObjectLiteralExpression,
     getControllerView: (node, projectPath) =>
-        parseModuleState(<ts.ObjectLiteralExpression>node).toList().toArray()
+        parseModuleState(<ts.ObjectLiteralExpression>node).toVector().toArray()
 };
 
 const directiveViewConnector: ModelViewConnector = {
     interceptAstNode: ts.SyntaxKind.CallExpression,
     getModelView: (filename, node, projectPath) =>
-        parseAngularDirectiveTemplate(filename, <ts.CallExpression>node).toList().toArray()
+        parseAngularDirectiveTemplate(filename, <ts.CallExpression>node).toVector().toArray()
 };
 
 /**
@@ -389,8 +387,8 @@ export function extractCtrlViewConnsAngularModule(
     const sourceFile = ts.createSourceFile(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
-    let ngModuleName = Maybe.None<string>();
-    let controllerName = Maybe.None<string>();
+    let ngModuleName = Option.none<string>();
+    let controllerName = Option.none<string>();
     let controllerViewInfos: ControllerViewInfo[] = [];
     let modelViewInfos: ModelViewInfo[] = [];
     return new Promise<ViewInfo>((resolve, reject) => {
@@ -401,14 +399,14 @@ export function extractCtrlViewConnsAngularModule(
                 controllerName = mCtrlNgModule.map(moduleCtrl => moduleCtrl[1]);
             }
             controllerViewInfos = controllerViewInfos.concat(
-                monet.List.fromArray(ctrlViewConnectors)
+                Vector.ofIterableStruct(ctrlViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => monet.List.fromArray(conn.getControllerView(node, webappPath)))
+                    .flatMapStruct(conn => Vector.ofIterableStruct(conn.getControllerView(node, webappPath)))
                     .toArray());
             modelViewInfos = modelViewInfos.concat(
-                monet.List.fromArray(modelViewConnectors)
+                Vector.ofIterableStruct(modelViewConnectors)
                     .filter(conn => conn.interceptAstNode === node.kind)
-                    .flatMap(conn => monet.List.fromArray(conn.getModelView(fileName, node, webappPath)))
+                    .flatMapStruct(conn => Vector.ofIterableStruct(conn.getModelView(fileName, node, webappPath)))
                     .toArray());
             ts.forEachChild(node, nodeExtractModuleOpenAngularModule);
         }
@@ -421,15 +419,15 @@ export function extractCtrlViewConnsAngularModule(
  * @hidden
  */
 export interface ControllerScopeInfo {
-    readonly tsModuleName: Maybe<string>;
+    readonly tsModuleName: Option<string>;
     /**
      * body of the interface for the scope
      */
-    readonly scopeInfo: Maybe<string>;
+    readonly scopeInfo: Option<string>;
     /**
      * type parameters for the scope, like "<T0,T1>" or ""
      */
-    readonly scopeTypeParams: Maybe<string>;
+    readonly scopeTypeParams: Option<string>;
     readonly typeAliases: string[];
     readonly imports: string[];
     readonly importNames: string[];
@@ -438,7 +436,7 @@ export interface ControllerScopeInfo {
 }
 
 function nodeIsExported(node: ts.Node): boolean {
-    return Maybe.fromNull(node.modifiers)
+    return Option.ofStruct(node.modifiers)
         .filter(modifiers => modifiers.some(
             modifier => modifier.kind === ts.SyntaxKind.ExportKeyword))
         .isSome();
@@ -481,9 +479,9 @@ export function extractControllerScopeInfo(
         fileName, readFileSync(fileName).toString(),
         ts.ScriptTarget.ES2016, /*setParentNodes */ true);
     return new Promise<ControllerScopeInfo>((resolve, reject) => {
-        let scopeInfo = Maybe.None<string>();
-        let scopeTypeParams = Maybe.None<string>();
-        let tsModuleName:string|null = null;
+        let scopeInfo = Option.none<string>();
+        let scopeTypeParams = Option.none<string>();
+        let tsModuleName:string|undefined = undefined;
         let typeAliases:string[] = [];
         let imports:string[] = [];
         let importNames:string[] = [];
@@ -503,8 +501,8 @@ export function extractControllerScopeInfo(
                 if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
                     const curIntfInfo = parseScopeInterface(<ts.InterfaceDeclaration>node);
                     if (curIntfInfo.isSome()) {
-                        scopeInfo = curIntfInfo.map(x => x[0]);
-                        scopeTypeParams = curIntfInfo.map(x => x[1]);
+                        scopeInfo = curIntfInfo.map(x => x.fst());
+                        scopeTypeParams = curIntfInfo.map(x => x.snd());
                     } else {
                         nonExportedDeclarations.push(node.getText());
                     }
@@ -528,15 +526,15 @@ export function extractControllerScopeInfo(
                 imports.push(node.getText());
                 importNames.push((<ts.ImportEqualsDeclaration>node).name.getText());
             }
-            const ctrlViewFragments = imm.List(ctrlViewFragmentExtractors)
+            const ctrlViewFragments = Vector.ofIterableStruct(ctrlViewFragmentExtractors)
                 .filter(extractor => extractor.interceptAstNode === node.kind)
-                .flatMap(extractor => extractor.getViewFragments(node));
+                .flatMapStruct(extractor => Vector.ofIterable(extractor.getViewFragments(node)));
             viewFragments = viewFragments.concat(ctrlViewFragments.toArray());
             ts.forEachChild(node, nodeExtractScopeInterface);
         }
         nodeExtractScopeInterface(sourceFile);
         resolve({
-            tsModuleName: Maybe.fromNull<string>(tsModuleName),
+            tsModuleName: Option.of<string>(tsModuleName),
             scopeInfo, scopeTypeParams, typeAliases, imports, importNames,
             nonExportedDeclarations, viewFragments
         });

@@ -1,6 +1,5 @@
 import * as ts from "typescript";
-import {Maybe} from "monet";
-import * as monet from "monet";
+import {Option, Vector} from "prelude.ts";
 import {maybeVariableStatement, maybeSingleNode,
         maybeObjectLiteralExpression, maybePropertyAssignment} from "./controller-parser"
 
@@ -58,17 +57,17 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
     const sourceFile = ts.createSourceFile(
         "", "const ___ = " + input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
 
-    return Maybe.Some(sourceFile)
-        .flatMap(f => maybeSingleNode(f.statements))
-        .flatMap(st => maybeVariableStatement(st))
-        .flatMap(vs => maybeSingleNode(vs.declarationList.declarations))
+    return Option.ofStruct(sourceFile)
+        .flatMapStruct(f => maybeSingleNode(f.statements))
+        .flatMapStruct(st => maybeVariableStatement(st))
+        .flatMapStruct(vs => maybeSingleNode(vs.declarationList.declarations))
         .filter(decl => decl.initializer !== undefined)
-        .flatMap(decl => maybeObjectLiteralExpression(decl.initializer))
-        .flatMap(objLit => monet.List.fromArray(objLit.properties.map(maybePropertyAssignment)).sequenceMaybe<ts.PropertyAssignment>())
+        .flatMapStruct(decl => maybeObjectLiteralExpression(decl.initializer))
+        .flatMapStruct(objLit => Option.sequence(Vector.ofIterableStruct(objLit.properties.map(maybePropertyAssignment))))
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))
         .map(props => "{" + props.toArray().join(", ") + "}")
-        .orSome(normal);
+        .getOrElse(normal);
 }
 
 /**
