@@ -133,7 +133,7 @@ function objectLiteralGetProperty(
 
 function getFieldStringLiteralValue(field: ts.Node): Option<string> {
     return maybePropertyAssignment(field)
-        .flatMap(pa => maybeStringLiteral(pa.initializer))
+        .flatMapStruct(pa => maybeStringLiteral(pa.initializer))
         .map(ini => ini.text);
 }
 
@@ -147,12 +147,12 @@ function parseModalOpen(callExpr : ts.CallExpression): Option<ControllerViewInfo
     const paramObjectElements = Option.ofStruct(callExpr)
         .filter(c => ["$modal.open", "this.$modal.open"]
                 .indexOf(c.expression.getText()) >= 0)
-        .flatMap(c => maybeSingleNode(c.arguments))
-        .flatMap(a => maybeObjectLiteralExpression(a))
+        .flatMapStruct(c => maybeSingleNode(c.arguments))
+        .flatMapStruct(a => maybeObjectLiteralExpression(a))
         .map(o => Vector.ofIterableStruct(o.properties));
 
     const getField = (name: string): Option<string> =>
-        paramObjectElements.flatMap(oe => objectLiteralGetStringLiteralField(name, oe));
+        paramObjectElements.flatMapStruct(oe => objectLiteralGetStringLiteralField(name, oe));
 
     const controllerName = getField("controller");
     const rawViewPath = getField("templateUrl");
@@ -187,17 +187,17 @@ function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerV
 function parseAngularModule(expr: ts.ExpressionStatement): Option<[string,string]> {
     const callExpr = maybeCallExpression(expr.expression);
     const prop0 = callExpr
-        .flatMap(callExpr => maybePropertyAccessExpression(callExpr.expression));
+        .flatMapStruct(callExpr => maybePropertyAccessExpression(callExpr.expression));
 
     const prop = prop0
-        .flatMap(callProp => maybeCallExpression(callProp.expression))
-        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+        .flatMapStruct(callProp => maybeCallExpression(callProp.expression))
+        .flatMapStruct(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
 
     const receiver1 = prop
-        .flatMap(p => maybeIdentifier(p.expression))
+        .flatMapStruct(p => maybeIdentifier(p.expression))
         .map(r => r.text);
     const call1 = prop
-        .flatMap(p => maybeIdentifier(p.name))
+        .flatMapStruct(p => maybeIdentifier(p.name))
         .map(r => r.text);
 
     if (receiver1.filter(v => v === "angular")
@@ -206,12 +206,12 @@ function parseAngularModule(expr: ts.ExpressionStatement): Option<[string,string
         if (moduleCall.filter(v => v === "controller").isSome()) {
             const ctrlName = callExpr
                 .filter(c => c.arguments.length > 0)
-                .flatMap(c => maybeStringLiteral(c.arguments[0]))
+                .flatMapStruct(c => maybeStringLiteral(c.arguments[0]))
                 .map(a => a.text);
             const moduleName = prop0
-                .flatMap(p => maybeCallExpression(p.expression))
+                .flatMapStruct(p => maybeCallExpression(p.expression))
                 .filter(c => c.arguments.length > 0)
-                .flatMap(c => maybeStringLiteral(c.arguments[0]))
+                .flatMapStruct(c => maybeStringLiteral(c.arguments[0]))
                 .map(s => s.text);
             const buildModuleCtrl: ((x:string, y:string) => [string,string]) = (mod, ctrl) => [mod, ctrl];
             return Option.liftA2Struct(buildModuleCtrl)(moduleName, ctrlName);
@@ -231,14 +231,14 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
     const prop0 =  maybePropertyAccessExpression(callExpr.expression);
 
     const prop = prop0
-        .flatMap(callProp => maybeCallExpression(callProp.expression))
-        .flatMap(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
+        .flatMapStruct(callProp => maybeCallExpression(callProp.expression))
+        .flatMapStruct(callPropCall => maybePropertyAccessExpression(callPropCall.expression));
 
     const receiver1 = prop
-        .flatMap(p => maybeIdentifier(p.expression))
+        .flatMapStruct(p => maybeIdentifier(p.expression))
         .map(r => r.text);
     const call1 = prop
-        .flatMap(p => maybeIdentifier(p.name))
+        .flatMapStruct(p => maybeIdentifier(p.name))
         .map(r => r.text);
 
     if (receiver1.filter(v => v === "angular")
@@ -250,33 +250,33 @@ function parseAngularDirectiveTemplate(modelPath: string, callExpr: ts.CallExpre
                 .mapStruct(c => c.arguments[1]);
 
             const returnExpr = directiveParam
-                .flatMap(maybeArrayLiteralExpression)
+                .flatMapStruct(maybeArrayLiteralExpression)
                 .filter(l => l.elements.length > 0)
                 .mapStruct(l => l.elements[l.elements.length-1])
                 .orElse(directiveParam);
 
             const arrowBodyExpr = returnExpr
-                .flatMap(maybeArrowFunction)
-                .flatMap(a => maybeBlock(a.body));
+                .flatMapStruct(maybeArrowFunction)
+                .flatMapStruct(a => maybeBlock(a.body));
             const fnBodyExpr = returnExpr
-                .flatMap(maybeFunctionExpression)
+                .flatMapStruct(maybeFunctionExpression)
                 .mapStruct(fn => fn.body);
             const bodyExpr = arrowBodyExpr.orElse(fnBodyExpr);
 
             const resultExpr = bodyExpr
-                .flatMap(b => maybeReturnStatement(b.statements[b.statements.length-1]))
-                .flatMap(s => Option.ofStruct(s.expression));
+                .flatMapStruct(b => maybeReturnStatement(b.statements[b.statements.length-1]))
+                .flatMapStruct(s => Option.ofStruct(s.expression));
 
             const scopeObject = resultExpr
-                .flatMap(maybeAsExpression)
+                .flatMapStruct(maybeAsExpression)
                 .mapStruct(a => a.expression)
                 .orElse(resultExpr);
 
             const templateUrl = scopeObject
-                .flatMap(maybeObjectLiteralExpression)
-                .flatMap(e => getPropertyByName(e ,"templateUrl"))
-                .flatMap(maybePropertyAssignment)
-                .flatMap(a => maybeStringLiteral(a.initializer))
+                .flatMapStruct(maybeObjectLiteralExpression)
+                .flatMapStruct(e => getPropertyByName(e ,"templateUrl"))
+                .flatMapStruct(maybePropertyAssignment)
+                .flatMapStruct(a => maybeStringLiteral(a.initializer))
                 .map(s => s.text);
             return templateUrl.mapStruct(viewPath => ({modelPath, viewPath}));
         }

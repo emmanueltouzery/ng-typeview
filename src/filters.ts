@@ -58,12 +58,12 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
         "", "const ___ = " + input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
 
     return Option.ofStruct(sourceFile)
-        .flatMap(f => maybeSingleNode(f.statements))
-        .flatMap(st => maybeVariableStatement(st))
-        .flatMap(vs => maybeSingleNode(vs.declarationList.declarations))
+        .flatMapStruct(f => maybeSingleNode(f.statements))
+        .flatMapStruct(st => maybeVariableStatement(st))
+        .flatMapStruct(vs => maybeSingleNode(vs.declarationList.declarations))
         .filter(decl => decl.initializer !== undefined)
-        .flatMap(decl => maybeObjectLiteralExpression(decl.initializer))
-        .flatMap(objLit => Option.sequence(Vector.ofIterableStruct(objLit.properties.map(maybePropertyAssignment))))
+        .flatMapStruct(decl => maybeObjectLiteralExpression(decl.initializer))
+        .flatMapStruct(objLit => Option.sequence(Vector.ofIterableStruct(objLit.properties.map(maybePropertyAssignment))))
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))
         .map(props => "{" + props.toArray().join(", ") + "}")
