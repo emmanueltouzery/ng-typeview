@@ -68,7 +68,7 @@ function handleDirectiveResponses(xpath: Vector<string>,
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
         .mapStruct(r => (
             {
-                xpathDepth: xpath.size(),
+                xpathDepth: xpath.length(),
                 closeSource: r.closeSource || (() => ""),
                 variables: codegenHelpers.ngScopeInfo.curScopeVars
             }));
@@ -140,7 +140,7 @@ function getHandler(
             }
             xpath = xpath.dropRight(1);
             var firstScope = activeScopes.last().getOrUndefined();
-            while (firstScope && firstScope.xpathDepth > xpath.size()) {
+            while (firstScope && firstScope.xpathDepth > xpath.length()) {
                 expressions += firstScope.closeSource();
                 activeScopes = activeScopes.dropRight(1);
                 firstScope = activeScopes.last().getOrUndefined();
