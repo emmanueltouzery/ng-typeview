@@ -48,9 +48,9 @@ async function processControllerView(prjSettings: ProjectSettings,
     const viewExprs = await parseView(
         prjSettings.resolveImportsAsNonScope || false,
         viewPath, scopeContents.viewFragments, scopeContents.importNames,
-        Vector.ofIterableStruct(tagDirectives),
-        Vector.ofIterableStruct(attributeDirectives),
-        Vector.ofIterableStruct(ngFilters));
+        Vector.ofIterable(tagDirectives),
+        Vector.ofIterable(attributeDirectives),
+        Vector.ofIterable(ngFilters));
     const pathInfo = parse(controllerPath);
     const viewPathInfo = parse(viewPath);
     // putting both controller & view name in the output, as one controller
@@ -174,12 +174,12 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
             f, prjSettings.path,
             prjSettings.ctrlViewConnectors, prjSettings.modelViewConnectors)));
     const viewFilenameToControllerNames: HashMap<string,Vector<ControllerViewInfo>> =
-        Vector.ofIterableStruct(viewInfos)
-        .flatMapStruct(vi => Vector.ofIterableStruct(vi.controllerViewInfos))
-        .appendAllStruct(prjSettings.extraCtrlViewConnections)
+        Vector.ofIterable(viewInfos)
+        .flatMap(vi => Vector.ofIterable(vi.controllerViewInfos))
+        .appendAll(prjSettings.extraCtrlViewConnections)
         .groupBy(cvi => cvi.viewPath);
     const controllerNameToFilename =
-        Vector.ofIterableStruct(viewInfos)
+        Vector.ofIterable(viewInfos)
         .filter(vi => vi.controllerName.isSome())
      		// JS files are not going to have a scope interface
      		// definition so they're not helpful. Also, we can
@@ -192,16 +192,16 @@ export async function processProject(prjSettings: ProjectSettings): Promise<any>
         .map<string,Vector<string>>(
             (viewFname,ctrlViewInfos) =>
                 [viewFname, collectionKeepDefined(
-                    ctrlViewInfos.mapStruct(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
+                    ctrlViewInfos.map(cvi => controllerNameToFilename.get(cvi.controllerName).getOrUndefined()))]);
     const viewFilenameToCtrlFilenamesModelConns =
-        Vector.ofIterableStruct(viewInfos)
-        .flatMapStruct(vi => Vector.ofIterableStruct(vi.modelViewInfos))
+        Vector.ofIterable(viewInfos)
+        .flatMap(vi => Vector.ofIterable(vi.modelViewInfos))
         .groupBy(mvi => mvi.viewPath)
         .mapValues(mvis => mvis.map(mvi => mvi.modelPath));
     const viewFilenameToCtrlFilenames = viewFilenameToCtrlFilenamesViewConns.mergeWith(
         viewFilenameToCtrlFilenamesModelConns, (views1, views2) => views1.appendAll(views2));
-    return Promise.all(viewFilenameToCtrlFilenames.toVector().mapStruct(
-        ([viewName, ctrlNames]) => Promise.all(ctrlNames.mapStruct(
+    return Promise.all(viewFilenameToCtrlFilenames.toVector().map(
+        ([viewName, ctrlNames]) => Promise.all(ctrlNames.map(
             ctrlName => processControllerView(prjSettings,
                 ctrlName, prjSettings.path + "/" + viewName, prjSettings.ngFilters,
                 prjSettings.tagDirectives,

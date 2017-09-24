@@ -5,7 +5,7 @@ import {NgScope} from "../src/view-parser"
 
 describe("addScopeAccessors", () => {
     it ("should add $scope properly", () => {
-        const fakeScopeInfo: Vector<NgScope> = Vector.ofStruct(
+        const fakeScopeInfo: Vector<NgScope> = Vector.of(
             {
                 xpathDepth: 1,
                 closeSource: ()=>"",

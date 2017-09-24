@@ -57,13 +57,13 @@ function filterFilterParams(paramIdx: number, input: string, addScAccessors: (in
     const sourceFile = ts.createSourceFile(
         "", "const ___ = " + input, ts.ScriptTarget.ES2016, /*setParentNodes */ true);
 
-    return Option.ofStruct(sourceFile)
-        .flatMapStruct(f => maybeSingleNode(f.statements))
-        .flatMapStruct(st => maybeVariableStatement(st))
-        .flatMapStruct(vs => maybeSingleNode(vs.declarationList.declarations))
+    return Option.of(sourceFile)
+        .flatMap(f => maybeSingleNode(f.statements))
+        .flatMap(st => maybeVariableStatement(st))
+        .flatMap(vs => maybeSingleNode(vs.declarationList.declarations))
         .filter(decl => decl.initializer !== undefined)
-        .flatMapStruct(decl => maybeObjectLiteralExpression(decl.initializer))
-        .flatMapStruct(objLit => Option.sequence(Vector.ofIterableStruct(objLit.properties.map(maybePropertyAssignment))))
+        .flatMap(decl => maybeObjectLiteralExpression(decl.initializer))
+        .flatMap(objLit => Option.sequence(Vector.ofIterable(objLit.properties.map(maybePropertyAssignment))))
         .map(props => props.filter(p => p.initializer !== undefined))
         .map(props => props.map(prop => prop.name.getText() + ": " + addScAccessors(prop.initializer.getText())))
         .map(props => "{" + props.toArray().join(", ") + "}")

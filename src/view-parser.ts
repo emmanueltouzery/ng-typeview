@@ -39,11 +39,11 @@ export function requireDefined<T>(x:T|undefined): T {
 }
 
 export function collectionKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
-    return l.filter(x => x!==undefined).mapStruct(requireDefined);
+    return l.filter(x => x!==undefined).map(requireDefined);
 }
 
 export function listKeepDefined<T>(l:Vector<T|undefined>): Vector<T> {
-    return l.filter(x => x!==undefined).mapStruct(requireDefined);
+    return l.filter(x => x!==undefined).map(requireDefined);
 }
 
 /**
@@ -66,7 +66,7 @@ function handleDirectiveResponses(xpath: Vector<string>,
     return resps
         .filter(x => x.closeSource !== undefined ||
                 codegenHelpers.ngScopeInfo.curScopeVars.length > 0)
-        .mapStruct(r => (
+        .map(r => (
             {
                 xpathDepth: xpath.length(),
                 closeSource: r.closeSource || (() => ""),
@@ -82,7 +82,7 @@ function getHandler(
     f: (expr: string) => void): Handler {
     let expressions: string = "";
     let xpath = Vector.of<string>();
-    let activeScopes = Vector.ofIterableStruct<NgScope>([{
+    let activeScopes = Vector.ofIterable<NgScope>([{
         xpathDepth: 0,
         closeSource: ()=>"",
         variables: defaultScope
@@ -106,10 +106,10 @@ function getHandler(
             }
             const relevantTagHandlers = tagDirectiveHandlers
                 .filter(d => d.forTags.length === 0 || d.forTags.indexOf(name) >= 0);
-            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.mapStruct(
+            const tagDirectiveResps = listKeepDefined(relevantTagHandlers.map(
                 handler => handler.handleTag(name, attribs, codegenHelpersTag)));
             expressions += tagDirectiveResps.map(x => x.source).mkString("");
-            activeScopes = activeScopes.appendAllStruct(
+            activeScopes = activeScopes.appendAll(
                 handleDirectiveResponses(xpath, codegenHelpersTag, tagDirectiveResps));
 
             // work on attribute handlers
@@ -122,10 +122,10 @@ function getHandler(
 
                 if (!handlers.isEmpty()) {
                     const attrDirectiveResps = listKeepDefined(
-                        handlers.mapStruct(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
+                        handlers.map(handler => handler.handleAttribute(attrName, attrValue, attribs, codegenHelpersAttr)));
                     expressions += attrDirectiveResps.map(x => x.source).mkString("");
 
-                    activeScopes = activeScopes.appendAllStruct(
+                    activeScopes = activeScopes.appendAll(
                         handleDirectiveResponses(xpath, codegenHelpersAttr, attrDirectiveResps));
                 } else if (attrName.startsWith("ng-") &&
                            !relevantTagHandlers.find(th => th.canHandleAttributes.indexOf(attrName) >= 0)) {

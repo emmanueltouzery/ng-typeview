@@ -46,7 +46,7 @@ export class CodegenHelper {
      * @returns new source with the scope accessors added
      */
     public addScopeAccessors = (js:string): string => {
-        return addScopeAccessors(this.ngScopeInfo.soFar.prependStruct({
+        return addScopeAccessors(this.ngScopeInfo.soFar.prepend({
             // hardcoding 1...I just need to let addScopeAccessors
             // know about these local variables. a bit of a hack.
             xpathDepth:1,
