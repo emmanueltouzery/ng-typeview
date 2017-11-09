@@ -114,7 +114,7 @@ const passThroughAttrHandler: AttributeDirectiveHandler = {
 };
 
 const stringAttrHandler: AttributeDirectiveHandler = {
-    forAttributes: ["ng-include", "ng-src"],
+    forAttributes: ["ng-include"],
     handleAttribute: (attrName, val, allAttribs, codegenHelpers) =>
         ({ source: codegenHelpers.declareVariable("string", val) })
 };
