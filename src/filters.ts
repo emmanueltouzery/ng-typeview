@@ -81,5 +81,6 @@ export const defaultNgFilters = [
     new NgFilter("orderBy", "<T, K extends keyof T>(input:T[], field: K) => T[]"),
     new NgFilter("filter", "<T>(input:T[], p: (((v:T,idx:number,array:T[])=>boolean) | string | { [P in keyof T]?: T[P]; })) => T[]", filterFilterParams),
     new NgFilter("limitTo", "<T>(input: T[] | string | number, limit: string|number, begin?: string|number) => T[] | string"),
-    new NgFilter("date", "(date:Date|string|number, format?: string, timezone?: string)=>string")
+    new NgFilter("date", "(date:Date|string|number, format?: string, timezone?: string)=>string"),
+    new NgFilter("currency", "(amount:number, symbol?: string, fractionSize?:number)=>string")
 ];
