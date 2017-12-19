@@ -164,13 +164,12 @@ function parseModalOpen(callExpr : ts.CallExpression): Option<ControllerViewInfo
 }
 
 function parseModuleState(prop : ts.ObjectLiteralExpression): Option<ControllerViewInfo> {
-    const objectLiteralFields = prop.properties
-        .map(e => maybeIdentifier(e.name))
-        .filter(i => i.isSome())
-        .map(i => i.getOrThrow().text);
-    if ((objectLiteralFields.indexOf("url") >= 0) &&
-        (objectLiteralFields.indexOf("templateUrl") >= 0) &&
-        (objectLiteralFields.indexOf("controller") >= 0)) {
+    const objectLiteralFields = Vector.ofIterable(prop.properties)
+        .mapOption(e => maybeIdentifier(e.name))
+        .map(i => i.text);
+    if ((objectLiteralFields.contains("url")) &&
+        (objectLiteralFields.contains("templateUrl")) &&
+        (objectLiteralFields.contains("controller"))) {
         // seems like I got a state controller/view declaration
         const controllerName = objectLiteralGetStringLiteralField(
             "controller", Vector.ofIterable(prop.properties));
