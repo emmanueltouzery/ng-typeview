@@ -11,8 +11,17 @@ interface NotScope2 extends NotScope {
     }
 class NotScopeClass {
         field?: number;
-        constructor(public f2: number);
+        constructor(public f2: number) {
+            field = myVarUsedByClass;
+        }
     }
+const myVarUsedByClass = 5;
+enum X {
+        A
+    }
+const severityCellTemplate = checkViewFragment(`<div class="ngCellText" ng-style="{'background-color': getColor(row.entity)}">
+{{ row.entity.severity }}
+</div>`);
 interface Scope extends ng.IScope {
         showDiv?: string;
         showText: (x:string)=>boolean;

@@ -18,11 +18,19 @@ module multipart.module.name {
 
     class NotScopeClass {
         field?: number;
-        constructor(public f2: number);
+        constructor(public f2: number) {
+            field = myVarUsedByClass;
+        }
     }
 
     export class DontCopy {
         field: string;
+    }
+
+    const myVarUsedByClass = 5;
+
+    enum X {
+        A
     }
 
     interface Scope extends ng.IScope {

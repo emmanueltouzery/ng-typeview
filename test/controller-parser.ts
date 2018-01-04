@@ -80,7 +80,11 @@ describe("extractControllerScopeInfo", () => {
             [
                 "interface NotScope extends SomethingElse {\n        intField: number;\n    }",
                 "interface NotScope2 extends NotScope {\n        f1: (x:string)=>boolean;\n    }",
-                "class NotScopeClass {\n        field?: number;\n        constructor(public f2: number);\n    }"
+                "class NotScopeClass {\n        field?: number;\n        constructor(public f2: number) {\n            field = myVarUsedByClass;\n        }\n    }",
+                "const myVarUsedByClass = 5;",
+                "enum X {\n        A\n    }",
+                "const severityCellTemplate = checkViewFragment(`<div class=\"ngCellText\" ng-style=\"{'background-color': getColor(row.entity)}\">\n{{ row.entity.severity }}\n</div>`);"
+
             ],
             scopeInfo.nonExportedDeclarations);
     });

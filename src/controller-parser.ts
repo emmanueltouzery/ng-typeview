@@ -509,6 +509,12 @@ export function extractControllerScopeInfo(
                 if (node.kind === ts.SyntaxKind.ClassDeclaration) {
                     nonExportedDeclarations.push(node.getText());
                 }
+                if (node.kind === ts.SyntaxKind.VariableStatement) {
+                    nonExportedDeclarations.push(node.getText());
+                }
+                if (node.kind === ts.SyntaxKind.EnumDeclaration) {
+                    nonExportedDeclarations.push(node.getText());
+                }
             }
             if (node.kind === ts.SyntaxKind.ModuleDeclaration) {
                 const moduleLevel = (<ts.StringLiteral>(<ts.ModuleDeclaration>node).name).text;
