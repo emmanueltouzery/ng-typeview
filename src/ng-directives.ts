@@ -368,7 +368,7 @@ const ngUiSelectDirectiveTagHandler: TagDirectiveHandler = {
             switch (attrName) {
             case "ng-model":
                 source += `const ${codegenHelpers.registerVariable("$select")} = {search:'', selected: ${
-                    codegenHelpers.addScopeAccessors(attrValue + '[0]')}};`;
+                    codegenHelpers.addScopeAccessors(attrValue)}};`;
                 // alright, here comes the crazy part. it seems that $item is NOT
                 // defined by ui-select.ng-model as I first thought...
                 // but actually by the subtag ui-select.ui-select-choices.repeat.
