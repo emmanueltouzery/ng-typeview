@@ -34,6 +34,9 @@
                 <span ng-bind-html="maintenanceTask.instructions | linky:'_blank' | translate"></span>
                 This {{group}} should be taken from the local variable, not from the scope.
             </div>
+            <div data-ng-repeat="(k,v) in kvData">
+                k should be a string {{k.replaceAll("","")}}, v should be an int {{v+=1}}.
+            </div>
             This {{group}} should be taken from the scope, not as a local variable.
             <div ng-bind="data.groups | orderBy: 'field' | filter: {field: user}"></div>
             </p>

@@ -161,16 +161,36 @@ function handleNgRepeat(attrValue: string, codegenHelpers: CodegenHelper): strin
         console.warn(ngRepeatData);
         return null;
     }
+
     const enumerable = ngFilterExpressionToTypeScriptEmbedded(
         ngRepeatData.value.expression, codegenHelpers);
-    const source =`angular.forEach(${enumerable}, ${
-codegenHelpers.registerVariable(ngRepeatData.value.variable)} => {` +
+
+    // so here we have a hack to be able to support scenarios like
+    // "(k,v) in data" -- if there are no spaces in the expression,
+    // we actually parse it as one, variable name being "(k,v)".
+    // We should fix the parsing but... I just take it as-is then
+    // split in two variables "k" and "v", then hack around the iteration
+    // to make it work the way angular does it.
+    const shouldSplitVar = ngRepeatData.value.variable.startsWith("(") &&
+        ngRepeatData.value.variable.endsWith(")");
+    const keysIfSplit = (x:string) => shouldSplitVar ? `Object.keys(${x})` : x;
+    let splitterExpr = "";
+    if (shouldSplitVar) {
+        const vars = ngRepeatData.value.variable.substring(1, ngRepeatData.value.variable.length-1).split(",");
+        vars.forEach((v,idx) => codegenHelpers.registerVariable(v));
+        let [k,v] = vars;
+        splitterExpr = `const ${k} = curKey; const ${v} = ${enumerable}[curKey];`;
+    }
+    const repeatVarExpr = shouldSplitVar ? "curKey" : codegenHelpers.registerVariable(ngRepeatData.value.variable);
+
+    const source =`angular.forEach(${keysIfSplit(enumerable)}, ${repeatVarExpr} => {` +
         `let ${codegenHelpers.registerVariable('$index')} = 0;` +
         `let ${codegenHelpers.registerVariable('$first')} = true;` +
         `let ${codegenHelpers.registerVariable('$middle')} = true;` +
         `let ${codegenHelpers.registerVariable('$last')} = true;` +
         `let ${codegenHelpers.registerVariable('$even')} = true;` +
         `let ${codegenHelpers.registerVariable('$odd')} = false;` +
+        `${splitterExpr}` +
         (ngRepeatData.value.trackingExpression ?
          `${codegenHelpers.declareVariable('any', ngRepeatData.value.trackingExpression)}` : "");
     return source;

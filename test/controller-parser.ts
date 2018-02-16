@@ -67,6 +67,7 @@ describe("extractControllerScopeInfo", () => {
                      "        showDiv?: string;\n" +
                      "        showText: (x:string)=>boolean;\n" +
                      "        data: {groups: any[], firstname: string}\n" +
+                     "        kvData: {[index:number]: string}\n" +
                      "        triggerAction: boolean\n" +
                      "        user: string;\n" +
                      "        maxlength: number;\n" +

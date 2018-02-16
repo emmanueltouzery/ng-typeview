@@ -26,6 +26,7 @@ interface Scope extends ng.IScope {
         showDiv?: string;
         showText: (x:string)=>boolean;
         data: {groups: any[], firstname: string}
+        kvData: {[index:number]: string}
         triggerAction: boolean
         user: string;
         maxlength: number;
@@ -101,7 +102,20 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             const ___x25: any = group;
             
         });
-        const ___x26: any = $scope.group;
+        angular.forEach(Object.keys($scope.kvData), curKey => {
+            let $index = 0;
+            let $first = true;
+            let $middle = true;
+            let $last = true;
+            let $even = true;
+            let $odd = false;
+            const k = curKey;
+             const v = $scope.kvData[curKey];
+            const ___x26: any = k.replaceAll("", "");
+            const ___x27: any = v += 1;
+            
+        });
+        const ___x28: any = $scope.group;
         f__filter(f__orderBy($scope.data.groups, 'field'), {
             field: $scope.user
         });
@@ -112,32 +126,33 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             search:'', selected: $scope.data
         };
         let $item = null;
-        const ___x27: any = $scope.data;
+        const ___x29: any = $scope.data;
         $item = f__orderBy($scope.data.groups, 'nameAndCountry')[0];
         f__orderBy($scope.data.groups, 'nameAndCountry').forEach(subtype => {
-            const ___x28: any = subtype.name;
+            const ___x30: any = subtype.name;
             
         });
-        const ___x29: any = $select.selected.firstname;
-        const ___x30: any = $item.firstname;
+        const ___x31: any = $select.selected.firstname;
+        const ___x32: any = $item.firstname;
         
     }
     angular.forEach(f__orderBy($scope.data.groups, 'labelSort'), item => {
-        const ___x31: any = item.subItem;
-        const ___x32: any = item.label;
-        
-    });
-    const ___x33: any = $scope.user;
-    angular.forEach($scope.data.groups, item => {
-        f__translate(item.subItem);
-        const ___x34: any = item.id;
+        const ___x33: any = item.subItem;
+        const ___x34: any = item.label;
         
     });
     const ___x35: any = $scope.user;
+    angular.forEach($scope.data.groups, item => {
+        f__translate(item.subItem);
+        const ___x36: any = item.id;
+        
+    });
+    const ___x37: any = $scope.user;
     switch ($scope.showDiv) {
         case $scope.data.firstname: break;
         case $scope.maxlength: break;
-        case $scope.user: break;
+        case "user":break;
+        default:break;
         
     }
     angular.forEach($scope.data.groups, curGrp => {
@@ -147,7 +162,7 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
         let $last = true;
         let $even = true;
         let $odd = false;
-        const ___x36: any = curGrp.name;
+        const ___x38: any = curGrp.name;
         
     });
     while (1) {
@@ -155,26 +170,26 @@ function ___f($scope: Scope, f__translate:(key: string) => string,
             search:'', selected: $scope.editObject.assignedUserTypes
         };
         let $item = null;
-        const ___x37: any = $scope.editObject.assignedUserTypes;
+        const ___x39: any = $scope.editObject.assignedUserTypes;
         $item = f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         })[0];
         f__filter($scope.itemsData.activeUserTypes, {
             desc: $select.search, combinedUser: false
         }).forEach(user => {
-            const ___x38: any = user.typeId;
-            const ___x39: any = user.desc;
+            const ___x40: any = user.typeId;
+            const ___x41: any = user.desc;
             
         });
-        const ___x40: any = $scope.item.desc;
+        const ___x42: any = $scope.item.desc;
         
     }
     angular.forEach($scope.adminStatusList, status => {
-        const ___x41: any = status.name;
+        const ___x43: any = status.name;
         f__translate(status.name);
         
     });
-    const ___x42: any = $scope.actualConfigs[$scope.cfg.type] === "1" ? $scope.cfg.configs.test : ($scope.actualConfigs[$scope.cfg.type] === "0" ? $scope.cfg.configs.fleet : '');
+    const ___x44: any = $scope.actualConfigs[$scope.cfg.type] === "1" ? $scope.cfg.configs.test : ($scope.actualConfigs[$scope.cfg.type] === "0" ? $scope.cfg.configs.fleet : '');
     
 }
 }

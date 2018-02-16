@@ -37,6 +37,7 @@ module multipart.module.name {
         showDiv?: string;
         showText: (x:string)=>boolean;
         data: {groups: any[], firstname: string}
+        kvData: {[index:number]: string}
         triggerAction: boolean
         user: string;
         maxlength: number;
