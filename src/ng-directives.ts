@@ -366,13 +366,25 @@ const ngSwitchWhen: TagDirectiveHandler = {
     forTags: [],
     handleTag: (tag, attribs, codegenHelpers) =>
         {
+            const quoteOrNot = (str: string) => {
+                if (str === "true" || str === "false") {
+                    return str;
+                }
+                if (str.match(/^\d+$/)) {
+                    return str;
+                }
+                return '"' + str + '"';
+            }
+            if (attribs.hasOwnProperty("ng-switch-default")) {
+                    return {source: `default:`, closeSource:()=>"break;"};
+            }
             if (!attribs.hasOwnProperty("ng-switch-when")) { return; }
             if (attribs.hasOwnProperty("ng-switch-when-separator")) {
                 const values = attribs['ng-switch-when'].split(attribs['ng-switch-when-separator']);
                 const source = values.map(codegenHelpers.addScopeAccessors).map(v => `case ${v}: break;`).join("");
                 return {source};
             } else {
-                return {source: `case ${codegenHelpers.addScopeAccessors(attribs['ng-switch-when'])}: break;`};
+                return {source: `case ${quoteOrNot(attribs['ng-switch-when'])}:`, closeSource:()=>"break;"};
             }
         }
 };
