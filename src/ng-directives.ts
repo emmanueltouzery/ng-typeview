@@ -352,9 +352,19 @@ const ngSwitch: TagDirectiveHandler = {
             if (!attribs.hasOwnProperty('ng-switch')) { return; }
             const expr = attribs.hasOwnProperty('on') ?
                 attribs['on'] : attribs['ng-switch'];
+            const extraSrc = `
+                const assertUnreachable= (x:never): never => {
+                    throw new Error("Didn't expect to get here " + x);
+                };`;
+            const strictDefault = `
+                default:
+                    assertUnreachable(${expr});`;
+
+        const isStrict = attribs.hasOwnProperty('typeview-switch-exhaustive') ||
+            attribs.hasOwnProperty('data-typeview-switch-exhaustive');
             return {
-                source: `switch (${codegenHelpers.addScopeAccessors(expr)}) {`,
-                closeSource: () => "}"
+                source: `${isStrict ? extraSrc : ""}switch (${codegenHelpers.addScopeAccessors(expr)}) {`,
+                closeSource: () => `${isStrict ? strictDefault : ''}}`
             };
         }
 };
