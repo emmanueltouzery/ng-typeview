@@ -410,7 +410,7 @@ function stmtAddScopeAccessors(scopes: Vector<NgScope>): (node: ts.Node) => stri
         } else if (nodeKindPassthroughList.contains(node.kind)) {
             return node.getText();
         } else if (node.kind >= ts.SyntaxKind.FirstToken && node.kind <= ts.SyntaxKind.LastToken) {
-            return ts.tokenToString(node.kind);
+            return ts.tokenToString(node.kind) || "";
         } else if (node.kind === ts.SyntaxKind.ParenthesizedExpression) {
             return "(" + stmtAddScopeAccessors(scopes)(
                 (<ts.ParenthesizedExpression>node).expression) + ")";
