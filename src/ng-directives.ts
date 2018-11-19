@@ -1,4 +1,4 @@
-import {Option} from "prelude.ts";
+import {Option} from "prelude-ts";
 import * as P from "parsimmon"
 
 import {filterExpressionToTypescript, parseNgFilterExpression,

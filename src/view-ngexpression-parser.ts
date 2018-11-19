@@ -1,6 +1,6 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {HashSet, Vector} from "prelude.ts";
+import {HashSet, Vector} from "prelude-ts";
 import * as P from "parsimmon"
 
 import {NgScope, requireDefined} from "./view-parser"

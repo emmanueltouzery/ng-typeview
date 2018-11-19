@@ -1,5 +1,5 @@
 import * as ts from "typescript";
-import {Option, Vector} from "prelude.ts";
+import {Option, Vector} from "prelude-ts";
 import {maybeVariableStatement, maybeSingleNode,
         maybeObjectLiteralExpression, maybePropertyAssignment} from "./controller-parser"
 

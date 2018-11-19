@@ -1,19 +1,18 @@
-import {writeFileSync, readdirSync, statSync, unlinkSync} from "fs";
+import {writeFileSync, unlinkSync} from "fs";
 import {sync} from "glob";
-import {HashMap, Vector} from "prelude.ts";
+import {HashMap, Vector} from "prelude-ts";
 import {parse} from "path";
 
-import {parseView, listKeepDefined, collectionKeepDefined, requireDefined} from "./view-parser"
+import {parseView, collectionKeepDefined } from "./view-parser"
 import {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 export {AttributeDirectiveHandler, TagDirectiveHandler,
         defaultTagDirectiveHandlers, defaultAttrDirectiveHandlers} from "./ng-directives"
 import {extractControllerScopeInfo, extractCtrlViewConnsAngularModule,
-        ViewInfo, ControllerViewInfo, ControllerScopeInfo,
+        ControllerViewInfo, ControllerScopeInfo,
         ControllerViewConnector, defaultCtrlViewConnectors,
         CtrlViewFragmentExtractor, defaultCtrlViewFragmentExtractors,
         ModelViewConnector, defaultModelViewConnectors} from "./controller-parser"
-import {addScopeAccessors, CodegenHelper} from "./view-ngexpression-parser"
 import {NgFilter, defaultNgFilters} from "./filters"
 
 export {ControllerViewInfo} from "./controller-parser";

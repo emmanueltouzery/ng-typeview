@@ -1,5 +1,5 @@
 import * as assert from 'assert'
-import {Vector} from "prelude.ts";
+import {Vector} from "prelude-ts";
 import {addScopeAccessors} from '../src/view-ngexpression-parser'
 import {NgScope} from "../src/view-parser"
 

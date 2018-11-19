@@ -1,6 +1,6 @@
 import {Parser, Handler} from "htmlparser2";
 import {readFileSync} from "fs";
-import { Option, Vector } from "prelude.ts";
+import { Vector } from "prelude-ts";
 import {AttributeDirectiveHandler, TagDirectiveHandler, DirectiveResponse} from "./ng-directives"
 import {filterExpressionToTypescript, CodegenHelper, addScopeAccessors} from "./view-ngexpression-parser"
 import {NgFilter} from "./filters"

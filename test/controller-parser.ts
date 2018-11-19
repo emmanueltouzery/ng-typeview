@@ -1,5 +1,5 @@
 import * as assert from 'assert'
-import {Option} from "prelude.ts";
+import {Option} from "prelude-ts";
 import {extractControllerScopeInfo, ControllerScopeInfo,
         extractCtrlViewConnsAngularModule,
         ControllerViewInfo,

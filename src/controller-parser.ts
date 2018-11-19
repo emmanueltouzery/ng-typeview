@@ -1,6 +1,6 @@
 import {readFileSync} from "fs";
 import * as ts from "typescript";
-import {Option, Vector, Tuple2} from "prelude.ts";
+import {Option, Vector, Tuple2} from "prelude-ts";
 
 /**
  * return a pair:
