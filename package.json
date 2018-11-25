@@ -1,6 +1,6 @@
 {
     "name": "ng-typeview",
-    "version": "0.0.40",
+    "version": "0.0.41",
     "description": "library to enable type-checking of angular views when using typescript",
     "keywords": [
         "angularjs",
@@ -23,7 +23,6 @@
     "dependencies": {
         "@types/glob": "5.0.30",
         "@types/htmlparser2": "3.7.29",
-        "@types/mocha": "2.2.41",
         "@types/node": "7.0.29",
         "glob": "7.1.2",
         "htmlparser2": "3.9.2",
@@ -33,7 +32,8 @@
         "prelude-ts": "0.8.2"
     },
     "devDependencies": {
-        "mocha": "3.4.2",
+        "mocha": "5.2.0",
+        "@types/mocha": "5.2.5",
         "typedoc": "0.7.1"
     },
     "scripts": {
