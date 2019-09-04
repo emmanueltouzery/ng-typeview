@@ -23,13 +23,13 @@
     "dependencies": {
         "@types/glob": "5.0.30",
         "@types/htmlparser2": "3.7.29",
-        "@types/node": "7.0.29",
+        "@types/node": "12.7.3",
         "glob": "7.1.2",
         "htmlparser2": "3.9.2",
         "typescript": "3.1.1",
         "parsimmon": "1.4.0",
         "@types/parsimmon": "1.3.0",
-        "prelude-ts": "0.8.2"
+        "prelude-ts": "0.8.3"
     },
     "devDependencies": {
         "mocha": "5.2.0",
